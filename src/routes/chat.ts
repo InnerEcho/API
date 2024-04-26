@@ -1,6 +1,7 @@
 import express from 'express';
-import PlantChatBotController from '../controllers/chatbot.js';
+import PlantChatBotController from '../controllers/ChatBotController.js';
 import multer from 'multer';
+import PlantSpeechController from '../controllers/SpeechController.js';
 
 
 const router = express.Router();
@@ -96,6 +97,9 @@ const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' �
  */
 router.post("/plant", PlantChatBotController.chat);
 
+// PlantChatBotController.getChatHistory 호출
+router.post('/history', PlantChatBotController.getChatHistory);
+
 /**
  * @swagger
  * /stt:
@@ -160,12 +164,10 @@ router.post("/plant", PlantChatBotController.chat);
  *                   type: string
  *                   example: "Server Error"
  */
-router.post('/stt', upload.single('file'), PlantChatBotController.speechToText);
+router.post('/stt', upload.single('file'), PlantSpeechController.speechToText);
 
-router.post('/tts', PlantChatBotController.textToSpeech);
+router.post('/tts', PlantSpeechController.textToSpeech);
 
-// PlantChatBotController.getChatHistory 호출
-router.post('/history', PlantChatBotController.getChatHistory);
 
 export default router;
 
