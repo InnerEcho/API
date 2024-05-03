@@ -1,0 +1,79 @@
+import { Sequelize, DataTypes, Model } from "sequelize";
+
+// 인터페이스 정의 - 성장일지 속성 정의
+interface GrowthDiaryAttributes {
+  id: BigInt;               // 일지 ID (PK)
+  user_id: BigInt;          // 사용자 ID (FK)
+  title: string;            // 일지 제목
+  content: string;          // 일지 내용
+  image_url?: string;       // 첨부 이미지 URL (옵션)
+  created_at: Date;         // 생성일시
+  updated_at: Date;         // 수정일시
+  is_deleted: boolean;      // 삭제 여부
+  edited: boolean;          // 수정 여부
+}
+
+// 모델 반환 함수
+export default function (sequelize: Sequelize) {
+  return sequelize.define<Model<GrowthDiaryAttributes>>(
+    "growth_diary",
+    {
+      id: {
+        type: DataTypes.BIGINT,
+        primaryKey: true,
+        autoIncrement: true,
+        allowNull: false,
+        comment: "성장일지 ID (Primary Key)",
+      },
+      user_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        comment: "작성자 사용자 ID (Foreign Key)",
+      },
+      title: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+        comment: "일지 제목",
+      },
+      content: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        comment: "일지 내용 (챗봇이 자동 작성)",
+      },
+      image_url: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+        comment: "첨부 이미지 URL",
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        comment: "일지 작성일시",
+      },
+      updated_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        comment: "일지 수정일시",
+      },
+      is_deleted: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        comment: "삭제 여부 (소프트 삭제)",
+      },
+      edited: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        comment: "수정 여부",
+      },
+    },
+    {
+      tableName: "growth_diary",        // 테이블명
+      timestamps: false,                // createdAt, updatedAt 자동 관리 비활성화
+      comment: "챗봇이 작성한 성장 일지 정보",
+    }
+  );
+}
