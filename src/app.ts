@@ -16,14 +16,24 @@ import { swaggerUi, specs } from './config/swagger.config.js';
 
 // 라우터와 데이터베이스 모델 가져오기
 import indexRouter from './routes/index.js';
-import authRouter from './routes/auth.js';
+import authRouter from './routes/user.js';
 import chatRouter from './routes/chat.js';
 import plantRouter from './routes/plant.js';
+import diaryRouter from './routes/diary.js';
+import commentRouter from './routes/comment.js';
 import db from './models/index.js';
+import YAML from 'yamljs';
 
 dotenv.config();
 
+process.on('uncaughtException', (err) => {
+  console.error('[UncaughtException]', err);
+});
+
+
 const app = express();
+const swaggerDocument = YAML.load('./src/docs/leafy.yaml');
+
 db.sequelize
   .sync({ alter: true }) // 데이터베이스 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
   .catch((err: Error) => {
@@ -34,6 +44,8 @@ const debug = debugModule('ohgnoy-backend:server');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+
 
 // CORS 설정
 app.use(cors());
@@ -54,9 +66,13 @@ app.use('/', indexRouter);
 app.use('/user', authRouter);
 app.use('/chat', chatRouter);
 app.use('/plant', plantRouter);
+app.use('/diary', diaryRouter);
+app.use('/comment',commentRouter);
+
 
 //swagger 모듈 호출하기
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+app.use('/api-docs-old', swaggerUi.serve, swaggerUi.setup(specs));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // 404 에러 핸들링
 app.use((req: Request, res: Response, next: NextFunction) => {
