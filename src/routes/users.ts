@@ -1,4 +1,5 @@
 import { Request, Response, Router } from 'express';
+import { ApiResult } from '../interface/api'
 const router = Router();
 
 /* GET home page. */
