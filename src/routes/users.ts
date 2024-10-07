@@ -1,16 +1,25 @@
-import { Request, Response, Router } from 'express';
-import { ApiResult } from '../interface/api'
-const router = Router();
+import express from 'express';
+import { verifyToken } from '../middlewares/auth';
+import { registerUser, loginUser, sendEmailVerification } from '../controllers/user';
 
-/* GET home page. */
-router.get('/', function (req: Request, res: Response) {
-  let apiResult: ApiResult = {
+const router = express.Router();
+
+// 회원가입
+router.post("/entry", registerUser);
+
+// 로그인
+router.post("/login", loginUser);
+
+// 이메일 인증(아직 설정 미완료)
+router.post("/email", sendEmailVerification);
+
+// 토큰 검증
+router.get("/token", verifyToken, (req, res) => {
+  res.json({
     code: 200,
-    data: null,
-    msg: "ok"
-  };
-
-  res.json(apiResult);
+    data: req.body.user,
+    msg: "Ok"
+  });
 });
 
 export default router;

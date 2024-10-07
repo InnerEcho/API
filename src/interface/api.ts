@@ -1,5 +1,5 @@
 export interface ApiResult{
-    code:Number;
+    code:number;
     data:any;
-    msg:String;
+    msg:string;
 }

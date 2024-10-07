@@ -12,9 +12,11 @@ import debugModule from 'debug';
 
 // 라우터와 데이터베이스 모델 가져오기
 import indexRouter from './routes/index';
+import userRouter from './routes/users';
 import db from './models/index';
 
 dotenv.config();
+
 const app = express();
 db.sequelize.sync();  // 데이터베이스 동기화
 
@@ -36,6 +38,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // 라우터 설정
 app.use('/', indexRouter);
+app.use('/user', userRouter);
 
 // 404 에러 핸들링
 app.use((req: Request, res: Response, next: NextFunction) => {
