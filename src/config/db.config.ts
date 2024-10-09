@@ -9,6 +9,7 @@ const development: DbConfig = {
   host: 'localhost',
   dialect: 'mysql',
   port: 3306,
+  timezone:'+09:00',
   logging: false
 };
 
@@ -19,6 +20,7 @@ const test: DbConfig = {
   host: 'localhost',
   dialect: 'mysql',
   port: 3306,
+  timezone:'+09:00',
   logging: false
 };
 
@@ -29,6 +31,7 @@ const production: DbConfig = {
   host: 'localhost',
   dialect: 'mysql',
   port: 3306,
+  timezone:'+09:00',
   logging: false
 };
 
