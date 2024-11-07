@@ -10,9 +10,13 @@ import cors from 'cors';
 import http from 'http';
 import debugModule from 'debug';
 
+//Swagger 설정 가져오기
+import {swaggerUi, specs} from './config/swagger.config';
+
 // 라우터와 데이터베이스 모델 가져오기
 import indexRouter from './routes/index';
-import userRouter from './routes/users';
+import authRouter from './routes/auth';
+import chatRouter from './routes/chat';
 import db from './models/index';
 
 dotenv.config();
@@ -38,7 +42,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // 라우터 설정
 app.use('/', indexRouter);
-app.use('/user', userRouter);
+app.use('/user', authRouter);
+app.use('/chat', chatRouter);
+
+//swagger 모듈 호출하기
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // 404 에러 핸들링
 app.use((req: Request, res: Response, next: NextFunction) => {

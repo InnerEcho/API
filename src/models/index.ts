@@ -15,6 +15,7 @@ const sequelize = new Sequelize(
     host: config.host,    // 호스트
     dialect: config.dialect as Dialect,    // 데이터베이스 종류
     port: config.port,    // 포트 번호
+    timezone: config.timezone,
     logging: config.logging,    // 로그 여부
     pool: {
       max: 5,    // 최대 연결 수

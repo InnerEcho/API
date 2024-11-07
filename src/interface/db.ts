@@ -5,6 +5,7 @@ export interface DbConfig {
     host: string;
     dialect: string;
     port: number;
+    timezone: string;
     logging: boolean;
 }
   
