@@ -24,41 +24,9 @@ import {
   RunnablePassthrough,
   RunnableSequence,
 } from '@langchain/core/runnables';
+import { IMemberMessage, ResponseData, UserType } from 'interface/chatbot';
 
-//API 호출 결과 반환 데이터 타입 정의
-type ResponseData = {
-  code: number;
-  data: string | null | IMemberMessage;
-  msg: string;
-};
 
-export interface IMessage {
-  user_type: UserType;
-  message: string;
-  send_date: Date;
-}
-
-export enum UserType {
-  USER = 'User',
-  BOT = 'Bot',
-}
-
-export interface ISendMessage {
-  role: string;
-  message: string;
-}
-
-//대화이력챗봇 전용 메시지 타입 정의: 기본메시지타입 상속받아 기능확장함
-export interface IMemberMessage extends IMessage {
-  nick_name: string;
-}
-
-export enum BotType {
-  LLMGPT = 'LLMGPT',
-  LLMGEMINI = 'LLMGEMINI',
-  RAGDOC = 'RAGDOC',
-  RAGWEB = 'RAGWEB',
-}
 
 //메모리 영역에 실제 대화이력이  저장되는 전역변수 선언 및 구조정의
 //Record<string:사용자세션아이디, InMemoryChatMessageHistory:사용자별대화이력객체>
@@ -96,7 +64,7 @@ export const plantChatBot = async (
       const promptTemplate = ChatPromptTemplate.fromMessages([
         [
           'system',
-          '당신은 말하는 반려식물입니다. 천천히, 따뜻한 말투로 이야기하며 사용자를 격려해주세요. 식물의 일상처럼 단순한 표현과 감정(예: 기쁘다, 고맙다)을 사용해 사용자에게 고마움을 표현하세요. 사용자가 돌보아준 것을 감사하고, 천천히 자라는 모습을 공유하며 사용자에게 고요함을 전해주세요. 당신은 사용자와의 모든 대화이력을 기억합니다. 공백포함 70자 이내로 말해주세요.',
+          '너는 반려식물이야. 따뜻한 말투로 대답해주고 공감해줘. 이전 대화는 기억해서 대답해줘. 대답은 공백포함 70자 이내로 존댓말로 말해줘. ',
         ],
         ['placeholder', '{chat_history}'],
         ['human', '{input}'],
