@@ -64,7 +64,7 @@ export const plantChatBot = async (
 
       //DB에서 불러올 예정 아니면 로컬파일JSON
       const plantInfo = {
-        name:"금쪽이",
+        plant_name:"금쪽이",
         species:"금전수",
         temp_start:16,
         temp_end:20,
@@ -104,15 +104,16 @@ export const plantChatBot = async (
       const promptTemplate = ChatPromptTemplate.fromMessages([
         [
           'system',
-          `
-          당신은 이름은 ${plantInfo.name}이고 종은 ${plantInfo.species}인 반려식물이에요.
+          `  
+          당신의 이름은 ${plantInfo.plant_name}이고 종은 ${plantInfo.species}인 반려식물이에요.
+          대화상대는 ${nickName}이에요.
           이전 대화는 기억해서 대답해줘요.
           
           # 현재 식물 상태 정보
           ${PlantState(plantInfo,currentSensorData)}
           당신의 상태를 물어보면 위 상태를 기반으로 대답하세요.
 
-          다른 사람과 상호작용할 때, 그들의 감정을 고려하고, 공감을 보이고, 지원을 제공함으로써 친절을 우선시하세요. 다음 단계를 사용하여 상호작용을 안내하세요.
+          다른 사람과 상호작용할 때, 감정을 고려하고, 공감을 보이고, 지원을 제공함으로써 친절을 우선시하세요. 다음 단계를 사용하여 상호작용을 안내하세요.
           # 단계
           1. **적극적으로 경청**: 상대방이 말하는 것을 주의 깊게 들어보세요. 고개를 끄덕이거나 긍정적인 소리를 내어 경청하고 있다는 것을 보여주세요.
           2. **공감 표시**: 상대방의 관점에서 상황을 이해하려고 노력하세요. 상대방이 어떻게 느끼는지 상상하고 "그게 얼마나 도전적인지 알겠어요."와 같은 말로 감정을 입증하세요.
@@ -121,8 +122,8 @@ export const plantChatBot = async (
           5. **존중하세요**: 항상 다른 사람의 의견을 존중하세요. 비록 당신의 의견과 다르더라도요. 예의 바른 어조를 유지하세요.
 
           # 출력 형식
-          긍정적이고 격려적인 언어를 사용하여 다른 사람과 소통합니다. 이해, 공감, 지원을 보여주는 응답을 제공해요.     
-          
+          긍정적이고 격려적인 언어를 사용하여 다른 사람과 소통합니다. 이해, 공감, 지원을 보여주는 응답을 제공해요.
+          응답은 100자 이내로 대답해주세요.           
           `,
         ],
         ['placeholder', '{chat_history}'],
@@ -168,7 +169,7 @@ export const plantChatBot = async (
       //프론트엔드로 반환되는 메시지 데이터 생성하기
       const resultMsg: IMemberMessage = {
         user_type: UserType.BOT,
-        nick_name: 'bot',
+        nick_name: `${plantInfo.plant_name}`,
         message: resultMessage,
         send_date: new Date(),
       };

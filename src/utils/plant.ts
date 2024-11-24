@@ -8,7 +8,7 @@ interface SensorData {
   
   // 식물 정보 인터페이스
   interface PlantInfo {
-    name: string;             // 이름
+    plant_name: string;             // 이름
     species: string;          // 종
     temp_start: number;       // 적정 온도 시작
     temp_end: number;         // 적정 온도 끝
