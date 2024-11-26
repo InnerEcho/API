@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.dbConfig = void 0;
 const development = {
     username: 'root',
-    password: 'as060131',
-    database: 'InnerEcho',
+    password: 'ssotkfkd79++',
+    database: 'innerEcho',
     host: 'localhost',
     dialect: 'mysql',
     port: 3306,
