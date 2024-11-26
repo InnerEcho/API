@@ -4,16 +4,16 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 // 인터페이스 정의 - 이 모델에서 사용할 속성 정의
 interface UserAttributes {
   user_id: number;
-  name: string;
-  email: string;
   password: string;
-  summary?: string;
-  reg_date: Date;
-  edit_date?: Date;
+  user_name: string;
+  user_email: string;
+  phone_number: string;
+  birth_date: Date;
+  created_at: Date;
 }
 
 // 선택적 필드만 포함하는 인터페이스 (즉, 기본적으로 `user_id`는 자동 생성되므로 입력할 필요가 없음)
-interface UserCreationAttributes extends Optional<UserAttributes, 'user_id' | 'summary' | 'edit_date'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'user_id' | 'phone_number' | 'birth_date'> {}
 
 // 모델 반환 타입 정의
 export default function (sequelize: Sequelize) {
@@ -21,66 +21,67 @@ export default function (sequelize: Sequelize) {
     "user",
     {
       user_id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
+        type: DataTypes.STRING(20),
         primaryKey: true,
         allowNull: false,
-        comment: "사용자 고유번호",
-      },
-      name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        comment: "사용자 닉네임",
-      },
-      email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true, // 이메일은 고유해야 하므로 unique 인덱스를 추가했습니다.
-        validate: {
-          isEmail: true, // 유효한 이메일 형식인지 확인합니다.
-        },
-        comment: "사용자 이메일",
+        comment: "사용자 ID",
       },
       password: {
-        type: DataTypes.STRING(200),
+        type: DataTypes.STRING(256),
         allowNull: false,
-        comment: "사용자 난독화된 단방향 암호화된 텍스트값",
+        comment: "비밀번호",
       },
-      summary: {
-        type: DataTypes.TEXT,
+      user_name: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        comment: "사용자 이름",
+      },
+      user_email: {
+        type: DataTypes.STRING(254),
+        allowNull: false,
+        unique: true,
+        validate: {
+          isEmail: true, // 유효한 이메일 형식인지 확인
+        },
+        comment: "이메일",
+      },
+      phone_number: {
+        type: DataTypes.STRING(20),
         allowNull: true,
-        comment: "간략한 자기소개",
+        comment: "전화번호",
       },
-      reg_date: {
+      birth_date: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: "생년월일",
+      },
+      created_at: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정합니다.
-        comment: "등록일시",
-      },
-      edit_date: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        comment: "수정일시",
+        defaultValue: DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
+        comment: "가입 날짜",
       },
     },
     {
-      tableName: "user",
-      timestamps: false,
-      comment: "사용자 계정정보",
+      // 테이블 설정
+      tableName: "user",                // 실제 DB에서 사용될 테이블 이름
+      timestamps: false,                // createdAt, updatedAt 자동 생성 비활성화
+      comment: "사용자 계정정보",        // 테이블에 대한 설명
+    
+      // 인덱스 설정
       indexes: [
         {
-          name: "PRIMARY",
-          unique: true,
-          using: "BTREE",
-          fields: [{ name: "user_id" }],
+          name: "PRIMARY",             // 기본키 인덱스 이름
+          unique: true,                // 고유값 설정 (중복 불가)
+          using: "BTREE",              // B-tree 인덱스 알고리즘 사용
+          fields: [{ name: "user_id" }] // user_id 필드를 기본키로 설정
         },
         {
-          name: "email_unique",
-          unique: true,
-          fields: [{ name: "email" }], // 이메일에 대한 고유 인덱스 추가
-        },
-      ],
+          name: "email_unique",        // 이메일 인덱스 이름
+          unique: true,                // 이메일도 고유값으로 설정
+          fields: [{ name: "email" }]  // email 필드에 인덱스 적용
+        }
+      ]
     }
   );
 }
