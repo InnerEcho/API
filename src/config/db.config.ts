@@ -5,7 +5,7 @@ dotenv.config();
 const development: DbConfig = {
   username: 'root',
   password: `${process.env.DB_PW}`,
-  database: 'innerEcho',
+  database: `${process.env.DB_NAME}`,
   host: 'localhost',
   dialect: 'mysql',
   port: 3306,
@@ -16,7 +16,7 @@ const development: DbConfig = {
 const test: DbConfig = {
   username: 'root',
   password: `${process.env.DB_PW}`,
-  database: 'innerEcho',
+  database: `${process.env.DB_NAME}`,
   host: 'localhost',
   dialect: 'mysql',
   port: 3306,
@@ -27,7 +27,7 @@ const test: DbConfig = {
 const production: DbConfig = {
   username: 'root',
   password: `${process.env.DB_PW}`,
-  database: 'InnerEcho',
+  database: `${process.env.DB_NAME}`,
   host: 'localhost',
   dialect: 'mysql',
   port: 3306,
