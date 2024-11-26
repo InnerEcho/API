@@ -10,7 +10,7 @@ const options: Options = {
       contact: {
         name: "InnerEcho",
         email: "dyddyd134@chungbuk.ac.kr",
-        // url: "https://mixedcode.com",
+        // url: "",
       },
       version: "1.0.0",
     },
