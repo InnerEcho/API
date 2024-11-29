@@ -1,0 +1,23 @@
+[
+    {
+      "species_name": "금전수",
+      "max_temp": 16,
+      "min_temp": 20,
+      "max_light": 10000,
+      "min_light": 800,
+      "max_moisture": 370,
+      "min_moisture": 600,
+      "opt_watering": 15  
+    },
+    {
+      "species_name": "배용호",
+      "max_temp": 20,
+      "min_temp": 36,
+      "max_light": 70000,
+      "min_light": 800,
+      "max_moisture": 270,
+      "min_moisture": 400,
+      "opt_watering": 10000
+    }
+  ]
+  

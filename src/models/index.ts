@@ -1,6 +1,8 @@
 import { Sequelize, Dialect } from 'sequelize';
 import { dbConfig } from '../config/db.config';
 import userDb from './user';  // 모델 파일 import
+import userPlantInfoDb from './userPlantInfo';
+import optimalSpeciesInfoDb from './optimalSpeciesInfo';
 
 // 현재 환경을 가져옴 (development, test, production)
 const env = process.env.NODE_ENV || 'development';
@@ -44,6 +46,22 @@ const db: any = {};
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
-db.User = userDb(sequelize);  // userDb(sequelize) 호출하여 User 모델을 반환
+// 각 모델을 다른 키로 할당
+db.User = userDb(sequelize);
+db.UserPlantInfo = userPlantInfoDb(sequelize);
+db.OptimalSpeciesInfo = optimalSpeciesInfoDb(sequelize);
+
+// 모델 간의 관계 설정
+db.User.hasMany(db.UserPlantInfo, { foreignKey: 'user_id' });
+db.UserPlantInfo.belongsTo(db.User, { foreignKey: 'user_id' });
+
+// 테이블 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
+sequelize.sync({ alter: true })
+  .then(() => {
+    console.log('Tables created successfully!');
+  })
+  .catch((err: Error) => {
+    console.error('Unable to create tables:', err);
+  });
 
 export default db;

@@ -3,8 +3,9 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 // 식물 테이블의 모든 속성을 정의하는 인터페이스
 interface PlantAttributes {
   plant_id: number;          // 식물 ID
-  plant_name: string;        // 식물 이름
-  plant_type?: string;       // 식물 종류 (선택사항)
+  user_id: string;           // 사용자 ID
+  species_id: number;        // 식물 종
+  nickname: string;          // 식물 애칭 이름
   current_temp: number;      // 현재 온도
   temp_state: string;        // 온도 상태
   current_light: number;     // 현재 조도
@@ -17,7 +18,7 @@ interface PlantAttributes {
 }
 
 // plant_id는 자동 생성되고, plant_type은 선택적 입력이므로 Optional로 처리
-interface PlantCreationAttributes extends Optional<PlantAttributes, 'plant_id' | 'plant_type'> {}
+interface PlantCreationAttributes extends Optional<PlantAttributes, 'plant_id'> {}
 
 export default function (sequelize: Sequelize) {
   // Plant 모델 정의
@@ -31,16 +32,29 @@ export default function (sequelize: Sequelize) {
         allowNull: false,
         comment: "식물 ID",
       },
-      plant_name: {
-        type: DataTypes.STRING(50),
+      user_id: {
+        type: DataTypes.STRING(20),
         allowNull: false,
-        comment: "식물 이름",
+        comment: "사용자 ID",
+        references: {
+          model: 'user',
+          key: 'user_id'
+        }
       },
-      plant_type: {
+      species_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'species',
+          key: 'species_id'
+        },
+        comment: "식물 종 ID"
+      },
+      nickname: {
         type: DataTypes.STRING(50),
-        allowNull: true,         // null 허용
+        allowNull: true,
         defaultValue: null,
-        comment: "식물 종류",
+        comment: "식물 이름",
       },
       current_temp: {
         type: DataTypes.FLOAT,
@@ -48,7 +62,7 @@ export default function (sequelize: Sequelize) {
         comment: "현재 온도",
       },
       temp_state: {
-        type: DataTypes.STRING(5),
+        type: DataTypes.STRING(10),
         allowNull: false,
         defaultValue: 'UNKNOWN',
         comment: "온도 상태(범주화)",
@@ -59,7 +73,7 @@ export default function (sequelize: Sequelize) {
         comment: "현재 조도",
       },
       light_state: {
-        type: DataTypes.STRING(5),
+        type: DataTypes.STRING(10),
         allowNull: false,
         defaultValue: 'UNKNOWN',
         comment: "조도 상태(범주화)",
@@ -70,7 +84,7 @@ export default function (sequelize: Sequelize) {
         comment: "현재 토양수분",
       },
       moisture_state: {
-        type: DataTypes.STRING(5),
+        type: DataTypes.STRING(10),
         allowNull: false,
         defaultValue: 'UNKNOWN',
         comment: "토양수분 상태(범주화)",
@@ -83,26 +97,20 @@ export default function (sequelize: Sequelize) {
       last_watered_date: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW,
         comment: "마지막으로 물 준 날짜",
       },
       last_measured_date: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW,
         comment: "최신 데이터 측정 시간",
       }
     },
     {
-      tableName: "plant Information",
+      tableName: "plant",
       timestamps: false,         // createdAt, updatedAt 컬럼 사용하지 않음
-      comment: "식물 정보",
-      indexes: [
-        {
-          name: "PRIMARY",
-          unique: true,          // 중복값 허용하지 않음
-          using: "BTREE",        // B-tree 인덱스 사용
-          fields: [{ name: "plant_id" }],  // plant_id를 인덱스로 설정
-        }
-      ],
+      comment: "유저가 키우는 식물 정보",
     }
   );
 
