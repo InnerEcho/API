@@ -65,7 +65,7 @@ export default function (sequelize: Sequelize) {
         type: DataTypes.STRING(10),
         allowNull: false,
         defaultValue: 'UNKNOWN',
-        comment: "온도 상태(범주화)",
+        comment: "온도 상태(value: 낮음 | 적정 | 높음)",
       },
       current_light: {
         type: DataTypes.FLOAT,
@@ -76,7 +76,7 @@ export default function (sequelize: Sequelize) {
         type: DataTypes.STRING(10),
         allowNull: false,
         defaultValue: 'UNKNOWN',
-        comment: "조도 상태(범주화)",
+        comment: "조도 상태((value: 낮음 | 적정 | 높음))",
       },
       current_moisture: {
         type: DataTypes.FLOAT,
@@ -87,7 +87,7 @@ export default function (sequelize: Sequelize) {
         type: DataTypes.STRING(10),
         allowNull: false,
         defaultValue: 'UNKNOWN',
-        comment: "토양수분 상태(범주화)",
+        comment: "토양수분 상태((value: 낮음 | 적정 | 높음))",
       },
       watering_cycle: {
         type: DataTypes.INTEGER,

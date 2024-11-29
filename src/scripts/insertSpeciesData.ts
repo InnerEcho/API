@@ -10,7 +10,7 @@ dotenv.config();
 const sequelize = new Sequelize(
   process.env.DB_NAME || "default_database", // 기본값 지정
   process.env.DB_USER || "default_user",
-  process.env.DB_PASSWORD || "default_password",
+  process.env.DB_PW || "default_password",
   {
     host: process.env.DB_HOST || "localhost",
     dialect: (process.env.DB_DIALECT || "mysql") as Dialect,
