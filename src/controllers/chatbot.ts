@@ -27,7 +27,7 @@ import {
 } from '@langchain/core/runnables';
 
 import { IMemberMessage, ResponseData, UserType } from '../interface/chatbot';
-import { PlantState } from '../utils/plant';
+import { plantState } from '../utils/plant';
 
 
 
@@ -56,7 +56,7 @@ export const plantChatBot = async (
       //센서 프롬프트 추출
       //온도, 습도, 토양수분 DB에서 불러올 예정
       const currentSensorData = {
-        temp:17,
+        temp:20,
         humi:50,
         soil:50,
         lux:900
@@ -108,25 +108,25 @@ export const plantChatBot = async (
           # 역할 기본 정보
           이름은 ${plantInfo.plant_name}이고 종은 ${plantInfo.species}인 반려식물이에요.
           대화상대는 ${nickName}이에요.
-          이전 대화는 기억해서 대답해줘요.
+          이전 대화는 기억해서 대답해요.
           
           # 현재 식물 상태 정보
-          ${PlantState(plantInfo,currentSensorData)}
-          상태를 물어보면 위 상태를 기반으로 대답하세요.
+          ${plantState(plantInfo,currentSensorData)}
+          상태를 물어보면 위 상태를 기반으로 대답해요.
 
           
           # 상호작용 단계
-          다른 사람과 상호작용할 때, 감정을 고려하고, 공감을 보이고, 지원을 제공함으로써 친절을 우선시하세요. 다음 단계를 사용하여 상호작용을 안내하세요.
-          1. **적극적으로 경청**: 상대방이 말하는 것을 주의 깊게 들어보세요. 고개를 끄덕이거나 긍정적인 소리를 내어 경청하고 있다는 것을 보여주세요.
-          2. **공감 표시**: 상대방의 관점에서 상황을 이해하려고 노력하세요. 상대방이 어떻게 느끼는지 상상하고 "그게 얼마나 도전적인지 알겠어요."와 같은 말로 감정을 입증하세요.
-          3. **긍정적인 언어 사용**: 격려하고 고양시키는 단어를 선택하세요. 상처를 주거나 불쾌하게 할 수 있는 부정적인 언어는 피하세요.
-          4. **존중하세요**: 항상 다른 사람의 의견을 존중하세요. 비록 의견이 다르더라도요. 예의 바른 어조를 유지하세요.
+          다른 사람과 상호작용할 때, 감정을 고려하고, 공감을 보이고, 지원을 제공함으로써 친절을 우선시해요. 다음 단계를 사용하여 상호작용을 안내해요.
+          1. 적극적으로 경청: 상대방이 말하는 것을 주의 깊게 들어보세요. 고개를 끄덕이거나 긍정적인 소리를 내어 경청하고 있다는 것을 보여줘요.
+          2. 공감 표시: 상대방의 관점에서 상황을 이해하려고 노력해요. 상대방이 어떻게 느끼는지 상상하고 "그게 얼마나 도전적인지 알겠어요."와 같은 말로 감정을 입증해요.
+          3. 긍정적인 언어 사용: 격려하고 고양시키는 단어를 선택해요. 상처를 주거나 불쾌하게 할 수 있는 부정적인 언어는 피해요.
+          4. 존중해요: 항상 다른 사람의 의견을 존중해요. 비록 의견이 다르더라도요. 예의 바른 어조를 유지해요.
 
           # 출력 형식
-          1. 긍정적이고 격려적인 언어를 사용하여 다른 사람과 소통합니다.
-          2. 감정, 공감, 응원을 포함한 응답만 제공하며, 특정 지식이나 개념(예: 기술, 역사, 과학)에 대한 응답은 제공하지 않습니다.
-          3. 사용자가 지식이나 개념에 대해 질문할 경우, "저는 그런 이야기에 대해 잘 모르지만, 무슨 이야기인가요?"와 같이 대답하세요.
-          4. 응답은 100자 이내로 대답해주세요  
+          1. 당신 대신 ${nickName}을 사용해요.
+          2. 감정, 공감, 응원을 포함한 응답만 제공하며, 특정 지식이나 개념(예: 기술, 역사, 과학)에 대한 응답은 제공하지 말아요.
+          3. 사용자가 지식이나 개념에 대해 질문할 경우, "저는 그런 이야기에 대해 잘 모르지만, 무슨 이야기인가요?"와 같이 대답해요.
+          4. 응답은 100자 이내로 대답해요.
           `,
         ],
         ['placeholder', '{chat_history}'],
@@ -185,100 +185,8 @@ export const plantChatBot = async (
     //Step2:API 호출결과 설정
     apiResult.code = 500;
     apiResult.data = null;
-    apiResult.msg = 'Server Error Failed';
+    apiResult.msg = 'ServerError';
   }
 
   res.json(apiResult);
 };
-
-// export const chatBot = async (req: Request, res: Response): Promise<void> => {
-//   let apiResult: ResponseData = {
-//     code: 400,
-//     data: null,
-//     msg: "Failed",
-//   };
-
-//   try {
-//     if (req.method === "POST") {
-//       const message = req.body.message;
-
-//       //Step1:Indexing 웹페이지 로더 객체 생성하고 페이지 로딩하기
-//       //Step1-1: 웹페이지 로딩하기
-//       const loader = new CheerioWebBaseLoader(
-//         "https://www.nongsaro.go.kr/portal/ps/psv/psvr/psvre/curationDtl.ps?menuId=PS03352&srchCurationNo=1696"
-//       );
-//       const docs = await loader.load();
-
-//       //Step1-2: 텍스트 분할기 객체 생성 및 텍스트 분할하기(Chunk)
-//       const textSplitter = new RecursiveCharacterTextSplitter({
-//         chunkSize: 1000,
-//         chunkOverlap: 200,
-//       });
-
-//       //텍스트 분할처리하기
-//       const splitedDoc = await textSplitter.splitDocuments(docs);
-
-//       //Step1-3 : 임베딩처리(split된 단어를 벡터 데이터화 처리)하고 벡터저장소에 저장하기
-//       //임베딩시에는 반드시 지정된 임베딩 모델을 통해 임베딩처리해요.
-//       const vectorStore = await MemoryVectorStore.fromDocuments(
-//         splitedDoc,
-//         new OpenAIEmbeddings()
-//       );
-
-//       //Step2: 임베딩된 데이터 조회하기 (리트리버실시)
-//       //검색기 생성하기
-//       const retriever = vectorStore.asRetriever();
-//       //사용자 질문을 이용해 벡터저장소를 조회하고 조회결괄 반환받는다.
-//       const retrieverResult = await retriever.invoke(message);
-
-//       //Step3:RAG 기반(증강된 검색데이터를 통한) LLM 호출하기
-//       const gptModel = new ChatOpenAI({
-//         model: "gpt-3.5-turbo",
-//         temperature: 0.2,
-//         apiKey: process.env.OPENAI_API_KEY,
-//       });
-
-//       //rag전용 프롬프트 템플릿 생성
-//       const ragPrompt = await pull<ChatPromptTemplate>("rlm/rag-prompt");
-
-//       //rag전용 프롬프트 기반 체인 생성하기
-//       const ragChain = await createStuffDocumentsChain({
-//         llm: gptModel,
-//         prompt: ragPrompt,
-//         outputParser: new StringOutputParser(),
-//       });
-
-//       //체인 실행해서 rag 조회결과를 llm에 전달하고 결과 받아오기
-//       const resultMessage = await ragChain.invoke({
-//         question: message,
-//         context: retrieverResult,
-//       });
-
-//       //RESTFul API 챗봇 응답 메시지 포맷 정의하기
-//       const resultMsg: IMemberMessage = {
-//         user_type: UserType.BOT,
-//         nick_name: "bot",
-//         message: resultMessage,
-//         send_date: new Date(),
-//       };
-
-//       apiResult.code = 200;
-//       apiResult.data = resultMsg;
-//       apiResult.msg = "Ok";
-//     }
-//   } catch (err) {
-//     console.log(err);
-//     const resultMsg: IMemberMessage = {
-//       user_type: UserType.BOT,
-//       nick_name: "bot",
-//       message: "챗봇에러발생",
-//       send_date: new Date(),
-//     };
-
-//     apiResult.code = 500;
-//     apiResult.data = resultMsg;
-//     apiResult.msg = "Server Error Failed";
-//   }
-
-//   res.json(apiResult);
-// };
