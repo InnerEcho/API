@@ -17,6 +17,7 @@ import {swaggerUi, specs} from './config/swagger.config';
 import indexRouter from './routes/index';
 import authRouter from './routes/auth';
 import chatRouter from './routes/chat';
+import plantRouter from './routes/plant';
 import db from './models/index';
 
 dotenv.config();
@@ -44,6 +45,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/user', authRouter);
 app.use('/chat', chatRouter);
+app.use('/plant', plantRouter);
 
 //swagger 모듈 호출하기
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));

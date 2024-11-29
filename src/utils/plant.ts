@@ -23,7 +23,7 @@ interface SensorData {
   }
 
 
-export function PlantState(plantInfo:PlantInfo, currentSensorData:SensorData){
+export function plantState(plantInfo:PlantInfo, currentSensorData:SensorData){
     let tempStatus = "";
     let humiStatus = "";
     let soilStatus = "";
@@ -32,9 +32,9 @@ export function PlantState(plantInfo:PlantInfo, currentSensorData:SensorData){
     if (currentSensorData.temp < plantInfo.temp_lowest) {
       tempStatus = "온도가 너무 낮아 위험해요.";
     } else if (currentSensorData.temp < plantInfo.temp_start) {
-      tempStatus = "온도가 약간 낮아요.";
+      tempStatus = "온도가 너무 낮아요.";
     } else if (currentSensorData.temp > plantInfo.temp_end) {
-      tempStatus = "온도가 조금 높아요.";
+      tempStatus = "온도가 너무 높아요.";
     } else {
       tempStatus = "온도가 적정해요.";
     }
@@ -50,9 +50,9 @@ export function PlantState(plantInfo:PlantInfo, currentSensorData:SensorData){
   
     // 토양 수분 상태 분석
     if (currentSensorData.soil < 40) {
-      soilStatus = "토양이 건조해요. 물을 줘야 할 것 같아요.";
+      soilStatus = "토양이 건조해요. 물이 필요해요.";
     } else if (currentSensorData.soil > 70) {
-      soilStatus = "토양이 너무 축축해요. 물을 주는 걸 조심하세요.";
+      soilStatus = "토양이 너무 축축해요. 물은 그만 먹어도 될 것 같아요.";
     } else {
       soilStatus = "토양 상태가 좋아요.";
     }

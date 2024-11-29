@@ -80,7 +80,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(tokenData, process.env.JWT_AUTH_KEY as string, {
       expiresIn: "24h",
-      issuer: "BYH",
+      issuer: "InnerEcho",
     });
 
     apiResult.code = 200;
