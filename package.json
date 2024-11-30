@@ -6,7 +6,7 @@
     "build": "tsc",
     "start": "nodemon dist/app.js",
     "dev": "nodemon --watch \"*.ts\" --exec \"ts-node\" src/app.ts",
-    "insert-SpeciesData": "ts-node src/scripts/insertSpeciesData.ts"
+    "db": "ts-node src/scripts/insertSpeciesData.ts"
   },
   "dependencies": {
     "@langchain/community": "^0.3.11",
