@@ -55,13 +55,4 @@ db.OptimalSpeciesInfo = optimalSpeciesInfoDb(sequelize);
 db.User.hasMany(db.UserPlantInfo, { foreignKey: 'user_id' });
 db.UserPlantInfo.belongsTo(db.User, { foreignKey: 'user_id' });
 
-// 테이블 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
-sequelize.sync({ alter: true })
-  .then(() => {
-    console.log('Tables created successfully!');
-  })
-  .catch((err: Error) => {
-    console.error('Unable to create tables:', err);
-  });
-
 export default db;
