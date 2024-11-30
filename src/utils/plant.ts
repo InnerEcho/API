@@ -1,61 +1,54 @@
-// 센서 데이터 인터페이스
-interface SensorData {
-    temp: number; // 온도
-    humi: number; // 습도
-    soil: number; // 토양 수분
-    lux: number;  // 광량
-  }
-  
-  // 식물 정보 인터페이스
-  interface PlantInfo {
-    plant_name: string;             // 이름
-    species: string;          // 종
-    temp_start: number;       // 적정 온도 시작
-    temp_end: number;         // 적정 온도 끝
-    temp_lowest: number;      // 최소 온도
-    humi_start: number;       // 적정 습도 시작
-    humi_end: number;         // 적정 습도 끝
-    lux_mid_start: number;    // 중간 광도 시작
-    lux_mid_end: number;      // 중간 광도 끝
-    lux_high_start: number;   // 강한 광도 시작
-    lux_high_end: number;     // 강한 광도 끝
-    add_info: string;         // 추가 정보
-  }
+import { StateData } from "../interface/plant";
 
+export function convertPlantState(plantState:StateData): string {
+  let tempStatus = "";
+  let humiStatus = "";
+  let soilStatus = "";
 
-export function plantState(plantInfo:PlantInfo, currentSensorData:SensorData){
-    let tempStatus = "";
-    let humiStatus = "";
-    let soilStatus = "";
-  
-    // 온도 상태 분석
-    if (currentSensorData.temp < plantInfo.temp_lowest) {
-      tempStatus = "온도가 너무 낮아 위험해요.";
-    } else if (currentSensorData.temp < plantInfo.temp_start) {
+  // 온도 상태 분석
+  switch (plantState.temp_state) {
+    case "낮음":
       tempStatus = "온도가 너무 낮아요.";
-    } else if (currentSensorData.temp > plantInfo.temp_end) {
+      break;
+    case "높음":
       tempStatus = "온도가 너무 높아요.";
-    } else {
+      break;
+    case "정상":
       tempStatus = "온도가 적정해요.";
-    }
-  
-    // 습도 상태 분석
-    if (currentSensorData.humi < plantInfo.humi_start) {
-      humiStatus = "습도가 너무 낮아요.";
-    } else if (currentSensorData.humi > plantInfo.humi_end) {
-      humiStatus = "습도가 너무 높아요.";
-    } else {
-      humiStatus = "습도가 적정해요.";
-    }
-  
-    // 토양 수분 상태 분석
-    if (currentSensorData.soil < 40) {
+      break;
+    default:
+      tempStatus = "온도 상태를 알 수 없어요.";
+  }
+
+  // 습도 상태 분석
+  switch (plantState.light_state) {
+    case "낮음":
+      humiStatus = "빛이 너무 약해요.";
+      break;
+    case "높음":
+      humiStatus = "빛이 너무 강해요.";
+      break;
+    case "정상":
+      humiStatus = "빛이 적정해요.";
+      break;
+    default:
+      humiStatus = "빛의 상태를 알 수 없어요.";
+  }
+
+  // 토양 수분 상태 분석
+  switch (plantState.moisture_state) {
+    case "낮음":
       soilStatus = "토양이 건조해요. 물이 필요해요.";
-    } else if (currentSensorData.soil > 70) {
+      break;
+    case "높음":
       soilStatus = "토양이 너무 축축해요. 물은 그만 먹어도 될 것 같아요.";
-    } else {
+      break;
+    case "정상":
       soilStatus = "토양 상태가 좋아요.";
-    }
-  
-    return `${tempStatus} ${humiStatus} ${soilStatus}`;
+      break;
+    default:
+      soilStatus = "토양 수분 상태를 알 수 없어요.";
+  }
+
+  return `${tempStatus} ${humiStatus} ${soilStatus}`;
 }
