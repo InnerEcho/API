@@ -37,7 +37,6 @@ export default function (sequelize: Sequelize) {
       user_email: {
         type: DataTypes.STRING(254),
         allowNull: false,
-        unique: true,
         validate: {
           isEmail: true, // 유효한 이메일 형식인지 확인
         },
@@ -65,6 +64,9 @@ export default function (sequelize: Sequelize) {
       tableName: "user",                // 실제 DB에서 사용될 테이블 이름
       timestamps: false,                // createdAt, updatedAt 자동 생성 비활성화
       comment: "사용자 계정정보",        // 테이블에 대한 설명
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       
       indexes: [
         {
@@ -74,5 +76,26 @@ export default function (sequelize: Sequelize) {
         },
       ]
     }
+=======
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+        indexes: [
+          {
+            name: "user_email_unique", // 유니크 인덱스 이름
+            unique: true, // 인덱스를 유니크로 설정
+            fields: ["user_email"], // 인덱스를 적용할 필드
+          },
+        ]
+    },
+    
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
   );
 }

@@ -18,6 +18,16 @@
       "max_moisture": 270,
       "min_moisture": 400,
       "opt_watering": 10000
+    },
+    {
+      "species_name": "노현우",
+      "max_temp": 2,
+      "min_temp": 36,
+      "max_light": 500,
+      "min_light": 200,
+      "max_moisture": 270,
+      "min_moisture": 400,
+      "opt_watering": 10000
     }
   ]
   
