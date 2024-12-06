@@ -1,7 +1,12 @@
 import express from 'express';
 import { plantChatBot } from '../controllers/chatbot';
+import { speechToText } from '../controllers/stt';
+import multer from 'multer';
 
 const router = express.Router();
+
+const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
+
 
 /**
  * @swagger
@@ -90,7 +95,8 @@ const router = express.Router();
  *                   type: string
  *                   example: "ServerError"
  */
-
 router.post("/plant", plantChatBot);
+
+router.post('/stt', upload.single('file'), speechToText);
 
 export default router;

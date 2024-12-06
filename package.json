@@ -9,9 +9,11 @@
     "db": "ts-node src/scripts/insertSpeciesData.ts"
   },
   "dependencies": {
+    "@google-cloud/speech": "^6.7.0",
     "@langchain/community": "^0.3.11",
     "@langchain/core": "^0.3.16",
     "@langchain/openai": "^0.3.11",
+    "@types/multer": "^1.4.12",
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.0.0",
     "cookie-parser": "~1.4.4",
@@ -24,6 +26,7 @@
     "jsonwebtoken": "^9.0.2",
     "langchain": "^0.3.5",
     "morgan": "~1.9.1",
+    "multer": "^1.4.5-lts.1",
     "mysql2": "^3.11.3",
     "nodemailer": "^6.9.15",
     "sequelize": "^6.37.4"
