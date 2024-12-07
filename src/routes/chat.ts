@@ -10,7 +10,7 @@ const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' �
 
 /**
  * @swagger
- * /api/chat/plant:
+ * /chat/plant:
  *   post:
  *     summary: 식물 챗봇과의 상호작용
  *     description: 사용자가 키우는 식물과 대화하는 챗봇 API입니다. 챗봇은 식물의 현재 상태와 이전 대화 이력을 바탕으로 맞춤형 응답을 제공합니다.
@@ -96,6 +96,71 @@ const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' �
  *                   example: "ServerError"
  */
 router.post("/plant", plantChatBot);
+
+/**
+ * @swagger
+ * /stt:
+ *   post:
+ *     summary: 음성 파일을 텍스트로 변환
+ *     description: 사용자가 업로드한 음성 파일을 Google Cloud Speech-to-Text API를 사용하여 텍스트로 변환합니다.
+ *     tags:
+ *       - 음성 인식
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: 업로드할 음성 파일
+ *     responses:
+ *       200:
+ *         description: 음성 파일이 성공적으로 텍스트로 변환된 경우
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: integer
+ *                   example: 200
+ *                 data:
+ *                   type: string
+ *                   description: 변환된 텍스트
+ *                   example: "안녕하세요, 오늘의 날씨는 맑습니다."
+ *                 msg:
+ *                   type: string
+ *                   example: "Ok"
+ *       400:
+ *         description: 잘못된 요청 또는 음성 파일이 없는 경우
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: integer
+ *                   example: 400
+ *                 msg:
+ *                   type: string
+ *                   example: "Not Exist Audio File"
+ *       500:
+ *         description: 서버 내부 오류가 발생한 경우
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: integer
+ *                   example: 500
+ *                 msg:
+ *                   type: string
+ *                   example: "Server Error"
+ */
 
 router.post('/stt', upload.single('file'), speechToText);
 

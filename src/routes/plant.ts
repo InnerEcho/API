@@ -5,7 +5,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/plant/state:
+ * /plant/state:
  *   post:
  *     summary: 식물 상태 정보 조회
  *     description: 특정 사용자가 소유한 식물의 현재 상태 정보를 조회합니다. 온도, 조도, 습도의 상태값(높음, 정상, 낮음)과 관련 정보를 반환합니다.
