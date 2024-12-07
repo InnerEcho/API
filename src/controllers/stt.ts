@@ -1,10 +1,8 @@
+import 'dotenv/config';
 import { Request, Response } from 'express';
 import { ApiResult } from '../interface/api';
 import { SpeechClient } from '@google-cloud/speech';
 import fs from 'fs';
-import 'dotenv/config';
-
-
 
 export const speechToText = async (
   req: Request,
@@ -17,17 +15,15 @@ export const speechToText = async (
   };
 
   try {
-    // 업로드된 파일을 다루기 위한 부분 추가
+    // 업로드된 파일 확인
     if (!req.file || !req.file.path) {
-      apiResult.msg = 'No audio file provided';
+      apiResult.msg = 'Not Exist Audio File';
       res.json(apiResult);
       return;
     }
 
-    // Google Cloud SpeechClient 생성 (서비스 계정 키 파일 경로를 지정)
-    const client = new SpeechClient({
-      keyFilename: `${process.env.GOOGLE_CLOUD_APIKEY}`, // 서비스 계정 키 파일 경로 설정
-    });
+    // Google Cloud SpeechClient 생성 (환경 변수 사용)
+    const client = new SpeechClient();
 
     // 파일 경로 가져오기
     const filePath = req.file.path;
@@ -43,7 +39,7 @@ export const speechToText = async (
     const config = {
       encoding: 'OGG_OPUS' as const, // Opus 인코딩을 사용
       sampleRateHertz: 16000, // 녹음 시 설정했던 샘플링 레이트
-      languageCode: 'en-US',
+      languageCode: 'ko-KR',
     };
 
     const request = {
@@ -63,12 +59,12 @@ export const speechToText = async (
 
     apiResult.code = 200;
     apiResult.data = transcription;
-    apiResult.msg = 'Success';
+    apiResult.msg = 'Ok';
   } catch (err) {
     apiResult.code = 500;
     apiResult.data = null;
-    apiResult.msg = 'ServerError';
-    console.error(err);
+    apiResult.msg = 'Server Error';
+    console.error('음성 인식 처리 중 오류 발생:', err);
   }
 
   res.json(apiResult);

@@ -1,6 +1,5 @@
-import { DbConfig } from "../interface/db";
 import 'dotenv/config';
-
+import { DbConfig } from "../interface/db";
 
 const development: DbConfig = {
   username: 'root',
