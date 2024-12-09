@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { Request, Response } from 'express';
 import { ApiResult } from '../interface/api';
+import { IMessage, UserType } from '../interface/chatbot';
 import { SpeechClient } from '@google-cloud/speech';
 import fs from 'fs';
 
@@ -15,6 +16,9 @@ export const speechToText = async (
   };
 
   try {
+    const userId = req.body.user_id; //사용자 이름 추출
+    const plantId = req.body.plant_id; //식물 이름 추출
+
     // 업로드된 파일 확인
     if (!req.file || !req.file.path) {
       apiResult.msg = 'Not Exist Audio File';
@@ -57,14 +61,23 @@ export const speechToText = async (
 
     console.log(`Transcription: ${transcription}`);
 
+    //프론트엔드로 반환되는 메시지 데이터 생성하기
+    const plantResultMsg: IMessage = {
+      user_id: userId,
+      plant_id: plantId,
+      message: transcription,
+      user_type: UserType.BOT,
+      send_date: new Date(),
+    };
+
     apiResult.code = 200;
-    apiResult.data = transcription;
+    apiResult.data = plantResultMsg;
     apiResult.msg = 'Ok';
   } catch (err) {
     apiResult.code = 500;
     apiResult.data = null;
     apiResult.msg = 'Server Error';
-    console.error('음성 인식 처리 중 오류 발생:', err);
+    console.error('음성 인식 처리 중 오류 발생:', err); 
   }
 
   res.json(apiResult);
