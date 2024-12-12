@@ -33,6 +33,8 @@ import { StateData } from '../interface/plant';
 
 //메모리 영역에 실제 대화이력이 저장되는 전역변수 선언 및 구조정의
 //Record<string:사용자세션아이디, InMemoryChatMessageHistory:사용자별대화이력객체>
+
+
 const plantMessageHistories: Record<string, InMemoryChatMessageHistory> = {};
 
 export const plantChatBot = async (req: Request, res: Response): Promise<void> => {
@@ -57,7 +59,7 @@ export const plantChatBot = async (req: Request, res: Response): Promise<void> =
         `
           SELECT p.temp_state, p.light_state, p.moisture_state, u.user_name, p.nickname, s.species_name
           FROM user u, plant p, species s
-          WHERE u.user_id = ${userId} AND p.plant_id = '${plantId}' AND p.species_id = s.species_id;
+          WHERE u.user_id = ${userId} AND p.plant_id = ${plantId} AND p.species_id = s.species_id;
         `,
         {
           type: db.Sequelize.QueryTypes.SELECT,
@@ -159,6 +161,8 @@ export const plantChatBot = async (req: Request, res: Response): Promise<void> =
         user_type: UserType.BOT,
         send_date: new Date(),
       };
+
+      console.log(plantResultMsg);
 
       plantApiResult.code = 200;
       plantApiResult.data = plantResultMsg;

@@ -29,7 +29,6 @@ export default function (sequelize: Sequelize) {
       },
       species_name: {
         type: DataTypes.STRING(50),
-         unique: true,
         allowNull: false,
         comment: "종 이름",
       },
@@ -73,6 +72,13 @@ export default function (sequelize: Sequelize) {
       tableName: "species",
       timestamps: false,         // createdAt, updatedAt 컬럼 사용하지 않음
       comment: "식물 종 정보",
+      indexes: [
+        {
+          name: "species_name_unique",    // 유니크 인덱스 이름
+          unique: true,                 // 인덱스를 유니크로 설정
+          fields: ["species_name"],       // 인덱스를 적용할 필드
+        },
+      ]
     }
   );
 

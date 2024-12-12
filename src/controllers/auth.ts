@@ -14,10 +14,10 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
   };
 
   try {
-    const { name, email, password } = req.body;
+    const { user_name, userEmail, password } = req.body;
 
-    const existEmail = await db.User.findOne({ where: { email } });
-    const existNickName = await db.User.findOne({ where: { name } });
+    const existEmail = await db.User.findOne({ where: { user_email:userEmail } });
+    const existNickName = await db.User.findOne({ where: { user_name } });
 
     if (existEmail) {
       apiResult.msg = "ExistEmail";
@@ -30,7 +30,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     }
 
     const entryPassword = await bcrypt.hash(password, 12);
-    const entryUser = { name, email, password: entryPassword };
+    const entryUser = { user_name, user_email:userEmail, password: entryPassword };
 
     const registedUser = await db.User.create(entryUser);
     registedUser.password = ""; // 비밀번호는 숨김 처리
@@ -56,32 +56,51 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
   };
 
   try {
-    const { email, password } = req.body;
-    const dbUser = await db.User.findOne({ where: { email } });
+    const { userEmail, password } = req.body;
+
+    const dbUser = await db.User.findOne({ where: { user_email:userEmail } });
 
     if (!dbUser) {
       apiResult.msg = "NotExistEmail";
-      res.status(400).json(apiResult);
+      apiResult.code = 401;
+      res.json(apiResult);
       return;
     }
 
     const comparePassword = await bcrypt.compare(password, dbUser.password);
     if (!comparePassword) {
       apiResult.msg = "IncorrectPassword";
-      res.status(400).json(apiResult);
+      apiResult.code = 402;
+      res.json(apiResult);
       return;
     }
 
+    const dbPlant = await db.sequelize.query(
+      `
+        SELECT p.plant_id, p.nickname
+        FROM user u, plant p
+        WHERE u.user_id = p.user_id AND u.user_id = ${dbUser.user_id} AND p.plant_id = 1;
+      `,
+      {
+        type: db.Sequelize.QueryTypes.SELECT,
+      },
+    );
+    
     const tokenData = {
-      email: dbUser.email,
-      name: dbUser.name,
       user_id: dbUser.user_id,
+      user_email: dbUser.user_email,
+      user_name: dbUser.user_name,
+      state: dbUser.state,
+      plant_id: dbPlant.plant_id,
+      nickname: dbPlant.nickname
     };
 
     const token = jwt.sign(tokenData, process.env.JWT_AUTH_KEY as string, {
       expiresIn: "24h",
       issuer: "InnerEcho",
     });
+
+    console.log(token);
 
     apiResult.code = 200;
     apiResult.data = token;

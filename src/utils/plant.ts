@@ -7,17 +7,17 @@ export function convertPlantState(plantState:StateData): string {
 
   // 온도 상태 분석
   switch (plantState.temp_state) {
-    case "낮음":
-      tempStatus = "온도가 너무 낮아요.";
-      break;
-    case "높음":
-      tempStatus = "온도가 너무 높아요.";
-      break;
-    case "정상":
-      tempStatus = "온도가 적정해요.";
-      break;
+    // case "낮음":
+    //   tempStatus = "온도가 너무 낮아요.";
+    //   break;
+    // case "높음":
+    //   tempStatus = "온도가 너무 높아요.";
+    //   break;
+    // case "정상":
+    //   tempStatus = "온도가 적정해요.";
+    //   break;
     default:
-      tempStatus = "온도 상태를 알 수 없어요.";
+      tempStatus = "온도가 너무 높아요.";
   }
 
   // 습도 상태 분석

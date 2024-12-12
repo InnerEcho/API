@@ -48,11 +48,11 @@ db.Sequelize = Sequelize;
 
 // 각 모델을 다른 키로 할당
 db.User = userDb(sequelize);
-db.UserPlantInfo = userPlantInfoDb(sequelize);
-db.OptimalSpeciesInfo = optimalSpeciesInfoDb(sequelize);
+db.Plant = userPlantInfoDb(sequelize);
+db.Species = optimalSpeciesInfoDb(sequelize);
 
 // 모델 간의 관계 설정
-db.User.hasMany(db.UserPlantInfo, { foreignKey: 'user_id' });
-db.UserPlantInfo.belongsTo(db.User, { foreignKey: 'user_id' });
+db.User.hasMany(db.Plant, { foreignKey: 'user_id' });
+db.Plant.belongsTo(db.User, { foreignKey: 'user_id' });
 
 export default db;

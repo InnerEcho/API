@@ -84,7 +84,7 @@ router.post("/login", loginUser);
 router.post("/email", sendEmailVerification);
 
 // 토큰 검증
-router.get("/token", verifyToken, (req, res) => {
+router.post("/token", verifyToken, (req, res) => {
   res.json({
     code: 200,
     data: req.body.user,

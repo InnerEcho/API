@@ -7,6 +7,7 @@ interface UserAttributes {
   user_name: string;        // 사용자 이름
   user_email: string;       // 이메일 (아이디 역할, UNIQUE)
   phone_number: string;     // 전화번호
+  state:string;
   birth_date: Date;         // 생년월일
   created_at: Date;         // 생성 날짜
 }
@@ -26,7 +27,6 @@ export default function (sequelize: Sequelize) {
       user_email: {
         type: DataTypes.STRING(254),  // 이메일 필드
         allowNull: false,
-        unique: true,                 // 유니크 설정
         validate: {
           isEmail: true,              // 유효한 이메일 형식인지 확인
         },
@@ -41,6 +41,11 @@ export default function (sequelize: Sequelize) {
         type: DataTypes.STRING(50),
         allowNull: false,
         comment: "사용자 이름",
+      },
+      state: {
+        type: DataTypes.STRING(50),
+        allowNull:true,
+        comment:"사용자 상태 값"
       },
       phone_number: {
         type: DataTypes.STRING(20),
