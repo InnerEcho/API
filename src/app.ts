@@ -26,6 +26,11 @@ const app = express();
 db.sequelize
   .sync({ alter: true }) // 데이터베이스 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
   .catch((err: Error) => {
+    console.log('DB_HOST:', process.env.DB_HOST);
+    console.log('DB_USER:', process.env.DB_USER);
+    console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
+    console.log('DB_NAME:', process.env.DB_NAME);
+
     console.error('Unable to create DB:', err);
   });
 

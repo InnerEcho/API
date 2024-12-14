@@ -92,7 +92,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       user_name: dbUser.user_name,
       state: dbUser.state,
       plant_id: dbPlant.plant_id,
-      nickname: dbPlant.nickname
+      nickname: dbPlant.nickname,
     };
 
     const token = jwt.sign(tokenData, process.env.JWT_AUTH_KEY as string, {
