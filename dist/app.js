@@ -13,12 +13,25 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
 const http_1 = __importDefault(require("http"));
 const debug_1 = __importDefault(require("debug"));
+//Swagger 설정 가져오기
+const swagger_config_1 = require("./config/swagger.config");
 // 라우터와 데이터베이스 모델 가져오기
 const index_1 = __importDefault(require("./routes/index"));
+const auth_1 = __importDefault(require("./routes/auth"));
+const chat_1 = __importDefault(require("./routes/chat"));
+const plant_1 = __importDefault(require("./routes/plant"));
 const index_2 = __importDefault(require("./models/index"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-index_2.default.sequelize.sync(); // 데이터베이스 동기화
+index_2.default.sequelize
+    .sync({ alter: true }) // 데이터베이스 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
+    .catch((err) => {
+    console.log('DB_HOST:', process.env.DB_HOST);
+    console.log('DB_USER:', process.env.DB_USER);
+    console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
+    console.log('DB_NAME:', process.env.DB_NAME);
+    console.error('Unable to create DB:', err);
+});
 const debug = (0, debug_1.default)('ohgnoy-backend:server');
 // CORS 설정
 app.use((0, cors_1.default)());
@@ -33,6 +46,11 @@ app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
 // 라우터 설정
 app.use('/', index_1.default);
+app.use('/user', auth_1.default);
+app.use('/chat', chat_1.default);
+app.use('/plant', plant_1.default);
+//swagger 모듈 호출하기
+app.use('/api-docs', swagger_config_1.swaggerUi.serve, swagger_config_1.swaggerUi.setup(swagger_config_1.specs));
 // 404 에러 핸들링
 app.use((req, res, next) => {
     next((0, http_errors_1.default)(404));
@@ -42,7 +60,7 @@ app.use((err, req, res, next) => {
     res.locals.message = err.message;
     res.locals.error = req.app.get('env') === 'development' ? err : {};
     res.status(err.status || 500);
-    res.render('error');
+    res.json('error');
 });
 /**
  * 서버 설정

@@ -1,31 +1,35 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.dbConfig = void 0;
+require("dotenv/config");
 const development = {
-    username: 'root',
-    password: 'ssotkfkd79++',
-    database: 'innerEcho',
-    host: 'localhost',
+    username: `${process.env.DB_USER}`,
+    password: `${process.env.DB_PW}`,
+    database: `${process.env.DB_NAME}`,
+    host: `${process.env.DB_HOST}`,
     dialect: 'mysql',
-    port: 3306,
+    port: Number(process.env.DB_PORT),
+    timezone: '+09:00',
     logging: false
 };
 const test = {
-    username: 'root',
-    password: 'as060131',
-    database: 'InnerEcho',
-    host: 'localhost',
+    username: `${process.env.DB_USER}`,
+    password: `${process.env.DB_PW}`,
+    database: `${process.env.DB_NAME}`,
+    host: `${process.env.DB_HOST}`,
     dialect: 'mysql',
-    port: 3306,
+    port: Number(process.env.DB_PORT),
+    timezone: '+09:00',
     logging: false
 };
 const production = {
-    username: 'root',
-    password: 'as060131',
-    database: 'InnerEcho',
-    host: 'localhost',
+    username: `${process.env.DB_USER}`,
+    password: `${process.env.DB_PW}`,
+    database: `${process.env.DB_NAME}`,
+    host: `${process.env.DB_HOST}`,
     dialect: 'mysql',
-    port: 3306,
+    port: Number(process.env.DB_PORT),
+    timezone: '+09:00',
     logging: false
 };
 exports.dbConfig = {

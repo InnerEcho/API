@@ -1,9 +1,12 @@
-import express from 'express';
-import { verifyToken } from '../middlewares/auth';
-import { registerUser, loginUser, sendEmailVerification } from '../controllers/auth';
-
-const router = express.Router();
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_1 = require("../middlewares/auth");
+const auth_2 = require("../controllers/auth");
+const router = express_1.default.Router();
 /**
  * @swagger
  * /auth/register:
@@ -31,8 +34,7 @@ const router = express.Router();
  *       500:
  *         description: 서버 오류
  */
-router.post("/register", registerUser);
-
+router.post("/register", auth_2.registerUser);
 /**
  * @swagger
  * /auth/login:
@@ -58,8 +60,7 @@ router.post("/register", registerUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/login", loginUser);
-
+router.post("/login", auth_2.loginUser);
 /**
  * @swagger
  * /auth/email:
@@ -81,15 +82,13 @@ router.post("/login", loginUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/email", sendEmailVerification);
-
+router.post("/email", auth_2.sendEmailVerification);
 // 토큰 검증
-router.get("/token", verifyToken, (req, res) => {
-  res.json({
-    code: 200,
-    data: req.body.user,
-    msg: "Ok"
-  });
+router.get("/token", auth_1.verifyToken, (req, res) => {
+    res.json({
+        code: 200,
+        data: req.body.user,
+        msg: "Ok"
+    });
 });
-
-export default router;
+exports.default = router;

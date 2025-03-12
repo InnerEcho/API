@@ -2,34 +2,34 @@ import 'dotenv/config';
 import { DbConfig } from "../interface/db";
 
 const development: DbConfig = {
-  username: 'root',
+  username: `${process.env.DB_USER}`,
   password: `${process.env.DB_PW}`,
   database: `${process.env.DB_NAME}`,
-  host: 'localhost',
+  host: `${process.env.DB_HOST}`,
   dialect: 'mysql',
-  port: 3306,
+  port: Number(process.env.DB_PORT),
   timezone:'+09:00',
   logging: false
 };
 
 const test: DbConfig = {
-  username: 'root',
+  username: `${process.env.DB_USER}`,
   password: `${process.env.DB_PW}`,
   database: `${process.env.DB_NAME}`,
-  host: 'localhost',
+  host: `${process.env.DB_HOST}`,
   dialect: 'mysql',
-  port: 3306,
+  port: Number(process.env.DB_PORT),
   timezone:'+09:00',
   logging: false
 };
 
 const production: DbConfig = {
-  username: 'root',
+  username: `${process.env.DB_USER}`,
   password: `${process.env.DB_PW}`,
   database: `${process.env.DB_NAME}`,
-  host: 'localhost',
+  host: `${process.env.DB_HOST}`,
   dialect: 'mysql',
-  port: 3306,
+  port: Number(process.env.DB_PORT),
   timezone:'+09:00',
   logging: false
 };

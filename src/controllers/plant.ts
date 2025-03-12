@@ -64,7 +64,7 @@ export const getPlantState = async (
         state: `${plantDb[0].light_state}`,
       },
       current_moisture: {
-        value: plantDb[0].current_moisture,
+        value: plantDb[0].current_moisture/10,
         state: `${plantDb[0].moisture_state}`,
       },
       watering_cycle: 7,
