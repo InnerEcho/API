@@ -1,4 +1,4 @@
-import { getPlantState } from '../controllers/plant';
+import PlantStateController from '../controllers/plant';
 import express from 'express';
 
 const router = express.Router();
@@ -95,6 +95,6 @@ const router = express.Router();
  *                   example: "ServerError"
  */
 
-router.post("/state", getPlantState);
+router.post("/state", PlantStateController.getPlantState);
 
-export default router;  
+export default router;

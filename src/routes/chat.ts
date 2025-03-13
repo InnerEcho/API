@@ -1,6 +1,5 @@
 import express from 'express';
-import { plantChatBot } from '../controllers/chatbot';
-import { speechToText } from '../controllers/stt';
+import PlantChatBotController from '../controllers/chatbot';
 import multer from 'multer';
 
 const router = express.Router();
@@ -95,7 +94,7 @@ const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' �
  *                   type: string
  *                   example: "ServerError"
  */
-router.post("/plant", plantChatBot);
+router.post("/plant", PlantChatBotController.chat);
 
 /**
  * @swagger
@@ -161,7 +160,6 @@ router.post("/plant", plantChatBot);
  *                   type: string
  *                   example: "Server Error"
  */
-
-router.post('/stt', upload.single('file'), speechToText);
+router.post('/stt', upload.single('file'), PlantChatBotController.speechToText);
 
 export default router;

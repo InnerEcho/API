@@ -1,6 +1,6 @@
 import express from 'express';
 import { verifyToken } from '../middlewares/auth';
-import { registerUser, loginUser, sendEmailVerification } from '../controllers/auth';
+import AuthController from '../controllers/auth';
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ const router = express.Router();
  *       500:
  *         description: 서버 오류
  */
-router.post("/register", registerUser);
+router.post("/register", AuthController.registerUser);
 
 /**
  * @swagger
@@ -58,7 +58,7 @@ router.post("/register", registerUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/login", loginUser);
+router.post("/login", AuthController.loginUser);
 
 /**
  * @swagger
@@ -81,7 +81,7 @@ router.post("/login", loginUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/email", sendEmailVerification);
+router.post("/email", AuthController.sendEmailVerification);
 
 // 토큰 검증
 router.get("/token", verifyToken, (req, res) => {
