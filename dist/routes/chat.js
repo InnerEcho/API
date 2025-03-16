@@ -4,8 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const chatbot_1 = require("../controllers/chatbot");
-const stt_1 = require("../controllers/stt");
+const chatbot_1 = __importDefault(require("../controllers/chatbot"));
 const multer_1 = __importDefault(require("multer"));
 const router = express_1.default.Router();
 const upload = (0, multer_1.default)({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
@@ -96,7 +95,7 @@ const upload = (0, multer_1.default)({ dest: 'uploads/' }); // 파일을 임시�
  *                   type: string
  *                   example: "ServerError"
  */
-router.post("/plant", chatbot_1.plantChatBot);
+router.post("/plant", chatbot_1.default.chat);
 /**
  * @swagger
  * /stt:
@@ -161,5 +160,5 @@ router.post("/plant", chatbot_1.plantChatBot);
  *                   type: string
  *                   example: "Server Error"
  */
-router.post('/stt', upload.single('file'), stt_1.speechToText);
+router.post('/stt', upload.single('file'), chatbot_1.default.speechToText);
 exports.default = router;

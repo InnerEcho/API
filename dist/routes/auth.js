@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_1 = require("../middlewares/auth");
-const auth_2 = require("../controllers/auth");
+const auth_2 = __importDefault(require("../controllers/auth"));
 const router = express_1.default.Router();
 /**
  * @swagger
@@ -34,7 +34,7 @@ const router = express_1.default.Router();
  *       500:
  *         description: 서버 오류
  */
-router.post("/register", auth_2.registerUser);
+router.post("/register", auth_2.default.registerUser);
 /**
  * @swagger
  * /auth/login:
@@ -60,7 +60,7 @@ router.post("/register", auth_2.registerUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/login", auth_2.loginUser);
+router.post("/login", auth_2.default.loginUser);
 /**
  * @swagger
  * /auth/email:
@@ -82,7 +82,7 @@ router.post("/login", auth_2.loginUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/email", auth_2.sendEmailVerification);
+router.post("/email", auth_2.default.sendEmailVerification);
 // 토큰 검증
 router.get("/token", auth_1.verifyToken, (req, res) => {
     res.json({
