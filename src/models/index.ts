@@ -3,6 +3,9 @@ import { dbConfig } from '../config/db.config';
 import userDb from './user';  // 모델 파일 import
 import userPlantInfoDb from './userPlantInfo';
 import optimalSpeciesInfoDb from './optimalSpeciesInfo';
+import eventDb from './eventInfo'; 
+import userEventInfoDb from './userEventInfo';  
+
 
 // 현재 환경을 가져옴 (development, test, production)
 const env = process.env.NODE_ENV || 'development';
@@ -50,6 +53,8 @@ db.Sequelize = Sequelize;
 db.User = userDb(sequelize);
 db.Plant = userPlantInfoDb(sequelize);
 db.Species = optimalSpeciesInfoDb(sequelize);
+db.Event = eventDb(sequelize);
+db.User_Event = userEventInfoDb(sequelize);
 
 // 모델 간의 관계 설정
 db.User.hasMany(db.Plant, { foreignKey: 'user_id' });
