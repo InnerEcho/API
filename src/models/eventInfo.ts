@@ -2,9 +2,9 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 
 // 인터페이스 정의 - 이 모델에서 사용할 속성 정의
 interface EventAttributes {
-  event_id: number; // 이벤트 ID(PK)
-  title: string; // 이벤트 제목
-  description: string; // 이벤트 설명
+  event_id: BigInt; // 이벤트 ID(PK)
+  event_title: string; // 이벤트 제목
+  event_content: string; // 이벤트 내용
   update_at: Date; // 생성 날짜
 }
 
@@ -15,21 +15,21 @@ export default function (sequelize: Sequelize) {
     "event",
     {
       event_id: {
-        type: DataTypes.INTEGER,      // 사용자 ID를 INT로 변경
+        type: DataTypes.BIGINT,       // 사용자 ID를 INT로 변경
         primaryKey: true,             // 기본 키 설정
         autoIncrement: true,          // 자동 증가
         allowNull: false,
         comment: "이벤트 ID (Primary Key)",
       },
-      title: {
-        type: DataTypes.STRING(256),      // 사용자 ID를 STRING로 변경
+      event_title: {
+        type: DataTypes.STRING(256),      // 이벤트 제목을 STRING로 변경
         allowNull: false,
         comment: "이벤트 제목",
       },
-      description: {
-        type: DataTypes.STRING(256),      // 사용자 ID를 STING로 변경
+      event_content: {
+        type: DataTypes.STRING(256),      // 이벤트 내용용를 STRING로 변경
         allowNull: false,
-        comment: "설명",
+        comment: "이벤트 내용",
       },
       update_at: {
         type: DataTypes.DATE,      // 사용자 ID를 INT로 변경

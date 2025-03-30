@@ -2,12 +2,13 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 
 // 인터페이스 정의 - 이 모델에서 사용할 속성 정의
 interface UserAttributes {
-  user_id: number;          // 사용자 ID (Primary Key)
+  user_id: BigInt;          // 사용자 ID (PK)
   password: string;         // 비밀번호
   user_name: string;        // 사용자 이름
+  user_gender: string;      // 사용자 성별
   user_email: string;       // 이메일 (아이디 역할, UNIQUE)
   phone_number: string;     // 전화번호
-  state:string;
+  state:string;             // 상태
   birth_date: Date;         // 생년월일
   created_at: Date;         // 생성 날짜
 }
@@ -18,7 +19,7 @@ export default function (sequelize: Sequelize) {
     "user",
     {
       user_id: {
-        type: DataTypes.INTEGER,      // 사용자 ID를 INT로 변경
+        type: DataTypes.BIGINT,      // 사용자 ID를 INT로 변경
         primaryKey: true,             // 기본 키 설정
         autoIncrement: true,          // 자동 증가
         allowNull: false,
@@ -41,6 +42,11 @@ export default function (sequelize: Sequelize) {
         type: DataTypes.STRING(50),
         allowNull: false,
         comment: "사용자 이름",
+      },
+      user_gender: {
+        type: DataTypes.STRING(5),
+        allowNull: false,
+        comment: "사용자 성별",
       },
       state: {
         type: DataTypes.STRING(50),

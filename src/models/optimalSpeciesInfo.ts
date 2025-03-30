@@ -2,7 +2,7 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 
 // 종 테이블의 모든 속성을 정의하는 인터페이스
 interface SpeciesAttributes {
-  species_id: number;     // 종 ID
+  species_id: BigInt;     // 종 ID (PK)
   species_name: string;   // 종 이름
   max_temp: number;       // 최대 온도
   min_temp: number;       // 최소 온도
@@ -21,7 +21,7 @@ export default function (sequelize: Sequelize) {
     "species",
     {
       species_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,

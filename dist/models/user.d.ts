@@ -1,8 +1,9 @@
 import { Sequelize, Model } from "sequelize";
 interface UserAttributes {
-    user_id: number;
+    user_id: BigInt;
     password: string;
     user_name: string;
+    user_gender: string;
     user_email: string;
     phone_number: string;
     state: string;

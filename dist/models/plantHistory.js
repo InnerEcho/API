@@ -18,13 +18,27 @@ function default_1(sequelize) {
     // 모델의 스키마 정의
     PlantHistory.init({
         history_id: {
-            type: sequelize_1.DataTypes.INTEGER,
+            type: sequelize_1.DataTypes.BIGINT,
             primaryKey: true,
             autoIncrement: true,
             comment: "히스토리 ID",
         },
+        content: {
+            type: sequelize_1.DataTypes.TEXT,
+            allowNull: false,
+            comment: "히스토리 내용",
+        },
+        user_id: {
+            type: sequelize_1.DataTypes.BIGINT, // 사용자 ID를 INT로 변경
+            allowNull: false,
+            comment: "사용자 ID (Primary Key)",
+            references: {
+                model: 'user',
+                key: 'user_id'
+            }
+        },
         plant_id: {
-            type: sequelize_1.DataTypes.INTEGER,
+            type: sequelize_1.DataTypes.BIGINT,
             allowNull: false,
             comment: "식물 ID",
             references: {
@@ -37,39 +51,6 @@ function default_1(sequelize) {
             allowNull: false,
             comment: "기록 시간",
         },
-        temperature: {
-            type: sequelize_1.DataTypes.FLOAT,
-            allowNull: false,
-            comment: "측정된 온도",
-        },
-        temp_state: {
-            type: sequelize_1.DataTypes.STRING(5),
-            allowNull: false,
-            defaultValue: 'UNKNOWN',
-            comment: "온도 상태",
-        },
-        light_intensity: {
-            type: sequelize_1.DataTypes.FLOAT,
-            allowNull: false,
-            comment: "측정된 조도",
-        },
-        light_state: {
-            type: sequelize_1.DataTypes.STRING(5),
-            allowNull: false,
-            defaultValue: 'UNKNOWN',
-            comment: "조도 상태",
-        },
-        soil_moisture: {
-            type: sequelize_1.DataTypes.FLOAT,
-            allowNull: false,
-            comment: "측정된 토양수분",
-        },
-        moisture_state: {
-            type: sequelize_1.DataTypes.STRING(5),
-            allowNull: false,
-            defaultValue: 'UNKNOWN',
-            comment: "토양수분 상태",
-        }
     }, {
         sequelize,
         tableName: "plant_history",
@@ -87,6 +68,15 @@ function default_1(sequelize) {
                 using: "BTREE",
                 fields: [
                     { name: "plant_id" },
+                    { name: "timestamp" }
+                ],
+            },
+            {
+                // 유저ID와 타임스탬프로 조회 성능 향상을 위한 인덱스
+                name: "user_timestamp_idx",
+                using: "BTREE",
+                fields: [
+                    { name: "user_id" },
                     { name: "timestamp" }
                 ],
             }

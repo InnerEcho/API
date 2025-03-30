@@ -1,6 +1,6 @@
 import { Sequelize, Model, Optional } from "sequelize";
 interface SpeciesAttributes {
-    species_id: number;
+    species_id: BigInt;
     species_name: string;
     max_temp: number;
     min_temp: number;

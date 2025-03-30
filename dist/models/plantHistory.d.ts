@@ -1,14 +1,10 @@
 import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 interface PlantHistoryAttributes {
-    history_id: number;
-    plant_id: number;
+    history_id: BigInt;
+    content: Text;
+    user_id: BigInt;
+    plant_id: BigInt;
     timestamp: Date;
-    temperature: number;
-    temp_state: string;
-    light_intensity: number;
-    light_state: string;
-    soil_moisture: number;
-    moisture_state: string;
 }
 interface PlantHistoryCreationAttributes extends Optional<PlantHistoryAttributes, 'history_id'> {
 }
@@ -48,15 +44,11 @@ export default function (sequelize: Sequelize): {
         validate(options?: import("sequelize/types/instance-validator").ValidationOptions): Promise<void>;
         update<K extends keyof PlantHistoryAttributes>(key: K, value: import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | PlantHistoryAttributes[K], options?: import("sequelize").InstanceUpdateOptions<PlantHistoryAttributes> | undefined): Promise<any>;
         update(keys: {
-            history_id?: number | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
-            plant_id?: number | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
+            history_id?: BigInt | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
+            content?: import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | Text | undefined;
+            user_id?: BigInt | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
+            plant_id?: BigInt | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
             timestamp?: Date | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
-            temperature?: number | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
-            temp_state?: string | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
-            light_intensity?: number | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
-            light_state?: string | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
-            soil_moisture?: number | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
-            moisture_state?: string | import("sequelize/types/utils").Fn | import("sequelize/types/utils").Col | import("sequelize/types/utils").Literal | undefined;
         }, options?: import("sequelize").InstanceUpdateOptions<PlantHistoryAttributes> | undefined): Promise<any>;
         destroy(options?: import("sequelize").InstanceDestroyOptions): Promise<void>;
         restore(options?: import("sequelize").InstanceRestoreOptions): Promise<void>;

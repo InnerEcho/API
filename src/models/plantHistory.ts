@@ -2,15 +2,12 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 
 // 식물 히스토리 테이블의 모든 속성을 정의하는 인터페이스
 interface PlantHistoryAttributes {
-  history_id: number;    // 히스토리 ID
-  plant_id: number;      // 연관된 식물 ID
+  history_id: BigInt;    // 히스토리 ID
+  content: Text;      // 히스토리 내용
+  user_id: BigInt;    // 유저 ID (FK)
+  plant_id: BigInt;      // 연관된 식물 ID (FK)
   timestamp: Date;       // 데이터 기록 시간
-  temperature: number;   // 온도 측정값
-  temp_state: string;    // 온도 상태
-  light_intensity: number; // 조도 측정값
-  light_state: string;    // 조도 상태
-  soil_moisture: number;  // 토양 수분 측정값
-  moisture_state: string; // 토양 수분 상태
+
 }
 
 // 생성 시 자동 생성되는 history_id를 제외한 속성 인터페이스
@@ -34,13 +31,27 @@ export default function (sequelize: Sequelize) {
   PlantHistory.init(
     {
       history_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         primaryKey: true,
         autoIncrement: true,
         comment: "히스토리 ID",
       },
+      content: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        comment: "히스토리 내용",
+      },
+      user_id: {
+        type: DataTypes.BIGINT,      // 사용자 ID를 INT로 변경
+        allowNull: false,
+        comment: "사용자 ID (Primary Key)",
+        references: {
+          model: 'user',
+          key: 'user_id'
+        }
+      },
       plant_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: false,
         comment: "식물 ID",
         references: {
@@ -53,39 +64,6 @@ export default function (sequelize: Sequelize) {
         allowNull: false,
         comment: "기록 시간",
       },
-      temperature: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        comment: "측정된 온도",
-      },
-      temp_state: {
-        type: DataTypes.STRING(5),
-        allowNull: false,
-        defaultValue: 'UNKNOWN',
-        comment: "온도 상태",
-      },
-      light_intensity: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        comment: "측정된 조도",
-      },
-      light_state: {
-        type: DataTypes.STRING(5),
-        allowNull: false,
-        defaultValue: 'UNKNOWN',
-        comment: "조도 상태",
-      },
-      soil_moisture: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        comment: "측정된 토양수분",
-      },
-      moisture_state: {
-        type: DataTypes.STRING(5),
-        allowNull: false,
-        defaultValue: 'UNKNOWN',
-        comment: "토양수분 상태",
-      }
     },
     {
       sequelize,
@@ -104,6 +82,15 @@ export default function (sequelize: Sequelize) {
           using: "BTREE",
           fields: [
             { name: "plant_id" },
+            { name: "timestamp" }
+          ],
+        },
+        {
+          // 유저ID와 타임스탬프로 조회 성능 향상을 위한 인덱스
+          name: "user_timestamp_idx",
+          using: "BTREE",
+          fields: [
+            { name: "user_id" },
             { name: "timestamp" }
           ],
         }
