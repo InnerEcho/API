@@ -20,6 +20,10 @@ import { StateData } from "../interface/plant";
 import { ApiResult } from "interface/api";
 import { SpeechClient } from "@google-cloud/speech";
 import fs from 'fs';
+import sequelize from '../models/plantHistory';
+
+const { PlantHistory } = db;
+
 
 // 대화 이력 저장소
 const plantMessageHistories: Record<string, InMemoryChatMessageHistory> = {};
@@ -232,11 +236,33 @@ class PlantChatBotController {
       apiResult.code = 500;
       apiResult.data = null;
       apiResult.msg = 'Server Error';
-      console.error('음성 인식 처리 중 오류 발생:', err); 
+      console.error('음성 인식 처리 중 오류 발생:', err);
     }
   
     res.json(apiResult);
   }
+ 
+  // GET /chat/history
+  async getChatHistory(req: Request, res: Response) {
+    try {
+      const histories = await PlantHistory.findAll({
+        attributes: ['content'], // content 필드만 가져오기
+        order: [['createdAt', 'ASC']], // 내림차순으로 가져옴
+      });
+
+      res.status(200).json({
+        success: true,
+        data: histories,
+      });
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch chat history',
+      });
+    }
+  }
+
 }
 
 // 🌱 PlantChatBotController 인스턴스 생성 후 export

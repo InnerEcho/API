@@ -52,5 +52,4 @@ export default function (sequelize: Sequelize) {
     //   ],
     }
   );
-  return ;
 }

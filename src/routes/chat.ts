@@ -1,10 +1,39 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import PlantChatBotController from '../controllers/chatbot';
 import multer from 'multer';
+// import { db } from '../config/db.config';
+
 
 const router = express.Router();
 
 const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
+
+// /**
+//  * @swagger
+//  * /chat/history:
+//  *   get:
+//  *     summary: 전체 채팅 내역 조회
+//  *     description: 모든 사용자와 식물 챗봇 간의 채팅 내역을 불러옵니다.
+//  *     tags:
+//  *       - 식물 챗봇
+//  *     responses:
+//  *       200:
+//  *         description: 채팅 내역 리스트
+//  */
+// router.get('/history', (req: Request, res: Response) => {
+//     const sql = 'SELECT * FROM plant_chats ORDER BY created_at DESC';
+  
+//     db.query(sql, (err, results) => {
+//       if (err) {
+//         console.error('채팅 내역 불러오기 실패:', err);
+//         return res.status(500).json({ error: 'DB 오류' });
+//       }
+  
+//       res.status(200).json(results);
+//     });
+//   });
+  
+//   export default router;
 
 
 /**
@@ -163,3 +192,4 @@ router.post("/plant", PlantChatBotController.chat);
 router.post('/stt', upload.single('file'), PlantChatBotController.speechToText);
 
 export default router;
+
