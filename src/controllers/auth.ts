@@ -169,6 +169,8 @@ class AuthController {
 
     res.json(apiResult);
   }
+
+  
 }
 
 // AuthController 인스턴스 생성

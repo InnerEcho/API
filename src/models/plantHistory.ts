@@ -7,7 +7,6 @@ interface PlantHistoryAttributes {
   user_id: BigInt;    // 유저 ID (FK)
   plant_id: BigInt;      // 연관된 식물 ID (FK)
   timestamp: Date;       // 데이터 기록 시간
-
 }
 
 // 생성 시 자동 생성되는 history_id를 제외한 속성 인터페이스

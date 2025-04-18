@@ -8,4 +8,3 @@ export interface DbConfig {
     timezone: string;
     logging: boolean;
 }
-  
