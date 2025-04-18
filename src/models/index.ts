@@ -1,10 +1,10 @@
 import { Sequelize, Dialect } from 'sequelize';
-import { dbConfig } from '../config/db.config';
-import userDb from './user';  // 모델 파일 import
-import userPlantInfoDb from './userPlantInfo';
-import optimalSpeciesInfoDb from './optimalSpeciesInfo';
-import eventDb from './eventInfo'; 
-import userEventInfoDb from './userEventInfo';  
+import { dbConfig } from '../config/db.config.js';
+import userDb from './user.js';  // 모델 파일 import
+import userPlantInfoDb from './userPlantInfo.js';
+import optimalSpeciesInfoDb from './optimalSpeciesInfo.js';
+import eventDb from './eventInfo.js'; 
+import userEventInfoDb from './userEventInfo.js';  
 
 
 // 현재 환경을 가져옴 (development, test, production)

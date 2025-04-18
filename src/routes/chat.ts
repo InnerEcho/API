@@ -1,5 +1,5 @@
 import express from 'express';
-import PlantChatBotController from '../controllers/chatbot';
+import PlantChatBotController from '../controllers/chatbot.js';
 import multer from 'multer';
 
 const router = express.Router();
@@ -161,5 +161,7 @@ router.post("/plant", PlantChatBotController.chat);
  *                   example: "Server Error"
  */
 router.post('/stt', upload.single('file'), PlantChatBotController.speechToText);
+
+router.post('/tts', PlantChatBotController.textToSpeech);
 
 export default router;

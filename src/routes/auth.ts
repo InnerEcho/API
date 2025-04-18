@@ -1,12 +1,12 @@
 import express from 'express';
-import { verifyToken } from '../middlewares/auth';
-import AuthController from '../controllers/auth';
+import { verifyToken } from '../middlewares/auth.js';
+import AuthController from '../controllers/auth.js';
 
 const router = express.Router();
 
 /**
  * @swagger
- * /auth/register:
+ * /auth/regist:
  *   post:
  *     summary: 사용자 회원가입
  *     tags: [User]
@@ -31,7 +31,7 @@ const router = express.Router();
  *       500:
  *         description: 서버 오류
  */
-router.post("/register", AuthController.registerUser);
+router.post("/regist", AuthController.registUser);
 
 /**
  * @swagger

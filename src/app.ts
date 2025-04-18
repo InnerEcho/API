@@ -3,6 +3,7 @@
 import createError from 'http-errors';
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import dotenv from 'dotenv';
@@ -11,14 +12,14 @@ import http from 'http';
 import debugModule from 'debug';
 
 //Swagger 설정 가져오기
-import { swaggerUi, specs } from './config/swagger.config';
+import { swaggerUi, specs } from './config/swagger.config.js';
 
 // 라우터와 데이터베이스 모델 가져오기
-import indexRouter from './routes/index';
-import authRouter from './routes/auth';
-import chatRouter from './routes/chat';
-import plantRouter from './routes/plant';
-import db from './models/index';
+import indexRouter from './routes/index.js';
+import authRouter from './routes/auth.js';
+import chatRouter from './routes/chat.js';
+import plantRouter from './routes/plant.js';
+import db from './models/index.js';
 
 dotenv.config();
 
@@ -26,15 +27,13 @@ const app = express();
 db.sequelize
   .sync({ alter: true }) // 데이터베이스 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
   .catch((err: Error) => {
-    console.log('DB_HOST:', process.env.DB_HOST);
-    console.log('DB_USER:', process.env.DB_USER);
-    console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
-    console.log('DB_NAME:', process.env.DB_NAME);
-
     console.error('Unable to create DB:', err);
   });
 
 const debug = debugModule('ohgnoy-backend:server');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // CORS 설정
 app.use(cors());
