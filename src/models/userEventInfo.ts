@@ -2,10 +2,10 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 
 // 인터페이스 정의 - 이 모델에서 사용할 속성 정의
 interface UserEventAttributes {
-    user_event_id: number; // 유저 이벤트 ID (PK)
-    user_id: number;  // 사용자 ID (FK)
-    event_id: number; // 이벤트 ID (FK)
-    plant_id: number; // 식물 ID (FK)
+    user_event_id: BigInt; // 유저 이벤트 ID (PK)
+    user_id: BigInt;  // 사용자 ID (FK)
+    event_id: BigInt; // 이벤트 ID (FK)
+    plant_id: BigInt; // 식물 ID (FK)
     status: number;   // 진행 상태 (0: 미완료, 1: 완료)
     assigned_at: Date; // 미션 할당 날짜
     completed_at: Date; // 미션 완료 날짜
@@ -18,14 +18,14 @@ export default function (sequelize: Sequelize) {
     "user_event",
     {
       user_event_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         primaryKey: true,        // PRI 키 설정
         autoIncrement: true,     // 자동 증가
         allowNull: false,
-        comment: "유저 이벤트트 ID",
+        comment: "유저 이벤트 ID",
         },
       user_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: false,
         comment: "사용자 ID",
         references: {
@@ -36,7 +36,7 @@ export default function (sequelize: Sequelize) {
         onUpdate: "CASCADE",     // 유저 ID 변경 시 업데이트
       },
       event_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: false,
         comment: "사용자 ID",
         references: {
@@ -47,7 +47,7 @@ export default function (sequelize: Sequelize) {
         onUpdate: "CASCADE",     // 유저 ID 변경 시 업데이트
       },
       plant_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: false,
         comment: "사용자 ID",
         references: {

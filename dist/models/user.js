@@ -6,7 +6,7 @@ const sequelize_1 = require("sequelize");
 function default_1(sequelize) {
     return sequelize.define("user", {
         user_id: {
-            type: sequelize_1.DataTypes.INTEGER, // 사용자 ID를 INT로 변경
+            type: sequelize_1.DataTypes.BIGINT, // 사용자 ID를 INT로 변경
             primaryKey: true, // 기본 키 설정
             autoIncrement: true, // 자동 증가
             allowNull: false,
@@ -29,6 +29,11 @@ function default_1(sequelize) {
             type: sequelize_1.DataTypes.STRING(50),
             allowNull: false,
             comment: "사용자 이름",
+        },
+        user_gender: {
+            type: sequelize_1.DataTypes.STRING(5),
+            allowNull: false,
+            comment: "사용자 성별",
         },
         state: {
             type: sequelize_1.DataTypes.STRING(50),

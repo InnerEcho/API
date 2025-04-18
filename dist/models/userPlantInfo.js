@@ -6,25 +6,25 @@ function default_1(sequelize) {
     // Plant 모델 정의
     const Plant = sequelize.define("plant", {
         plant_id: {
-            type: sequelize_1.DataTypes.INTEGER,
+            type: sequelize_1.DataTypes.BIGINT,
             primaryKey: true, // PRI 키 설정
             autoIncrement: true, // 자동 증가
             allowNull: false,
             comment: "식물 ID",
         },
         user_id: {
-            type: sequelize_1.DataTypes.INTEGER,
+            type: sequelize_1.DataTypes.BIGINT,
             allowNull: false,
-            comment: "사용자 ID",
             references: {
                 model: 'user', // 참조할 테이블
                 key: 'user_id', // 참조할 컬럼
             },
             onDelete: "CASCADE", // 유저 삭제 시 해당 식물도 삭제
             onUpdate: "CASCADE", // 유저 ID 변경 시 업데이트
+            comment: "유저 ID",
         },
         species_id: {
-            type: sequelize_1.DataTypes.INTEGER,
+            type: sequelize_1.DataTypes.BIGINT,
             allowNull: false,
             references: {
                 model: 'species', // 참조할 테이블
@@ -36,53 +36,23 @@ function default_1(sequelize) {
         },
         nickname: {
             type: sequelize_1.DataTypes.STRING(50),
-            allowNull: true,
-            defaultValue: null,
+            allowNull: false,
             comment: "식물 이름",
         },
-        current_temp: {
-            type: sequelize_1.DataTypes.FLOAT,
-            allowNull: false,
-            comment: "현재 온도",
-        },
-        temp_state: {
-            type: sequelize_1.DataTypes.STRING(10),
-            allowNull: false,
-            defaultValue: 'UNKNOWN',
-            comment: "온도 상태(value: 낮음 | 정상 | 높음)",
-        },
-        current_light: {
-            type: sequelize_1.DataTypes.FLOAT,
-            allowNull: false,
-            comment: "현재 조도",
-        },
-        light_state: {
-            type: sequelize_1.DataTypes.STRING(10),
-            allowNull: false,
-            defaultValue: 'UNKNOWN',
-            comment: "조도 상태(value: 낮음 | 정상 | 높음)",
-        },
-        current_moisture: {
-            type: sequelize_1.DataTypes.FLOAT,
-            allowNull: false,
-            comment: "현재 토양수분",
-        },
-        moisture_state: {
-            type: sequelize_1.DataTypes.STRING(10),
-            allowNull: false,
-            defaultValue: 'UNKNOWN',
-            comment: "토양수분 상태(value: 낮음 | 정상 | 높음)",
-        },
-        watering_cycle: {
+        plant_level: {
             type: sequelize_1.DataTypes.INTEGER,
             allowNull: false,
-            comment: "물 주기(일 단위)",
+            comment: "식물 레벨",
         },
-        last_watered_date: {
-            type: sequelize_1.DataTypes.DATE,
+        plant_experience: {
+            type: sequelize_1.DataTypes.INTEGER,
             allowNull: false,
-            defaultValue: sequelize_1.DataTypes.NOW,
-            comment: "마지막으로 물 준 날짜",
+            comment: "식물 경험치",
+        },
+        plant_hogamdo: {
+            type: sequelize_1.DataTypes.INTEGER,
+            allowNull: false,
+            comment: "식물 호감도도",
         },
         last_measured_date: {
             type: sequelize_1.DataTypes.DATE,

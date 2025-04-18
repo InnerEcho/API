@@ -6,7 +6,7 @@ function default_1(sequelize) {
     // Species 모델 정의
     const Species = sequelize.define("species", {
         species_id: {
-            type: sequelize_1.DataTypes.INTEGER,
+            type: sequelize_1.DataTypes.BIGINT,
             primaryKey: true,
             autoIncrement: true,
             allowNull: false,

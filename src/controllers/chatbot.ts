@@ -21,6 +21,10 @@ import { ApiResult } from "interface/api.js";
 import { SpeechClient } from "@google-cloud/speech";
 import { ZyphraClient } from "@zyphra/client";
 import fs from 'fs';
+import sequelize from '../models/plantHistory.js';
+
+const { PlantHistory } = db;
+
 
 // 대화 이력 저장소
 const plantMessageHistories: Record<string, InMemoryChatMessageHistory> = {};
@@ -281,6 +285,28 @@ class PlantChatBotController {
       console.error(err);
     }
   }
+ 
+  // GET /chat/history
+  async getChatHistory(req: Request, res: Response) {
+    try {
+      const histories = await PlantHistory.findAll({
+        attributes: ['content'], // content 필드만 가져오기
+        order: [['createdAt', 'ASC']], // 내림차순으로 가져옴
+      });
+
+      res.status(200).json({
+        success: true,
+        data: histories,
+      });
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch chat history',
+      });
+    }
+  }
+
 }
 
 // 🌱 PlantChatBotController 인스턴스 생성 후 export

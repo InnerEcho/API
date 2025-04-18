@@ -1,11 +1,12 @@
 import { Sequelize, Dialect } from 'sequelize';
+
 import { dbConfig } from '../config/db.config.js';
 import userDb from './user.js';  // 모델 파일 import
 import userPlantInfoDb from './userPlantInfo.js';
 import optimalSpeciesInfoDb from './optimalSpeciesInfo.js';
 import eventDb from './eventInfo.js'; 
 import userEventInfoDb from './userEventInfo.js';  
-
+import plantHistoryDb from './plantHistory.js';
 
 // 현재 환경을 가져옴 (development, test, production)
 const env = process.env.NODE_ENV || 'development';
@@ -38,6 +39,14 @@ const sequelize = new Sequelize(
 sequelize.authenticate()
   .then(() => {
     console.log('Database connection established successfully.');
+        //데이터베이스 동기화 (테이블 생성 및 동기화)
+        sequelize.sync()
+        .then(() => {
+          console.log('Database synchronized successfully.');
+        })
+        .catch((err: Error) => {
+          console.error('Error during database synchronization:', err.message);
+        });
   })
   .catch((err: Error) => {
     console.error('Unable to connect to the database:', err.message);
@@ -55,6 +64,7 @@ db.Plant = userPlantInfoDb(sequelize);
 db.Species = optimalSpeciesInfoDb(sequelize);
 db.Event = eventDb(sequelize);
 db.User_Event = userEventInfoDb(sequelize);
+db.PlantHistory = plantHistoryDb(sequelize);
 
 // 모델 간의 관계 설정
 db.User.hasMany(db.Plant, { foreignKey: 'user_id' });

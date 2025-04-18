@@ -2,18 +2,13 @@ import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 
 // 식물 테이블의 모든 속성을 정의하는 인터페이스
 interface PlantAttributes {
-  plant_id: number;          // 식물 ID
-  user_id: number;           // 사용자 ID (FK)
-  species_id: number;        // 식물 종 (FK)
+  plant_id: BigInt;          // 식물 ID
+  user_id: BigInt;           // 사용자 ID (FK)
+  species_id: BigInt;        // 식물 종 (FK)
   nickname: string;          // 식물 애칭 이름
-  current_temp: number;      // 현재 온도
-  temp_state: string;        // 온도 상태
-  current_light: number;     // 현재 조도
-  light_state: string;       // 조도 상태
-  current_moisture: number;  // 현재 토양수분
-  moisture_state: string;    // 토양수분 상태
-  watering_cycle: number;    // 물주기 주기(일)
-  last_watered_date: Date;   // 마지막 물준 날짜
+  plant_level: number;     // 식물 레벨
+  plant_experience: number;  // 식물 경험치
+  plant_hogamdo: number;     // 식물 호감도
   last_measured_date: Date;  // 마지막 측정 날짜
 }
 
@@ -26,25 +21,25 @@ export default function (sequelize: Sequelize) {
     "plant",
     {
       plant_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         primaryKey: true,        // PRI 키 설정
         autoIncrement: true,     // 자동 증가
         allowNull: false,
         comment: "식물 ID",
       },
       user_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: false,
-        comment: "사용자 ID",
         references: {
           model: 'user',        // 참조할 테이블
           key: 'user_id',       // 참조할 컬럼
         },
         onDelete: "CASCADE",     // 유저 삭제 시 해당 식물도 삭제
         onUpdate: "CASCADE",     // 유저 ID 변경 시 업데이트
+        comment: "유저 ID",
       },
       species_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.BIGINT,
         allowNull: false,
         references: {
           model: 'species',     // 참조할 테이블
@@ -56,53 +51,23 @@ export default function (sequelize: Sequelize) {
       },
       nickname: {
         type: DataTypes.STRING(50),
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
         comment: "식물 이름",
       },
-      current_temp: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        comment: "현재 온도",
-      },
-      temp_state: {
-        type: DataTypes.STRING(10),
-        allowNull: false,
-        defaultValue: 'UNKNOWN',
-        comment: "온도 상태(value: 낮음 | 정상 | 높음)",
-      },
-      current_light: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        comment: "현재 조도",
-      },
-      light_state: {
-        type: DataTypes.STRING(10),
-        allowNull: false,
-        defaultValue: 'UNKNOWN',
-        comment: "조도 상태(value: 낮음 | 정상 | 높음)",
-      },
-      current_moisture: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        comment: "현재 토양수분",
-      },
-      moisture_state: {
-        type: DataTypes.STRING(10),
-        allowNull: false,
-        defaultValue: 'UNKNOWN',
-        comment: "토양수분 상태(value: 낮음 | 정상 | 높음)",
-      },
-      watering_cycle: {
+      plant_level: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        comment: "물 주기(일 단위)",
+        comment: "식물 레벨",
       },
-      last_watered_date: {
-        type: DataTypes.DATE,
+      plant_experience: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: DataTypes.NOW,
-        comment: "마지막으로 물 준 날짜",
+        comment: "식물 경험치",
+      },
+      plant_hogamdo: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        comment: "식물 호감도도",
       },
       last_measured_date: {
         type: DataTypes.DATE,
