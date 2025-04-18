@@ -1,4 +1,4 @@
-import { StateData } from "../interface/plant";
+import { StateData } from "../interface/plant.js";
 
 export function convertPlantState(plantState:StateData): string {
   let tempStatus = "";

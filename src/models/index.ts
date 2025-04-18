@@ -1,11 +1,12 @@
 import { Sequelize, Dialect } from 'sequelize';
-import { dbConfig } from '../config/db.config';
-import userDb from './user';  // 모델 파일 import
-import userPlantInfoDb from './userPlantInfo';
-import optimalSpeciesInfoDb from './optimalSpeciesInfo';
-import eventDb from './eventInfo'; 
-import userEventInfoDb from './userEventInfo';  
-import plantHistoryDb from './plantHistory';
+
+import { dbConfig } from '../config/db.config.js';
+import userDb from './user.js';  // 모델 파일 import
+import userPlantInfoDb from './userPlantInfo.js';
+import optimalSpeciesInfoDb from './optimalSpeciesInfo.js';
+import eventDb from './eventInfo.js'; 
+import userEventInfoDb from './userEventInfo.js';  
+import plantHistoryDb from './plantHistory.js';
 
 // 현재 환경을 가져옴 (development, test, production)
 const env = process.env.NODE_ENV || 'development';
@@ -38,7 +39,7 @@ const sequelize = new Sequelize(
 sequelize.authenticate()
   .then(() => {
     console.log('Database connection established successfully.');
-        // 데이터베이스 동기화 (테이블 생성 및 동기화)
+        //데이터베이스 동기화 (테이블 생성 및 동기화)
         sequelize.sync()
         .then(() => {
           console.log('Database synchronized successfully.');

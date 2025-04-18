@@ -13,14 +13,15 @@ import {
   RunnableWithMessageHistory,
   RunnableSequence,
 } from "@langchain/core/runnables";
-import { IMessage, ResponseData, UserType } from "../interface/chatbot";
-import { convertPlantState } from "../utils/plant";
-import db from "../models/index";
-import { StateData } from "../interface/plant";
-import { ApiResult } from "interface/api";
+import { IMessage, ResponseData, UserType } from "../interface/chatbot.js";
+import { convertPlantState } from "../utils/plant.js";
+import db from "../models/index.js";
+import { StateData } from "../interface/plant.js";
+import { ApiResult } from "interface/api.js";
 import { SpeechClient } from "@google-cloud/speech";
+import { ZyphraClient } from "@zyphra/client";
 import fs from 'fs';
-import sequelize from '../models/plantHistory';
+import sequelize from '../models/plantHistory.js';
 
 const { PlantHistory } = db;
 
@@ -167,59 +168,59 @@ class PlantChatBotController {
   public async speechToText(
     req: Request,
     res: Response,
-  ): Promise<any>{
+  ): Promise<any> {
     let apiResult: ApiResult = {
       code: 400,
       data: null,
       msg: 'Failed',
     };
-  
+
     try {
       const userId = req.body.user_id; //사용자 이름 추출
       const plantId = req.body.plant_id; //식물 이름 추출
-  
+
       // 업로드된 파일 확인
       if (!req.file || !req.file.path) {
         apiResult.msg = 'Not Exist Audio File';
         res.json(apiResult);
         return;
       }
-  
+
       // Google Cloud SpeechClient 생성 (환경 변수 사용)
       const client = new SpeechClient();
-  
+
       // 파일 경로 가져오기
       const filePath = req.file.path;
-  
+
       // 파일을 Buffer로 읽기
       const fileContent = fs.readFileSync(filePath);
-  
+
       // Define the audio and config objects
       const audio = {
         content: fileContent.toString('base64'), // 오디오 파일을 Base64 인코딩하여 content에 추가
       };
-  
+
       const config = {
         encoding: 'OGG_OPUS' as const, // Opus 인코딩을 사용
         sampleRateHertz: 16000, // 녹음 시 설정했던 샘플링 레이트
         languageCode: 'ko-KR',
       };
-  
+
       const request = {
         audio,
         config,
       };
-  
+
       // Call the recognize method
       const [response] = await client.recognize(request);
-  
+
       // Extract the transcription from the response
       const transcription = response.results
         ?.map(result => result.alternatives?.[0].transcript)
         .join('\n');
-  
+
       console.log(`Transcription: ${transcription}`);
-  
+
       //프론트엔드로 반환되는 메시지 데이터 생성하기
       const plantResultMsg: IMessage = {
         user_id: userId,
@@ -228,7 +229,7 @@ class PlantChatBotController {
         user_type: UserType.BOT,
         send_date: new Date(),
       };
-  
+
       apiResult.code = 200;
       apiResult.data = plantResultMsg;
       apiResult.msg = 'Ok';
@@ -238,8 +239,51 @@ class PlantChatBotController {
       apiResult.msg = 'Server Error';
       console.error('음성 인식 처리 중 오류 발생:', err);
     }
-  
+
     res.json(apiResult);
+  }
+
+  public async textToSpeech(req: Request, res: Response): Promise<void> {
+    let apiResult: ApiResult = {
+      code: 400,
+      data: null,
+      msg: 'Failed',
+    };
+    
+    try {
+      const { message: plantPrompt, user_id: userId, plant_id: plantId } = req.body;
+
+      if (!process.env.ZONOS_API_KEY) {
+        throw new Error('ZONOS_API_KEY is not defined');
+      }
+
+      const client = new ZyphraClient({ apiKey: process.env.ZONOS_API_KEY });
+
+      const audioBlob = await client.audio.speech.create(
+        {
+          text: plantPrompt,
+          speaking_rate:15,
+          model: "zonos-v0.1-transformer",
+          mime_type: "audio/ogg",
+          language_iso_code :"ko"
+        }
+      )
+
+      if(audioBlob){
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        res.set({
+          'Content-Type': 'audio/ogg',
+          'Content-Disposition': 'inline; filename="speech.ogg"',
+          'Content-Length': buffer.length
+        });
+        
+        res.send(buffer);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
  
   // GET /chat/history

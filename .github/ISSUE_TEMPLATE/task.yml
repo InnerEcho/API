@@ -1,0 +1,30 @@
+name: 📌 작업
+description: 새로운 기능 개발, 리팩토링, 문서화 등 일반 작업 이슈용
+title: "[Task] "
+labels: ["task"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 작업 요약
+      description: 어떤 작업을 할지 간단히 설명해주세요.
+      placeholder: |
+        예) 미션 생성 API 추가, 로그인 상태 유지 기능 구현
+    validations:
+      required: true
+
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 작업 항목 (선택)
+      description: 해야 할 작업이 있다면 체크리스트 형식으로 작성해주세요.
+      placeholder: |
+        - [ ] 컨트롤러 생성
+        - [ ] 테스트 코드 작성
+        - [ ] API 문서 작성
+
+  - type: input
+    id: related
+    attributes:
+      label: 관련 링크 또는 커밋 (선택)
+      placeholder: 예) #12, 커밋 abc123, 디자인 문서

@@ -1,0 +1,28 @@
+name: 🐛 버그 리포트
+description: 버그를 발견했을 때 작성하는 이슈 템플릿
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: bug_description
+    attributes:
+      label: 버그 설명
+      description: 어떤 문제가 발생했는지 간단히 작성해주세요.
+      placeholder: |
+        예) 로그인 시도 시 500 에러 발생
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 절차
+      description: 버그를 재현하는 단계가 있다면 순서대로 작성해주세요.
+      placeholder: |
+        1. 로그인 페이지 이동
+        2. 잘못된 이메일 입력
+        3. 로그인 클릭 → 에러 발생
+
+  - type: input
+    id: env
+    attributes:
+      label: 환경 정보
+      placeholder: 예) Ubuntu 22.04, Chrome 123, Java 17

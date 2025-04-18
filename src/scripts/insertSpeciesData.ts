@@ -1,5 +1,5 @@
 import { Dialect, Sequelize } from "sequelize";
-import SpeciesModel from "../models/optimalSpeciesInfo"; // 모델 경로 확인
+import SpeciesModel from "../models/optimalSpeciesInfo.js"; // 모델 경로 확인
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
@@ -28,7 +28,7 @@ async function insertSpeciesData() {
     console.log("Connection established successfully.");
 
     // JSON 파일 읽기
-    const filePath = path.resolve(__dirname, "../data/plantdata.json");
+    const filePath = path.resolve(__dirname, "../public/plantdata.json");
     const speciesData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
      // 데이터 삽입

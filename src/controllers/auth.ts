@@ -2,14 +2,14 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import db from "../models/index";
-import { ApiResult } from "../interface/api";
+import db from "../models/index.js";
+import { ApiResult } from "../interface/api.js";
 
 class AuthController {
   /**
    * 사용자 회원가입
    */
-  public async registerUser(req: Request, res: Response): Promise<void> {
+  public async registUser(req: Request, res: Response): Promise<void> {
     const apiResult: ApiResult = {
       code: 400,
       data: null,

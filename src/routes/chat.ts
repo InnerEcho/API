@@ -1,5 +1,5 @@
-import express, { Request, Response } from 'express';
-import PlantChatBotController from '../controllers/chatbot';
+import express from 'express';
+import PlantChatBotController from '../controllers/chatbot.js';
 import multer from 'multer';
 
 
@@ -161,6 +161,8 @@ router.post("/plant", PlantChatBotController.chat);
  *                   example: "Server Error"
  */
 router.post('/stt', upload.single('file'), PlantChatBotController.speechToText);
+
+router.post('/tts', PlantChatBotController.textToSpeech);
 
 // PlantChatBotController.getChatHistory 호출
 router.get('/chat/history', PlantChatBotController.getChatHistory);
