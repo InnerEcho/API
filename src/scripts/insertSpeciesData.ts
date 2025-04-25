@@ -3,8 +3,13 @@ import SpeciesModel from "../models/optimalSpeciesInfo.js"; // 모델 경로 확
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Sequelize 인스턴스 생성
 const sequelize = new Sequelize(

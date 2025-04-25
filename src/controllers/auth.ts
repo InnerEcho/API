@@ -17,7 +17,7 @@ class AuthController {
     };
 
     try {
-      const { user_name, userEmail, password } = req.body;
+      const { user_name, userEmail, password, user_gender } = req.body;
 
       const existEmail = await db.User.findOne({ where: { user_email: userEmail } });
       const existNickName = await db.User.findOne({ where: { user_name } });
@@ -33,9 +33,13 @@ class AuthController {
       }
 
       const entryPassword = await bcrypt.hash(password, 12);
-      const entryUser = { user_name, user_email: userEmail, password: entryPassword };
+      const entryUser = { user_name, user_email: userEmail, password: entryPassword, user_gender };
+
 
       const registedUser = await db.User.create(entryUser);
+      const entryPlant = { user_id: registedUser.user_id, species_id: 1, nickname: "금쪽이", plant_level: 1, plant_experience: 0, plant_hogamdo: 0, last_measured_date: new Date() };
+      const registedPlant = await db.Plant.create(entryPlant);
+
       registedUser.password = ""; // 비밀번호 숨김 처리
       apiResult.code = 200;
       apiResult.data = registedUser;
@@ -45,6 +49,7 @@ class AuthController {
     } catch (err) {
       apiResult.code = 500;
       apiResult.msg = "ServerError";
+      console.log(err);
       res.status(500).json(apiResult);
     }
   }

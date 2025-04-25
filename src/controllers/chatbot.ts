@@ -21,10 +21,11 @@ import { ApiResult } from "interface/api.js";
 import { SpeechClient } from "@google-cloud/speech";
 import { ZyphraClient } from "@zyphra/client";
 import fs from 'fs';
-import sequelize from '../models/plantHistory.js';
+import sequelize from '../models/clantHistory.js';
+import { now } from "sequelize/lib/utils";
+import clantHistory from "../models/clantHistory.js";
 
-const { PlantHistory } = db;
-
+const { ChatHistory } = db;
 
 // 대화 이력 저장소
 const plantMessageHistories: Record<string, InMemoryChatMessageHistory> = {};
@@ -43,13 +44,12 @@ class PlantChatBotController {
     try {
       if (req.method === "POST") {
         // Step1: 사용자 입력값 추출
-        const { message: plantPrompt, user_id: userId, plant_id: plantId } = req.body;
+        const { message: userMessage, user_id: userId, plant_id: plantId } = req.body;
 
         // Step2: DB에서 식물 정보 가져오기
         const plantDbInfo = await db.sequelize.query(
           `
-            SELECT p.temp_state, p.light_state, p.moisture_state, 
-                   u.user_name, p.nickname, s.species_name
+            SELECT u.user_name, p.nickname, s.species_name
             FROM user u, plant p, species s
             WHERE u.user_id = ${userId} AND p.plant_id = ${plantId} 
                   AND p.species_id = s.species_id;
@@ -65,9 +65,12 @@ class PlantChatBotController {
 
         // 현재 식물 상태 설정
         const plantCurrentState: StateData = {
-          temp_state: plantDbInfo[0].temp_state,
-          light_state: plantDbInfo[0].light_state,
-          moisture_state: plantDbInfo[0].moisture_state,
+          // temp_state: plantDbInfo[0].temp_state,
+          // light_state: plantDbInfo[0].light_state,
+          // moisture_state: plantDbInfo[0].moisture_state,
+          temp_state: "정상",
+          light_state: "정상",
+          moisture_state: "정상",
         };
 
         // Step3: LLM 모델 생성
@@ -80,7 +83,7 @@ class PlantChatBotController {
         const plantLoader = new JSONLoader("src/document_loaders/example_data/example.json");
 
         // Step5: 프롬프트 템플릿 생성
-        const plantPromptTemplate = ChatPromptTemplate.fromMessages([
+        const userMessageTemplate = ChatPromptTemplate.fromMessages([
           [
             "system",
             `
@@ -112,7 +115,7 @@ class PlantChatBotController {
         const plantOutputParser = new StringOutputParser();
 
         // Step7: LLM 체인 생성
-        const plantLLMChain = plantPromptTemplate.pipe(plantLLM).pipe(plantOutputParser);
+        const plantLLMChain = userMessageTemplate.pipe(plantLLM).pipe(plantOutputParser);
 
         // Step8: 대화 이력 관리 체인 생성
         const plantHistoryChain = new RunnableWithMessageHistory({
@@ -134,7 +137,7 @@ class PlantChatBotController {
 
         // Step9: 챗봇 응답 생성
         const plantResultMessage = await plantHistoryChain.invoke(
-          { input: plantPrompt },
+          { input: userMessage },
           plantConfig
         );
 
@@ -147,20 +150,38 @@ class PlantChatBotController {
           send_date: new Date(),
         };
 
-        console.log(plantResultMsg);
+        const entryUserHistory = {
+          user_id: userId,
+          plant_id: plantId,
+          message: userMessage,
+          user_type: UserType.USER,
+          send_date: new Date(),
+        }
+
+        //채팅내역 저장
+        const registedHistory = await ChatHistory.bulkCreate([
+          entryUserHistory,
+          plantResultMsg,
+        ]);
+
+        console.log(registedHistory);
+
 
         plantApiResult.code = 200;
         plantApiResult.data = plantResultMsg;
         plantApiResult.msg = "Ok";
+
+        res.status(200).json(plantApiResult);
       }
     } catch (err) {
       plantApiResult.code = 500;
       plantApiResult.data = null;
       plantApiResult.msg = "ServerError";
       console.error(err);
+      res.status(500).json(plantApiResult);
     }
 
-    res.json(plantApiResult);
+    
   }
 
 
@@ -249,9 +270,9 @@ class PlantChatBotController {
       data: null,
       msg: 'Failed',
     };
-    
+
     try {
-      const { message: plantPrompt, user_id: userId, plant_id: plantId } = req.body;
+      const { message: userMessage, user_id: userId, plant_id: plantId } = req.body;
 
       if (!process.env.ZONOS_API_KEY) {
         throw new Error('ZONOS_API_KEY is not defined');
@@ -261,15 +282,15 @@ class PlantChatBotController {
 
       const audioBlob = await client.audio.speech.create(
         {
-          text: plantPrompt,
-          speaking_rate:15,
+          text: userMessage,
+          speaking_rate: 15,
           model: "zonos-v0.1-transformer",
           mime_type: "audio/ogg",
-          language_iso_code :"ko"
+          language_iso_code: "ko"
         }
       )
 
-      if(audioBlob){
+      if (audioBlob) {
         const arrayBuffer = await audioBlob.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
@@ -278,25 +299,38 @@ class PlantChatBotController {
           'Content-Disposition': 'inline; filename="speech.ogg"',
           'Content-Length': buffer.length
         });
-        
+
         res.send(buffer);
       }
     } catch (err) {
       console.error(err);
     }
   }
- 
+
   // GET /chat/history
   async getChatHistory(req: Request, res: Response) {
+    let apiResult: ApiResult = {
+      code: 400,
+      data: null,
+      msg: 'Failed',
+    };
+
     try {
-      const histories = await PlantHistory.findAll({
-        attributes: ['content'], // content 필드만 가져오기
-        order: [['createdAt', 'ASC']], // 내림차순으로 가져옴
+      const { user_id: userId, plant_id: plantID } = req.body;
+
+      const histories = await ChatHistory.findAll({
+        where: {
+          user_id: userId,
+          plant_id: plantID,
+        },
+        order: [['send_date', 'ASC']],
       });
 
+
       res.status(200).json({
-        success: true,
+        code: 200,
         data: histories,
+        msg: "Ok"
       });
     } catch (error) {
       console.error('Error fetching chat history:', error);

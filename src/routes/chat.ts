@@ -165,6 +165,7 @@ router.post('/stt', upload.single('file'), PlantChatBotController.speechToText);
 router.post('/tts', PlantChatBotController.textToSpeech);
 
 // PlantChatBotController.getChatHistory 호출
-router.get('/chat/history', PlantChatBotController.getChatHistory);
+router.post('/history', PlantChatBotController.getChatHistory);
+
 export default router;
 
