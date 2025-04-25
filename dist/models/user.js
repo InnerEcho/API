@@ -60,9 +60,8 @@ export default function (sequelize) {
         comment: "사용자 계정정보", // 테이블에 대한 설명
         indexes: [
             {
-                name: "user_email_unique", // 유니크 인덱스 이름
-                unique: true, // 인덱스를 유니크로 설정
-                fields: ["user_email"], // 인덱스를 적용할 필드
+                unique: true,
+                fields: ["user_email"],
             },
         ],
     });
