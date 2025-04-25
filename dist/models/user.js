@@ -12,6 +12,7 @@ export default function (sequelize) {
         user_email: {
             type: DataTypes.STRING(254), // 이메일 필드
             allowNull: false,
+            unique: true,
             validate: {
                 isEmail: true, // 유효한 이메일 형식인지 확인
             },
@@ -58,11 +59,5 @@ export default function (sequelize) {
         tableName: "user", // 실제 DB에서 사용될 테이블 이름
         timestamps: false, // createdAt, updatedAt 자동 생성 비활성화
         comment: "사용자 계정정보", // 테이블에 대한 설명
-        indexes: [
-            {
-                unique: true,
-                fields: ["user_email"],
-            },
-        ],
     });
 }
