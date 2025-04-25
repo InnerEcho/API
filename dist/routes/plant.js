@@ -1,11 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const plant_1 = __importDefault(require("../controllers/plant"));
-const express_1 = __importDefault(require("express"));
-const router = express_1.default.Router();
+import PlantStateController from '../controllers/plant.js';
+import express from 'express';
+const router = express.Router();
 /**
  * @swagger
  * /plant/state:
@@ -97,5 +92,5 @@ const router = express_1.default.Router();
  *                   type: string
  *                   example: "ServerError"
  */
-router.post("/state", plant_1.default.getPlantState);
-exports.default = router;
+router.post("/state", PlantStateController.getPlantState);
+export default router;

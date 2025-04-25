@@ -5,6 +5,8 @@ declare class PlantChatBotController {
      */
     chat(req: Request, res: Response): Promise<void>;
     speechToText(req: Request, res: Response): Promise<any>;
+    textToSpeech(req: Request, res: Response): Promise<void>;
+    getChatHistory(req: Request, res: Response): Promise<void>;
 }
 declare const _default: PlantChatBotController;
 export default _default;

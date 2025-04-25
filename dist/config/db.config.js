@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.dbConfig = void 0;
-require("dotenv/config");
+import 'dotenv/config';
 const development = {
     username: `${process.env.DB_USER}`,
     password: `${process.env.DB_PW}`,
@@ -32,7 +29,7 @@ const production = {
     timezone: '+09:00',
     logging: false
 };
-exports.dbConfig = {
+export const dbConfig = {
     development,
     test,
     production

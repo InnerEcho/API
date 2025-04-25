@@ -1,13 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const chatbot_1 = __importDefault(require("../controllers/chatbot"));
-const multer_1 = __importDefault(require("multer"));
-const router = express_1.default.Router();
-const upload = (0, multer_1.default)({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
+import express from 'express';
+import PlantChatBotController from '../controllers/chatbot.js';
+import multer from 'multer';
+const router = express.Router();
+const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
 /**
  * @swagger
  * /chat/plant:
@@ -95,7 +90,7 @@ const upload = (0, multer_1.default)({ dest: 'uploads/' }); // 파일을 임시�
  *                   type: string
  *                   example: "ServerError"
  */
-router.post("/plant", chatbot_1.default.chat);
+router.post("/plant", PlantChatBotController.chat);
 /**
  * @swagger
  * /stt:
@@ -160,5 +155,8 @@ router.post("/plant", chatbot_1.default.chat);
  *                   type: string
  *                   example: "Server Error"
  */
-router.post('/stt', upload.single('file'), chatbot_1.default.speechToText);
-exports.default = router;
+router.post('/stt', upload.single('file'), PlantChatBotController.speechToText);
+router.post('/tts', PlantChatBotController.textToSpeech);
+// PlantChatBotController.getChatHistory 호출
+router.post('/history', PlantChatBotController.getChatHistory);
+export default router;

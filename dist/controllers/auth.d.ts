@@ -3,7 +3,7 @@ declare class AuthController {
     /**
      * 사용자 회원가입
      */
-    registerUser(req: Request, res: Response): Promise<void>;
+    registUser(req: Request, res: Response): Promise<void>;
     /**
      * 사용자 로그인 처리
      */

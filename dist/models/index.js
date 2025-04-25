@@ -1,21 +1,16 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const sequelize_1 = require("sequelize");
-const db_config_1 = require("../config/db.config");
-const user_1 = __importDefault(require("./user")); // 모델 파일 import
-const userPlantInfo_1 = __importDefault(require("./userPlantInfo"));
-const optimalSpeciesInfo_1 = __importDefault(require("./optimalSpeciesInfo"));
-const eventInfo_1 = __importDefault(require("./eventInfo"));
-const userEventInfo_1 = __importDefault(require("./userEventInfo"));
-const plantHistory_1 = __importDefault(require("./plantHistory"));
+import { Sequelize } from 'sequelize';
+import { dbConfig } from '../config/db.config.js';
+import userDb from './user.js'; // 모델 파일 import
+import userPlantInfoDb from './userPlantInfo.js';
+import optimalSpeciesInfoDb from './optimalSpeciesInfo.js';
+import eventDb from './eventInfo.js';
+import userEventInfoDb from './userEventInfo.js';
+import clantHistoryDb from './clantHistory.js';
 // 현재 환경을 가져옴 (development, test, production)
 const env = process.env.NODE_ENV || 'development';
-const config = db_config_1.dbConfig[env];
+const config = dbConfig[env];
 // Sequelize 인스턴스 생성
-const sequelize = new sequelize_1.Sequelize(config.database, // 데이터베이스 이름
+const sequelize = new Sequelize(config.database, // 데이터베이스 이름
 config.username, // 사용자명
 config.password, // 비밀번호
 {
@@ -38,7 +33,7 @@ config.password, // 비밀번호
 sequelize.authenticate()
     .then(() => {
     console.log('Database connection established successfully.');
-    // 데이터베이스 동기화 (테이블 생성 및 동기화)
+    //데이터베이스 동기화 (테이블 생성 및 동기화)
     sequelize.sync()
         .then(() => {
         console.log('Database synchronized successfully.');
@@ -53,15 +48,15 @@ sequelize.authenticate()
 // Sequelize 객체와 모델을 db 객체에 저장
 const db = {};
 db.sequelize = sequelize;
-db.Sequelize = sequelize_1.Sequelize;
+db.Sequelize = Sequelize;
 // 각 모델을 다른 키로 할당
-db.User = (0, user_1.default)(sequelize);
-db.Plant = (0, userPlantInfo_1.default)(sequelize);
-db.Species = (0, optimalSpeciesInfo_1.default)(sequelize);
-db.Event = (0, eventInfo_1.default)(sequelize);
-db.User_Event = (0, userEventInfo_1.default)(sequelize);
-db.PlantHistory = (0, plantHistory_1.default)(sequelize);
+db.User = userDb(sequelize);
+db.Plant = userPlantInfoDb(sequelize);
+db.Species = optimalSpeciesInfoDb(sequelize);
+db.Event = eventDb(sequelize);
+db.User_Event = userEventInfoDb(sequelize);
+db.ChatHistory = clantHistoryDb(sequelize);
 // 모델 간의 관계 설정
 db.User.hasMany(db.Plant, { foreignKey: 'user_id' });
 db.Plant.belongsTo(db.User, { foreignKey: 'user_id' });
-exports.default = db;
+export default db;

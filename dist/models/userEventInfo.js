@@ -1,19 +1,16 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = default_1;
-const sequelize_1 = require("sequelize");
+import { DataTypes } from "sequelize";
 // 모델 반환 타입 정의
-function default_1(sequelize) {
+export default function (sequelize) {
     return sequelize.define("user_event", {
         user_event_id: {
-            type: sequelize_1.DataTypes.BIGINT,
+            type: DataTypes.BIGINT,
             primaryKey: true, // PRI 키 설정
             autoIncrement: true, // 자동 증가
             allowNull: false,
             comment: "유저 이벤트 ID",
         },
         user_id: {
-            type: sequelize_1.DataTypes.BIGINT,
+            type: DataTypes.BIGINT,
             allowNull: false,
             comment: "사용자 ID",
             references: {
@@ -24,7 +21,7 @@ function default_1(sequelize) {
             onUpdate: "CASCADE", // 유저 ID 변경 시 업데이트
         },
         event_id: {
-            type: sequelize_1.DataTypes.BIGINT,
+            type: DataTypes.BIGINT,
             allowNull: false,
             comment: "사용자 ID",
             references: {
@@ -35,7 +32,7 @@ function default_1(sequelize) {
             onUpdate: "CASCADE", // 유저 ID 변경 시 업데이트
         },
         plant_id: {
-            type: sequelize_1.DataTypes.BIGINT,
+            type: DataTypes.BIGINT,
             allowNull: false,
             comment: "사용자 ID",
             references: {
@@ -46,19 +43,19 @@ function default_1(sequelize) {
             onUpdate: "CASCADE", // 유저 ID 변경 시 업데이트
         },
         status: {
-            type: sequelize_1.DataTypes.STRING(5), // 사용자 ID를 STING로 변경
+            type: DataTypes.STRING(5), // 사용자 ID를 STING로 변경
             allowNull: false,
             comment: "진행 상태",
         },
         assigned_at: {
-            type: sequelize_1.DataTypes.DATE,
-            defaultValue: sequelize_1.DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
             allowNull: false,
             comment: "할당당 날짜",
         },
         completed_at: {
-            type: sequelize_1.DataTypes.DATE,
-            defaultValue: sequelize_1.DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
             allowNull: false,
             comment: "완료 날짜",
         },

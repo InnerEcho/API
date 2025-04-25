@@ -1,12 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.specs = exports.swaggerUi = void 0;
-const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
-exports.swaggerUi = swagger_ui_express_1.default;
-const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
 const options = {
     definition: {
         openapi: "3.0.0",
@@ -37,5 +30,5 @@ const options = {
     },
     apis: ["./src/routes/*.ts", "./swagger/*"],
 };
-const specs = (0, swagger_jsdoc_1.default)(options);
-exports.specs = specs;
+const specs = swaggerJsdoc(options);
+export { swaggerUi, specs };

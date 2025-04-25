@@ -1,15 +1,10 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const auth_1 = require("../middlewares/auth");
-const auth_2 = __importDefault(require("../controllers/auth"));
-const router = express_1.default.Router();
+import express from 'express';
+import { verifyToken } from '../middlewares/auth.js';
+import AuthController from '../controllers/auth.js';
+const router = express.Router();
 /**
  * @swagger
- * /auth/register:
+ * /auth/regist:
  *   post:
  *     summary: 사용자 회원가입
  *     tags: [User]
@@ -34,7 +29,7 @@ const router = express_1.default.Router();
  *       500:
  *         description: 서버 오류
  */
-router.post("/register", auth_2.default.registerUser);
+router.post("/regist", AuthController.registUser);
 /**
  * @swagger
  * /auth/login:
@@ -60,7 +55,7 @@ router.post("/register", auth_2.default.registerUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/login", auth_2.default.loginUser);
+router.post("/login", AuthController.loginUser);
 /**
  * @swagger
  * /auth/email:
@@ -82,13 +77,13 @@ router.post("/login", auth_2.default.loginUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/email", auth_2.default.sendEmailVerification);
+router.post("/email", AuthController.sendEmailVerification);
 // 토큰 검증
-router.get("/token", auth_1.verifyToken, (req, res) => {
+router.get("/token", verifyToken, (req, res) => {
     res.json({
         code: 200,
         data: req.body.user,
         msg: "Ok"
     });
 });
-exports.default = router;
+export default router;

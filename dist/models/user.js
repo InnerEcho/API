@@ -1,19 +1,16 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = default_1;
-const sequelize_1 = require("sequelize");
+import { DataTypes } from "sequelize";
 // 모델 반환 타입 정의
-function default_1(sequelize) {
+export default function (sequelize) {
     return sequelize.define("user", {
         user_id: {
-            type: sequelize_1.DataTypes.BIGINT, // 사용자 ID를 INT로 변경
+            type: DataTypes.BIGINT, // 사용자 ID를 INT로 변경
             primaryKey: true, // 기본 키 설정
             autoIncrement: true, // 자동 증가
             allowNull: false,
             comment: "사용자 ID (Primary Key)",
         },
         user_email: {
-            type: sequelize_1.DataTypes.STRING(254), // 이메일 필드
+            type: DataTypes.STRING(254), // 이메일 필드
             allowNull: false,
             validate: {
                 isEmail: true, // 유효한 이메일 형식인지 확인
@@ -21,39 +18,39 @@ function default_1(sequelize) {
             comment: "사용자 이메일 (아이디 역할)",
         },
         password: {
-            type: sequelize_1.DataTypes.STRING(256),
+            type: DataTypes.STRING(256),
             allowNull: false,
             comment: "비밀번호",
         },
         user_name: {
-            type: sequelize_1.DataTypes.STRING(50),
+            type: DataTypes.STRING(50),
             allowNull: false,
             comment: "사용자 이름",
         },
         user_gender: {
-            type: sequelize_1.DataTypes.STRING(5),
+            type: DataTypes.STRING(5),
             allowNull: false,
             comment: "사용자 성별",
         },
         state: {
-            type: sequelize_1.DataTypes.STRING(50),
+            type: DataTypes.STRING(50),
             allowNull: true,
             comment: "사용자 상태 값"
         },
         phone_number: {
-            type: sequelize_1.DataTypes.STRING(20),
+            type: DataTypes.STRING(20),
             allowNull: true,
             comment: "전화번호",
         },
         birth_date: {
-            type: sequelize_1.DataTypes.DATE,
+            type: DataTypes.DATE,
             allowNull: true,
             comment: "생년월일",
         },
         created_at: {
-            type: sequelize_1.DataTypes.DATE,
+            type: DataTypes.DATE,
             allowNull: false,
-            defaultValue: sequelize_1.DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
+            defaultValue: DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
             comment: "가입 날짜",
         },
     }, {

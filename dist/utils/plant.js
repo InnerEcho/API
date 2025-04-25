@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertPlantState = convertPlantState;
-function convertPlantState(plantState) {
+export function convertPlantState(plantState) {
     let tempStatus = "";
     let humiStatus = "";
     let soilStatus = "";
