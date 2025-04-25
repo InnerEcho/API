@@ -1,33 +1,27 @@
 import { Sequelize, DataTypes, Model, Optional } from "sequelize";
 
-// 식물 히스토리 테이블의 모든 속성을 정의하는 인터페이스
 interface ChatHistoryAttributes {
-  history_id: BigInt;    // 히스토리 ID
-  message: Text;      // 히스토리 내용
-  user_id: BigInt;    // 유저 ID (FK)
-  plant_id: BigInt;      // 연관된 식물 ID (FK)
-  send_date: Date;       // 데이터 기록 시간
-  user_type:"User"|"Bot";
+  history_id: number;
+  message: string;
+  user_id: number;
+  plant_id: number;
+  send_date: Date;
+  user_type: 'User' | 'Bot';
 }
 
-// 생성 시 자동 생성되는 history_id를 제외한 속성 인터페이스
 interface ChatHistoryCreationAttributes extends Optional<ChatHistoryAttributes, 'history_id'> {}
 
 export default function (sequelize: Sequelize) {
-  // ChatHistory 모델 클래스 정의
   class ChatHistory extends Model<ChatHistoryAttributes, ChatHistoryCreationAttributes> {
-    // 다른 모델과의 관계 설정
     static associate(models: any) {
-      // Plant 모델과의 N:1 관계 설정 -> 하나의 식물은 여러개의 히스토리 기록을 가질 수 있음
       ChatHistory.belongsTo(models.Plant, {
         foreignKey: 'plant_id',
         targetKey: 'plant_id',
-        onDelete: 'CASCADE'  // 식물이 삭제되면 관련 히스토리도 삭제
+        onDelete: 'CASCADE'
       });
     }
   }
-  
-  // 모델의 스키마 정의
+
   ChatHistory.init(
     {
       history_id: {
@@ -44,20 +38,20 @@ export default function (sequelize: Sequelize) {
       user_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
-        comment: "사용자 ID",
         references: {
           model: 'user',
-          key: 'user_id'
-        }
+          key: 'user_id',
+        },
+        comment: "사용자 ID",
       },
       plant_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
-        comment: "식물 ID",
         references: {
           model: 'plant',
-          key: 'plant_id'
-        }
+          key: 'plant_id',
+        },
+        comment: "식물 ID",
       },
       send_date: {
         type: DataTypes.DATE,
@@ -67,35 +61,29 @@ export default function (sequelize: Sequelize) {
       user_type: {
         type: DataTypes.ENUM('User', 'Bot'),
         allowNull: false,
-        defaultValue: 'user',
-        comment: "히스토리 기록 주체 (user 또는 bot)",
+        defaultValue: 'User',
+        comment: "히스토리 기록 주체 (User 또는 Bot)",
       },
     },
     {
       sequelize,
-      tableName: "plant_history",
+      tableName: "plant_history", // 실제 테이블 이름이 이게 맞으면 OK
       timestamps: false,
       indexes: [
         {
-          name: "PRIMARY",
-          unique: true,
+          name: "plant_send_date_idx",
           using: "BTREE",
-          fields: [{ name: "history_id" }],
+          fields: [{ name: "plant_id" }, { name: "send_date" }],
         },
         {
-          name: "plant_timestamp_idx",
+          name: "user_send_date_idx",
           using: "BTREE",
-          fields: [{ name: "plant_id" }, { name: "timestamp" }],
+          fields: [{ name: "user_id" }, { name: "send_date" }],
         },
-        {
-          name: "user_timestamp_idx",
-          using: "BTREE",
-          fields: [{ name: "user_id" }, { name: "timestamp" }],
-        }
       ],
     }
   );
-  
 
   return ChatHistory;
-} 
+}
+

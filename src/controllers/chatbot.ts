@@ -21,9 +21,9 @@ import { ApiResult } from "interface/api.js";
 import { SpeechClient } from "@google-cloud/speech";
 import { ZyphraClient } from "@zyphra/client";
 import fs from 'fs';
-import sequelize from '../models/clantHistory.js';
+import sequelize from '../models/chatHistory.js';
 import { now } from "sequelize/lib/utils";
-import clantHistory from "../models/clantHistory.js";
+import clantHistory from "../models/chatHistory.js";
 
 const { ChatHistory } = db;
 
