@@ -34,3 +34,13 @@ export enum BotType {
     RAGDOC = 'RAGDOC',
     RAGWEB = 'RAGWEB',
 }
+
+/**
+ * 식물 챗봇을 위한 사용자 & 식물 정보 타입
+ */
+export interface PlantDbInfo {
+    user_name: string;       // 사용자 이름 (예: 홍길동)
+    nickname: string;       // 식물 애칭 (예: 금쪽이)
+    species_name: string;    // 식물 종 이름 (예: 몬스테라)
+  }
+  

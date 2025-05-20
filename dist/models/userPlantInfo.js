@@ -49,7 +49,7 @@ export default function (sequelize) {
         plant_hogamdo: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            comment: "식물 호감도도",
+            comment: "식물 호감도",
         },
         last_measured_date: {
             type: DataTypes.DATE,

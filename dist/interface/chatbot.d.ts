@@ -24,3 +24,11 @@ export declare enum BotType {
     RAGDOC = "RAGDOC",
     RAGWEB = "RAGWEB"
 }
+/**
+ * 식물 챗봇을 위한 사용자 & 식물 정보 타입
+ */
+export interface PlantDbInfo {
+    user_name: string;
+    nickname: string;
+    species_name: string;
+}
