@@ -1,6 +1,6 @@
 import { Sequelize, Model } from "sequelize";
 interface GrowthDiaryAttributes {
-    id: BigInt;
+    diary_id: BigInt;
     user_id: BigInt;
     title: string;
     content: string;

@@ -1,4 +1,4 @@
-import { Sequelize, DataTypes, Model, Optional } from "sequelize";
+import { Sequelize, DataTypes, Model, type Optional } from "sequelize";
 
 // 인터페이스 정의 - 이 모델에서 사용할 속성 정의
 interface EventAttributes {

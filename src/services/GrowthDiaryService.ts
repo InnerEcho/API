@@ -1,9 +1,37 @@
-import { IMessage, UserType } from '../interface/chatbot.js';
+import type { IMessage } from '../interface/chatbot.js';
+import { UserType } from '../interface/chatbot.js';
 import { GrowthDiaryBot } from './bots/GrowthDiaryBot.js';
 import db from '../models/index.js';
+import { Op } from 'sequelize';
 
 export class GrowthDiaryService {
   constructor(private growthDiaryBot: GrowthDiaryBot) {}
+
+  public async getDiaryByDate(user_id: number, date: string): Promise<any> {
+    if (!user_id || !date) {
+      throw new Error('Missing required fields: user_id, date');
+    }
+  
+    const growthDiary = db.GrowthDiary;
+  
+    try {
+      const diary = await db.GrowthDiary.findOne({
+        where: {
+          user_id,
+          is_deleted: false,
+          [Op.and]: [
+            db.Sequelize.where(db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), '=', date),
+          ],
+        },
+      });
+      
+  
+      return diary;
+    } catch (err) {
+      console.error('Error fetching diary:', err);
+      throw new Error('Failed to fetch diary');
+    }
+  }
 
   async create(userId: number, plantId: number, userMessage: string) {
     // 1. 챗봇 응답 생성

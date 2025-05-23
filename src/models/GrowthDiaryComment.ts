@@ -2,7 +2,7 @@ import { Sequelize, DataTypes, Model } from "sequelize";
 
 // 인터페이스 정의 - 답글 속성 정의
 interface GrowthDiaryCommentAttributes {
-  id: BigInt;               // 답글 ID (PK)
+  comment_id: BigInt;               // 답글 ID (PK)
   diary_id: BigInt;         // 성장일지 ID (FK)
   user_id: BigInt;          // 사용자 ID (FK)
   content: string;          // 댓글 내용
@@ -17,7 +17,7 @@ export default function (sequelize: Sequelize) {
   return sequelize.define<Model<GrowthDiaryCommentAttributes>>(
     "growth_diary_comment",
     {
-      id: {
+      comment_id: {
         type: DataTypes.BIGINT,
         primaryKey: true,
         autoIncrement: true,

@@ -12,7 +12,7 @@ export default function (sequelize) {
         user_email: {
             type: DataTypes.STRING(254), // 이메일 필드
             allowNull: false,
-            unique: true,
+            // unique: true,
             validate: {
                 isEmail: true, // 유효한 이메일 형식인지 확인
             },

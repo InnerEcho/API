@@ -1,6 +1,7 @@
-import { IMessage, UserType } from '../interface/chatbot.js';
-import { ChatBot } from './bots/ChatBot.js';
-import db from '../models/index.js';
+import type { IMessage } from '@/interface/chatbot.js';
+import { UserType } from '@/interface/chatbot.js';
+import { ChatBot } from '@/services/bots/ChatBot.js';
+import db from '@/models/index.js';
 
 export class ChatService {
   constructor(private chatBot: ChatBot) {}

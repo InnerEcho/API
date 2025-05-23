@@ -1,8 +1,8 @@
 import express from 'express';
-import PlantChatBotController from '../controllers/ChatBotController.js';
+import PlantChatBotController from '@/controllers/ChatBotController.js';
 import multer from 'multer';
-import PlantSpeechController from '../controllers/SpeechController.js';
-
+import PlantSpeechController from '@/controllers/SpeechController.js';
+import ChatHistoryController from '@/controllers/ChatHistoryController.js';
 
 const router = express.Router();
 
@@ -95,10 +95,10 @@ const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' �
  *                   type: string
  *                   example: "ServerError"
  */
-router.post("/plant", PlantChatBotController.chat);
+router.post('/plant', PlantChatBotController.chat);
 
 // PlantChatBotController.getChatHistory 호출
-router.post('/history', PlantChatBotController.getChatHistory);
+router.post('/history', ChatHistoryController.getChatHistory);
 
 /**
  * @swagger
@@ -168,6 +168,4 @@ router.post('/stt', upload.single('file'), PlantSpeechController.speechToText);
 
 router.post('/tts', PlantSpeechController.textToSpeech);
 
-
 export default router;
-

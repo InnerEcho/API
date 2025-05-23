@@ -1,5 +1,5 @@
-import db from "../models/index.js";
-import { IMessage } from "../interface/chatbot.js";
+import db from '@/models/index.js';
+import type { IMessage } from '@/interface/chatbot.js';
 
 const { ChatHistory } = db;
 
@@ -7,22 +7,31 @@ const { ChatHistory } = db;
  * 🌱 PlantChatHistoryService
  * - 식물 챗봇 대화 이력을 조회하는 전용 서비스
  */
-class PlantChatHistoryService {
+export class ChatHistoryService {
   /**
    * 특정 사용자와 식물 간의 대화 이력 조회
    */
-  public async getChatHistory(userId: number, plantId: number): Promise<IMessage[]> {
+  public async getChatHistory(
+    userId: number,
+    plantId: number,
+  ): Promise<IMessage[]> {
     return ChatHistory.findAll({
       where: { user_id: userId, plant_id: plantId },
-      order: [["send_date", "ASC"]],
+      order: [['send_date', 'ASC']],
     });
   }
 
-  public async getTodayHistory(userId: number, plantId: number): Promise<IMessage[]> {
+  public async getTodayHistory(
+    userId: number,
+    plantId: number,
+  ): Promise<IMessage[]> {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const startDateStr = todayStart.toISOString().slice(0, 19).replace('T', ' ');
+    const startDateStr = todayStart
+      .toISOString()
+      .slice(0, 19)
+      .replace('T', ' ');
 
     const query = `
       SELECT * FROM plant_history
@@ -40,5 +49,3 @@ class PlantChatHistoryService {
     return results as IMessage[];
   }
 }
-
-export default new PlantChatHistoryService();

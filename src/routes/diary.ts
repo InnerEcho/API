@@ -1,7 +1,8 @@
 import express from 'express';
-import { ApiResult } from '../interface/api.js';
-import GrowthDiaryController from '../controllers/GrowthDiaryController.js';
+import GrowthDiaryController from '@/controllers/GrowthDiaryController.js';
 const router = express.Router();
+
+router.post('', GrowthDiaryController.getDiaryByDate);
 
 router.post('/create', GrowthDiaryController.create );
 

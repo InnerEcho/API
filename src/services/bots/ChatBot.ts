@@ -1,17 +1,27 @@
-import { BaseChatBot } from './BaseChatBot.js';
-import { convertPlantState } from '../../utils/plant.js';
-import { StateData } from '../../interface/plant.js';
-import { PlantDbInfo } from '../../interface/chatbot.js'; // 이 타입 정의 필요
-import ChatHistoryService from '../ChatHistoryService.js';
+import { BaseChatBot } from '@/services/bots/BaseChatBot.js';
+import { convertPlantState } from '@/utils/plant.js';
+import type { StateData } from '@/interface/plant.js';
+import type { PlantDbInfo } from '@/interface/chatbot.js'; // 이 타입 정의 필요
+import { ChatHistoryService } from '@/services/ChatHistoryService.js';
 
 export class ChatBot extends BaseChatBot {
+  private chatHistoryService: ChatHistoryService;
+
+  constructor() {
+    super();
+    this.chatHistoryService = new ChatHistoryService();
+  }
+
   public async createPrompt(
     plantDbInfo: PlantDbInfo,
     userId: number,
     plantId: number,
     userMessage: string,
   ): Promise<Array<[string, string]>> {
-    const chatLogs = await ChatHistoryService.getChatHistory(userId, plantId);
+    const chatLogs = await this.chatHistoryService.getChatHistory(
+      userId,
+      plantId,
+    );
     const formattedHistory = chatLogs
       .map(log => {
         const speaker = log.user_type === 'User' ? '[User]' : '[Bot]';

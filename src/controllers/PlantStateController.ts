@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { ApiResult } from "../interface/api.js";
+import type { Request, Response } from "express";
+import type { ApiResult } from "../interface/api.js";
 import db from "../models/index.js";
 
 // PlantData 인터페이스 정의

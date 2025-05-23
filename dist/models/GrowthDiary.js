@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 // 모델 반환 함수
 export default function (sequelize) {
     return sequelize.define("growth_diary", {
-        id: {
+        diary_id: {
             type: DataTypes.BIGINT,
             primaryKey: true,
             autoIncrement: true,

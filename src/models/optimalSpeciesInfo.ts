@@ -1,4 +1,4 @@
-import { Sequelize, DataTypes, Model, Optional } from "sequelize";
+import { Sequelize, DataTypes, Model, type Optional } from "sequelize";
 
 // 종 테이블의 모든 속성을 정의하는 인터페이스
 interface SpeciesAttributes {

@@ -4,7 +4,7 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 import db from '../../models/index.js';
-import { IMessage, PlantDbInfo, UserType } from '../../interface/chatbot.js';
+import type { PlantDbInfo } from '../../interface/chatbot.js';
 
 // Sequelize 모델에서 ChatHistory 추출
 const { ChatHistory } = db;

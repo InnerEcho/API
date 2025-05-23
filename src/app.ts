@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import createError from 'http-errors';
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
@@ -12,24 +13,23 @@ import http from 'http';
 import debugModule from 'debug';
 
 //Swagger 설정 가져오기
-import { swaggerUi, specs } from './config/swagger.config.js';
+import { swaggerUi, specs } from '@/config/swagger.config.js';
 
 // 라우터와 데이터베이스 모델 가져오기
-import indexRouter from './routes/index.js';
-import authRouter from './routes/user.js';
-import chatRouter from './routes/chat.js';
-import plantRouter from './routes/plant.js';
-import diaryRouter from './routes/diary.js';
-import commentRouter from './routes/comment.js';
-import db from './models/index.js';
+import indexRouter from '@/routes/index.js';
+import authRouter from '@/routes/user.js';
+import chatRouter from '@/routes/chat.js';
+import plantRouter from '@/routes/plant.js';
+import diaryRouter from '@/routes/diary.js';
+import commentRouter from '@/routes/comment.js';
+import db from '@/models/index.js';
 import YAML from 'yamljs';
 
 dotenv.config();
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
   console.error('[UncaughtException]', err);
 });
-
 
 const app = express();
 const swaggerDocument = YAML.load('./src/docs/leafy.yaml');
@@ -44,8 +44,6 @@ const debug = debugModule('ohgnoy-backend:server');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-
 
 // CORS 설정
 app.use(cors());
@@ -67,8 +65,7 @@ app.use('/user', authRouter);
 app.use('/chat', chatRouter);
 app.use('/plant', plantRouter);
 app.use('/diary', diaryRouter);
-app.use('/comment',commentRouter);
-
+app.use('/comment', commentRouter);
 
 //swagger 모듈 호출하기
 app.use('/api-docs-old', swaggerUi.serve, swaggerUi.setup(specs));
@@ -81,11 +78,36 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // 에러 핸들러
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  // 에러 로깅
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
+
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
+  // 라우터 관련 에러인 경우 더 자세한 정보 제공
+  if (
+    err.message.includes('Route') &&
+    err.message.includes('requires a callback function')
+  ) {
+    console.error('Router Error:', {
+      path: req.path,
+      method: req.method,
+      error: err.message,
+    });
+  }
+
   res.status(err.status || 500);
-  res.json('error');
+  res.json({
+    code: err.status || 500,
+    msg: err.message,
+    path: req.path,
+    method: req.method,
+  });
 });
 
 /**

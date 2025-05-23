@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import PlantSpeechService from "../services/SpeechService.js";
-import { ApiResult } from "../interface/api.js";
+import type { ApiResult } from "../interface/api.js";
 
 class PlantSpeechController {
   /**

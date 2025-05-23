@@ -1,81 +1,81 @@
-import { Sequelize, DataTypes, Model, Optional } from "sequelize";
+import { Sequelize, DataTypes, Model } from 'sequelize';
 
 // 인터페이스 정의 - 이 모델에서 사용할 속성 정의
 interface UserAttributes {
-  user_id: BigInt;          // 사용자 ID (PK)
-  password: string;         // 비밀번호
-  user_name: string;        // 사용자 이름
-  user_gender: string;      // 사용자 성별
-  user_email: string;       // 이메일 (아이디 역할, UNIQUE)
-  phone_number: string;     // 전화번호
-  state:string;             // 상태
-  birth_date: Date;         // 생년월일
-  created_at: Date;         // 생성 날짜
+  user_id: BigInt; // 사용자 ID (PK)
+  password: string; // 비밀번호
+  user_name: string; // 사용자 이름
+  user_gender: string; // 사용자 성별
+  user_email: string; // 이메일 (아이디 역할, UNIQUE)
+  phone_number: string; // 전화번호
+  state: string; // 상태
+  birth_date: Date; // 생년월일
+  created_at: Date; // 생성 날짜
 }
 
 // 모델 반환 타입 정의
 export default function (sequelize: Sequelize) {
   return sequelize.define<Model<UserAttributes>>(
-    "user",
+    'user',
     {
       user_id: {
-        type: DataTypes.BIGINT,      // 사용자 ID를 INT로 변경
-        primaryKey: true,             // 기본 키 설정
-        autoIncrement: true,          // 자동 증가
+        type: DataTypes.BIGINT, // 사용자 ID를 INT로 변경
+        primaryKey: true, // 기본 키 설정
+        autoIncrement: true, // 자동 증가
         allowNull: false,
-        comment: "사용자 ID (Primary Key)",
+        comment: '사용자 ID (Primary Key)',
       },
       user_email: {
-        type: DataTypes.STRING(254),  // 이메일 필드
+        type: DataTypes.STRING(254), // 이메일 필드
         allowNull: false,
-        unique: true,
+        // unique: true,
         validate: {
-          isEmail: true,              // 유효한 이메일 형식인지 확인
+          isEmail: true, // 유효한 이메일 형식인지 확인
         },
-        comment: "사용자 이메일 (아이디 역할)",
+        comment: '사용자 이메일 (아이디 역할)',
       },
       password: {
         type: DataTypes.STRING(256),
         allowNull: false,
-        comment: "비밀번호",
+        comment: '비밀번호',
       },
       user_name: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        comment: "사용자 이름",
+        comment: '사용자 이름',
       },
       user_gender: {
         type: DataTypes.STRING(5),
         allowNull: false,
-        comment: "사용자 성별",
+        comment: '사용자 성별',
       },
       state: {
         type: DataTypes.STRING(50),
-        allowNull:true,
-        comment:"사용자 상태 값"
+        allowNull: true,
+        comment: '사용자 상태 값',
       },
       phone_number: {
         type: DataTypes.STRING(20),
         allowNull: true,
-        comment: "전화번호",
+        comment: '전화번호',
       },
       birth_date: {
         type: DataTypes.DATE,
         allowNull: true,
-        comment: "생년월일",
+        comment: '생년월일',
       },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
-        comment: "가입 날짜",
+        comment: '가입 날짜',
       },
     },
     {
       // 테이블 설정
-      tableName: "user",                // 실제 DB에서 사용될 테이블 이름
-      timestamps: false,                // createdAt, updatedAt 자동 생성 비활성화
-      comment: "사용자 계정정보",        // 테이블에 대한 설명
-    }
+      tableName: 'user', // 실제 DB에서 사용될 테이블 이름
+      timestamps: false, // createdAt, updatedAt 자동 생성 비활성화
+      comment: '사용자 계정정보', // 테이블에 대한 설명
+    },
   );
 }

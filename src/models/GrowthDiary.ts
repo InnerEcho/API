@@ -1,24 +1,24 @@
-import { Sequelize, DataTypes, Model } from "sequelize";
+import { Sequelize, DataTypes, Model, type Optional } from "sequelize";
 
-// 인터페이스 정의 - 성장일지 속성 정의
 interface GrowthDiaryAttributes {
-  id: BigInt;               // 일지 ID (PK)
-  user_id: BigInt;          // 사용자 ID (FK)
-  title: string;            // 일지 제목
-  content: string;          // 일지 내용
-  image_url?: string;       // 첨부 이미지 URL (옵션)
-  created_at: Date;         // 생성일시
-  updated_at: Date;         // 수정일시
-  is_deleted: boolean;      // 삭제 여부
-  edited: boolean;          // 수정 여부
+  diary_id: number;
+  user_id: number;
+  title: string;
+  content: string;
+  image_url?: string;
+  created_at: Date;
+  updated_at: Date;
+  is_deleted: boolean;
+  edited: boolean;
 }
 
-// 모델 반환 함수
+interface GrowthDiaryCreationAttributes extends Optional<GrowthDiaryAttributes, 'diary_id' | 'created_at' | 'updated_at'> {}
+
 export default function (sequelize: Sequelize) {
-  return sequelize.define<Model<GrowthDiaryAttributes>>(
+  return sequelize.define<Model<GrowthDiaryAttributes, GrowthDiaryCreationAttributes>>(
     "growth_diary",
     {
-      id: {
+      diary_id: {
         type: DataTypes.BIGINT,
         primaryKey: true,
         autoIncrement: true,
@@ -71,8 +71,8 @@ export default function (sequelize: Sequelize) {
       },
     },
     {
-      tableName: "growth_diary",        // 테이블명
-      timestamps: false,                // createdAt, updatedAt 자동 관리 비활성화
+      tableName: "growth_diary",
+      timestamps: false,
       comment: "챗봇이 작성한 성장 일지 정보",
     }
   );

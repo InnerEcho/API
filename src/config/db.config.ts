@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { DbConfig } from "../interface/db.js";
+import type { DbConfig } from "../interface/db.js";
 
 const development: DbConfig = {
   username: `${process.env.DB_USER}`,

@@ -1,9 +1,9 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import db from "../models/index.js";
-import { ApiResult } from "../interface/api.js";
+import type { ApiResult } from "../interface/api.js";
 
 class AuthController {
   /**

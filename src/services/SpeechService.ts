@@ -1,8 +1,8 @@
 import { SpeechClient } from "@google-cloud/speech";
 import { ZyphraClient } from "@zyphra/client";
 import fs from "fs";
-import { IMessage, UserType } from "../interface/chatbot.js";
-import { ApiResult } from "../interface/api.js";
+import type { IMessage } from '../interface/chatbot.js';
+import { UserType } from '../interface/chatbot.js';
 
 class PlantSpeechService {
   /**
