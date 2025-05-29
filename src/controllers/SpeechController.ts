@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express';
-import { PlantSpeechService } from '../services/SpeechService.js';
-import type { ApiResult } from '../interface/api.js';
+import type { ApiResult } from '@/interface/api.js';
+import { SpeechService } from '@/services/SpeechService.js';
 
-class PlantSpeechController {
-  private plantSpeechService: PlantSpeechService;
+export class PlantSpeechController {
+  private speechService: SpeechService;
 
-  constructor(plantSpeechService: PlantSpeechService) {
-    this.plantSpeechService = plantSpeechService;
+  constructor(speechService: SpeechService) {
+    this.speechService = speechService;
   }
 
   /**
@@ -16,30 +16,26 @@ class PlantSpeechController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, plant_id } = req.body as {
-        user_id: number;
-        plant_id: number;
-      };
-
-      if (!req.file || !req.file.path) {
+      if (!req.file) {
         result.msg = 'Not Exist Audio File';
         res.status(400).json(result);
         return;
       }
 
-      const transcriptionMessage = await this.plantSpeechService.speechToText(
+      const { user_id, plant_id } = req.body;
+      const response = await this.speechService.speechToText(
         req.file.path,
         user_id,
         plant_id,
       );
       result.code = 200;
-      result.data = transcriptionMessage;
+      result.data = response;
       result.msg = 'Ok';
       res.status(200).json(result);
     } catch (err) {
       console.error(err);
       result.code = 500;
-      result.msg = 'ServerError';
+      result.msg = 'Server Error';
       res.status(500).json(result);
     }
   }
@@ -48,24 +44,21 @@ class PlantSpeechController {
    * TTS 처리
    */
   public async textToSpeech(req: Request, res: Response): Promise<void> {
+    const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
+
     try {
-      const { message: userMessage } = req.body as { message: string };
-      const audioBuffer = await this.plantSpeechService.textToSpeech(
-        userMessage,
-      );
+      const { text } = req.body;
+      const response = await this.speechService.textToSpeech(text);
 
-      res.set({
-        'Content-Type': 'audio/ogg',
-        'Content-Disposition': 'inline; filename="speech.ogg"',
-        'Content-Length': audioBuffer.length,
-      });
-
-      res.send(audioBuffer);
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
     } catch (err) {
       console.error(err);
-      res.status(500).send('Server Error');
+      result.code = 500;
+      result.msg = 'Server Error';
+      res.status(500).json(result);
     }
   }
 }
-
-export default new PlantSpeechController(new PlantSpeechService());

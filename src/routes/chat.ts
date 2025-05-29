@@ -1,10 +1,12 @@
 import express from 'express';
 import { PlantChatBotController } from '@/controllers/ChatBotController.js';
 import multer from 'multer';
-import PlantSpeechController from '@/controllers/SpeechController.js';
-import ChatHistoryController from '@/controllers/ChatHistoryController.js';
+import { PlantSpeechController } from '@/controllers/SpeechController.js';
+import { ChatHistoryController } from '@/controllers/ChatHistoryController.js';
 import { ChatService } from '@/services/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
+import { ChatHistoryService } from '@/services/ChatHistoryService.js';
+import { SpeechService } from '@/services/SpeechService.js';
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
@@ -13,6 +15,10 @@ const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' �
 const chatBot = new ChatBot();
 const chatService = new ChatService(chatBot);
 const plantChatBotController = new PlantChatBotController(chatService);
+const chatHistoryService = new ChatHistoryService();
+const chatHistoryController = new ChatHistoryController(chatHistoryService);
+const speechService = new SpeechService();
+const plantSpeechController = new PlantSpeechController(speechService);
 
 /**
  * @swagger
@@ -104,7 +110,10 @@ const plantChatBotController = new PlantChatBotController(chatService);
 router.post('/plant', plantChatBotController.chat.bind(plantChatBotController));
 
 // PlantChatBotController.getChatHistory 호출
-router.post('/history', ChatHistoryController.getChatHistory);
+router.post(
+  '/history',
+  chatHistoryController.getChatHistory.bind(chatHistoryController),
+);
 
 /**
  * @swagger
@@ -170,8 +179,15 @@ router.post('/history', ChatHistoryController.getChatHistory);
  *                   type: string
  *                   example: "Server Error"
  */
-router.post('/stt', upload.single('file'), PlantSpeechController.speechToText);
+router.post(
+  '/stt',
+  upload.single('file'),
+  plantSpeechController.speechToText.bind(plantSpeechController),
+);
 
-router.post('/tts', PlantSpeechController.textToSpeech);
+router.post(
+  '/tts',
+  plantSpeechController.textToSpeech.bind(plantSpeechController),
+);
 
 export default router;

@@ -1,7 +1,8 @@
 import type { Request, Response } from 'express';
-import { ChatHistoryService } from '../services/ChatHistoryService.js';
+import type { ApiResult } from '@/interface/api.js';
+import { ChatHistoryService } from '@/services/ChatHistoryService.js';
 
-class ChatHistoryController {
+export class ChatHistoryController {
   private chatHistoryService: ChatHistoryService;
 
   constructor(chatHistoryService: ChatHistoryService) {
@@ -12,23 +13,24 @@ class ChatHistoryController {
    * 🌱 채팅 기록 조회
    */
   public async getChatHistory(req: Request, res: Response): Promise<void> {
+    const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
+
     try {
       const { user_id, plant_id } = req.body;
-
-      const histories = await this.chatHistoryService.getChatHistory(
+      const response = await this.chatHistoryService.getChatHistory(
         user_id,
         plant_id,
       );
 
-      res.status(200).json({ code: 200, data: histories, msg: 'Ok' });
-    } catch (error) {
-      console.error('Error fetching chat history:', error);
-
-      res
-        .status(500)
-        .json({ success: false, message: 'Failed to fetch chat history' });
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
+    } catch (err) {
+      console.error(err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
     }
   }
 }
-
-export default new ChatHistoryController(new ChatHistoryService());

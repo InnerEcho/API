@@ -11,19 +11,15 @@ const growthDiaryCommentController = new GrowthDiaryCommentController(
 );
 
 router.post(
-  '/list',
-  growthDiaryCommentController.getComments.bind(growthDiaryCommentController),
-);
-router.post(
   '/create',
   growthDiaryCommentController.create.bind(growthDiaryCommentController),
 );
-router.post(
-  '/update',
-  growthDiaryCommentController.update.bind(growthDiaryCommentController),
+router.get(
+  '/:diary_id',
+  growthDiaryCommentController.getComments.bind(growthDiaryCommentController),
 );
-router.post(
-  '/delete',
+router.delete(
+  '/:comment_id',
   growthDiaryCommentController.delete.bind(growthDiaryCommentController),
 );
 

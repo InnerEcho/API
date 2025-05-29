@@ -3,7 +3,7 @@ import type { ApiResult } from '@/interface/api.js';
 import { GrowthDiaryService } from '@/services/GrowthDiaryService.js';
 import { GrowthDiaryBot } from '@/services/bots/GrowthDiaryBot.js';
 
-class GrowthDiaryController {
+export class GrowthDiaryController {
   private growthDiaryService: GrowthDiaryService;
 
   constructor(growthDiaryService: GrowthDiaryService) {
@@ -59,7 +59,3 @@ class GrowthDiaryController {
     }
   }
 }
-
-export default new GrowthDiaryController(
-  new GrowthDiaryService(new GrowthDiaryBot()),
-);

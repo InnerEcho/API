@@ -4,7 +4,7 @@ import fs from 'fs';
 import type { IMessage } from '../interface/chatbot.js';
 import { UserType } from '../interface/chatbot.js';
 
-export class PlantSpeechService {
+export class SpeechService {
   /**
    * Google Cloud STT 처리
    */

@@ -1,8 +1,13 @@
 import express from 'express';
 import { verifyToken } from '@/middlewares/auth.js';
-import UserController from '@/controllers/UserController.js';
+import { UserController } from '@/controllers/UserController.js';
+import { UserService } from '@/services/UserService.js';
 
 const router = express.Router();
+
+// 의존성 주입
+const userService = new UserService();
+const userController = new UserController(userService);
 
 /**
  * @swagger
@@ -31,7 +36,7 @@ const router = express.Router();
  *       500:
  *         description: 서버 오류
  */
-router.post("/register", UserController.registUser);
+router.post('/register', userController.signUp.bind(userController));
 
 /**
  * @swagger
@@ -58,7 +63,7 @@ router.post("/register", UserController.registUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/login", UserController.loginUser);
+router.post('/login', userController.signIn.bind(userController));
 
 /**
  * @swagger
@@ -81,15 +86,22 @@ router.post("/login", UserController.loginUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/email", UserController.sendEmailVerification);
+router.post(
+  '/email',
+  userController.sendEmailVerification.bind(userController),
+);
 
 // 토큰 검증
-router.get("/token", verifyToken, (req, res) => {
+router.get('/token', verifyToken, (req, res) => {
   res.json({
     code: 200,
     data: req.body.user,
-    msg: "Ok"
+    msg: 'Ok',
   });
 });
+
+router.get('/:user_id', userController.getUserInfo.bind(userController));
+router.put('/:user_id', userController.updateUserInfo.bind(userController));
+router.delete('/:user_id', userController.deleteUser.bind(userController));
 
 export default router;
