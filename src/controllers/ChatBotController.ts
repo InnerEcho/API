@@ -3,11 +3,11 @@ import type { ApiResult } from '@/interface/api.js';
 import { ChatService } from '@/services/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
 
-class PlantChatBotController {
+export class PlantChatBotController {
   private chatService: ChatService;
 
-  constructor(chatServcie: ChatService) {
-    this.chatService = chatServcie;
+  constructor(chatService: ChatService) {
+    this.chatService = chatService;
   }
   /**
    * 🌱 식물 챗봇과의 대화 처리
@@ -35,5 +35,3 @@ class PlantChatBotController {
     }
   }
 }
-
-export default new PlantChatBotController(new ChatService(new ChatBot()));

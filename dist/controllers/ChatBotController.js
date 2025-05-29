@@ -1,8 +1,6 @@
-import { ChatService } from "../services/ChatService.js";
-import { ChatBot } from "../services/bots/ChatBot.js";
-class PlantChatBotController {
-  constructor(chatServcie) {
-    this.chatService = chatServcie;
+export class PlantChatBotController {
+  constructor(chatService) {
+    this.chatService = chatService;
   }
   /**
    * 🌱 식물 챗봇과의 대화 처리
@@ -32,4 +30,3 @@ class PlantChatBotController {
     }
   }
 }
-export default new PlantChatBotController(new ChatService(new ChatBot()));
