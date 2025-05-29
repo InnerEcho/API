@@ -1,6 +1,4 @@
-import { GrowthDiaryService } from "../services/GrowthDiaryService.js";
-import { GrowthDiaryBot } from "../services/bots/GrowthDiaryBot.js";
-class GrowthDiaryController {
+export class GrowthDiaryController {
   constructor(growthDiaryService) {
     this.growthDiaryService = growthDiaryService;
   }
@@ -57,4 +55,3 @@ class GrowthDiaryController {
     }
   }
 }
-export default new GrowthDiaryController(new GrowthDiaryService(new GrowthDiaryBot()));

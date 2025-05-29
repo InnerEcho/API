@@ -1,135 +1,62 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
-import db from "../models/index.js";
-class UserController {
+import nodemailer from 'nodemailer';
+import { UserService } from "../services/UserService.js";
+export class UserController {
+  constructor(userService) {
+    this.userService = userService;
+  }
+
   /**
    * 사용자 회원가입
    */
-  async registUser(req, res) {
-    const apiResult = {
+  async signUp(req, res) {
+    const result = {
       code: 400,
       data: null,
-      msg: ""
+      msg: 'Failed'
     };
     try {
       const {
         user_name,
-        userEmail,
-        password,
-        user_gender
+        email,
+        password
       } = req.body;
-      const existEmail = await db.User.findOne({
-        where: {
-          user_email: userEmail
-        }
-      });
-      const existNickName = await db.User.findOne({
-        where: {
-          user_name
-        }
-      });
-      if (existEmail) {
-        apiResult.msg = "ExistEmail";
-        res.status(400).json(apiResult);
-        return;
-      } else if (existNickName) {
-        apiResult.msg = "ExistNickName";
-        res.status(400).json(apiResult);
-        return;
-      }
-      const entryPassword = await bcrypt.hash(password, 12);
-      const entryUser = {
-        user_name,
-        user_email: userEmail,
-        password: entryPassword,
-        user_gender
-      };
-      const registedUser = await db.User.create(entryUser);
-      const entryPlant = {
-        user_id: registedUser.user_id,
-        species_id: 1,
-        nickname: "금쪽이",
-        plant_level: 1,
-        plant_experience: 0,
-        plant_hogamdo: 0,
-        last_measured_date: new Date()
-      };
-      const registedPlant = await db.Plant.create(entryPlant);
-      registedUser.password = ""; // 비밀번호 숨김 처리
-      apiResult.code = 200;
-      apiResult.data = registedUser;
-      apiResult.msg = "Success";
-      res.status(200).json(apiResult);
+      const response = await this.userService.signUp(user_name, email, password);
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
     } catch (err) {
-      apiResult.code = 500;
-      apiResult.msg = "ServerError";
-      console.log(err);
-      res.status(500).json(apiResult);
+      console.error(err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
     }
   }
 
   /**
    * 사용자 로그인 처리
    */
-  async loginUser(req, res) {
-    const apiResult = {
+  async signIn(req, res) {
+    const result = {
       code: 400,
       data: null,
-      msg: ""
+      msg: 'Failed'
     };
     try {
       const {
-        userEmail,
+        email,
         password
       } = req.body;
-      const dbUser = await db.User.findOne({
-        where: {
-          user_email: userEmail
-        }
-      });
-      if (!dbUser) {
-        apiResult.msg = "NotExistEmail";
-        apiResult.code = 401;
-        res.json(apiResult);
-        return;
-      }
-      const comparePassword = await bcrypt.compare(password, dbUser.password);
-      if (!comparePassword) {
-        apiResult.msg = "IncorrectPassword";
-        apiResult.code = 402;
-        res.json(apiResult);
-        return;
-      }
-      const dbPlant = await db.sequelize.query(`
-        SELECT p.plant_id, p.nickname
-        FROM user u, plant p
-        WHERE u.user_id = p.user_id AND u.user_id = ${dbUser.user_id} AND p.plant_id = 1;
-      `, {
-        type: db.Sequelize.QueryTypes.SELECT
-      });
-      const tokenData = {
-        user_id: dbUser.user_id,
-        user_email: dbUser.user_email,
-        user_name: dbUser.user_name,
-        state: dbUser.state,
-        plant_id: dbPlant[0]?.plant_id || null,
-        nickname: dbPlant[0]?.nickname || null
-      };
-      const token = jwt.sign(tokenData, process.env.JWT_AUTH_KEY, {
-        expiresIn: "24h",
-        issuer: "InnerEcho"
-      });
-      console.log(token);
-      apiResult.code = 200;
-      apiResult.data = token;
-      apiResult.msg = "Ok";
-      res.status(200).json(apiResult);
+      const response = await this.userService.signIn(email, password);
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
     } catch (err) {
-      apiResult.code = 500;
-      apiResult.msg = "ServerError";
-      console.log(err);
-      res.status(500).json(apiResult);
+      console.error(err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
     }
   }
 
@@ -140,13 +67,13 @@ class UserController {
     const apiResult = {
       code: 400,
       data: null,
-      msg: ""
+      msg: ''
     };
     const smtpTransport = nodemailer.createTransport({
       pool: true,
       maxConnections: 1,
-      service: "naver",
-      host: "smtp.naver.com",
+      service: 'naver',
+      host: 'smtp.naver.com',
       port: 587,
       secure: false,
       requireTLS: true,
@@ -163,22 +90,91 @@ class UserController {
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
-      subject: "Ohgnoy 메일 인증",
+      subject: 'Ohgnoy 메일 인증',
       html: `인증번호를 입력해주세요: ${randNum}`
     };
     try {
       await smtpTransport.sendMail(mailOptions);
       apiResult.code = 200;
       apiResult.data = randNum;
-      apiResult.msg = "SendMail";
+      apiResult.msg = 'SendMail';
     } catch (err) {
       apiResult.code = 500;
-      apiResult.msg = "ServerError";
+      apiResult.msg = 'ServerError';
       console.log(err);
     }
     res.json(apiResult);
   }
+  async getUserInfo(req, res) {
+    const result = {
+      code: 400,
+      data: null,
+      msg: 'Failed'
+    };
+    try {
+      const {
+        user_id
+      } = req.params;
+      const response = await this.userService.getUserInfo(parseInt(user_id));
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
+    } catch (err) {
+      console.error(err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
+    }
+  }
+  async updateUserInfo(req, res) {
+    const result = {
+      code: 400,
+      data: null,
+      msg: 'Failed'
+    };
+    try {
+      const {
+        user_id
+      } = req.params;
+      const {
+        user_name,
+        email
+      } = req.body;
+      const response = await this.userService.updateUserInfo(parseInt(user_id), user_name, email);
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
+    } catch (err) {
+      console.error(err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
+    }
+  }
+  async deleteUser(req, res) {
+    const result = {
+      code: 400,
+      data: null,
+      msg: 'Failed'
+    };
+    try {
+      const {
+        user_id
+      } = req.params;
+      await this.userService.deleteUser(parseInt(user_id));
+      result.code = 200;
+      result.msg = 'Ok';
+      res.status(200).json(result);
+    } catch (err) {
+      console.error(err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
+    }
+  }
 }
 
 // AuthController 인스턴스 생성
-export default new UserController();
+export default new UserController(new UserService());

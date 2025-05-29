@@ -2,7 +2,7 @@ import { SpeechClient } from '@google-cloud/speech';
 import { ZyphraClient } from '@zyphra/client';
 import fs from 'fs';
 import { UserType } from "../interface/chatbot.js";
-export class PlantSpeechService {
+export class SpeechService {
   /**
    * Google Cloud STT 처리
    */

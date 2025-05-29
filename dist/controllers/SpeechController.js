@@ -1,7 +1,6 @@
-import { PlantSpeechService } from "../services/SpeechService.js";
-class PlantSpeechController {
-  constructor(plantSpeechService) {
-    this.plantSpeechService = plantSpeechService;
+export class PlantSpeechController {
+  constructor(speechService) {
+    this.speechService = speechService;
   }
 
   /**
@@ -14,24 +13,24 @@ class PlantSpeechController {
       msg: 'Failed'
     };
     try {
-      const {
-        user_id,
-        plant_id
-      } = req.body;
-      if (!req.file || !req.file.path) {
+      if (!req.file) {
         result.msg = 'Not Exist Audio File';
         res.status(400).json(result);
         return;
       }
-      const transcriptionMessage = await this.plantSpeechService.speechToText(req.file.path, user_id, plant_id);
+      const {
+        user_id,
+        plant_id
+      } = req.body;
+      const response = await this.speechService.speechToText(req.file.path, user_id, plant_id);
       result.code = 200;
-      result.data = transcriptionMessage;
+      result.data = response;
       result.msg = 'Ok';
       res.status(200).json(result);
     } catch (err) {
       console.error(err);
       result.code = 500;
-      result.msg = 'ServerError';
+      result.msg = 'Server Error';
       res.status(500).json(result);
     }
   }
@@ -40,21 +39,25 @@ class PlantSpeechController {
    * TTS 처리
    */
   async textToSpeech(req, res) {
+    const result = {
+      code: 400,
+      data: null,
+      msg: 'Failed'
+    };
     try {
       const {
-        message: userMessage
+        text
       } = req.body;
-      const audioBuffer = await this.plantSpeechService.textToSpeech(userMessage);
-      res.set({
-        'Content-Type': 'audio/ogg',
-        'Content-Disposition': 'inline; filename="speech.ogg"',
-        'Content-Length': audioBuffer.length
-      });
-      res.send(audioBuffer);
+      const response = await this.speechService.textToSpeech(text);
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
     } catch (err) {
       console.error(err);
-      res.status(500).send('Server Error');
+      result.code = 500;
+      result.msg = 'Server Error';
+      res.status(500).json(result);
     }
   }
 }
-export default new PlantSpeechController(new PlantSpeechService());

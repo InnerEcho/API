@@ -1,6 +1,11 @@
-import PlantStateController from "../controllers/PlantStateController.js";
+import { PlantStateController } from "../controllers/PlantStateController.js";
+import { PlantStateService } from "../services/PlantStateService.js";
 import express from 'express';
 const router = express.Router();
+
+// 의존성 주입
+const plantStateService = new PlantStateService();
+const plantStateController = new PlantStateController(plantStateService);
 
 /**
  * @swagger
@@ -94,5 +99,5 @@ const router = express.Router();
  *                   example: "ServerError"
  */
 
-router.post("/state", PlantStateController.getPlantState);
+router.post('/state', plantStateController.getPlantState.bind(plantStateController));
 export default router;
