@@ -5,8 +5,9 @@ router.get('/', function (req, res) {
     let apiResult = {
         code: 200,
         data: null,
-        msg: "ok"
+        msg: 'ok',
     };
     res.json(apiResult);
 });
 export default router;
+//# sourceMappingURL=index.js.map

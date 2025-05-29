@@ -1,5 +1,8 @@
-import { Request, Response } from "express";
+import type { Request, Response } from 'express';
+import { PlantSpeechService } from '../services/SpeechService.js';
 declare class PlantSpeechController {
+    private plantSpeechService;
+    constructor(plantSpeechService: PlantSpeechService);
     /**
      * STT 처리
      */

@@ -47,3 +47,4 @@ async function insertSpeciesData() {
     }
 }
 insertSpeciesData();
+//# sourceMappingURL=insertSpeciesData.js.map

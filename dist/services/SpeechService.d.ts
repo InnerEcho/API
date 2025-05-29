@@ -1,5 +1,5 @@
-import { IMessage } from "../interface/chatbot.js";
-declare class PlantSpeechService {
+import type { IMessage } from '../interface/chatbot.js';
+export declare class PlantSpeechService {
     /**
      * Google Cloud STT 처리
      */
@@ -9,5 +9,3 @@ declare class PlantSpeechService {
      */
     textToSpeech(userMessage: string): Promise<Buffer>;
 }
-declare const _default: PlantSpeechService;
-export default _default;

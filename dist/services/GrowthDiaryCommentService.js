@@ -14,6 +14,7 @@ export class GrowthDiaryCommentService {
                 },
                 order: [['created_at', 'ASC']], // 작성순으로 정렬
             });
+            return comments;
         }
         catch (err) {
             console.error('Error fetching comments:', err);
@@ -26,12 +27,13 @@ export class GrowthDiaryCommentService {
         }
         const growthDiaryComment = db.GrowthDiaryComment;
         try {
-            const newComment = await growthDiaryComment.create({
+            const date = new Date();
+            const newComment = await db.GrowthDiaryComment.create({
                 content,
                 user_id,
                 diary_id,
-                created_at: new Date(),
-                updated_at: new Date(),
+                created_at: date,
+                updated_at: date,
                 is_deleted: false,
                 edited: false,
             });
@@ -42,4 +44,46 @@ export class GrowthDiaryCommentService {
             throw new Error('Failed to create comment');
         }
     }
+    async updateComment(content, user_id, diary_id, comment_id) {
+        if (!content || !user_id || !diary_id || !comment_id) {
+            throw new Error('Missing required fields: content, user_id, diary_id, comment_id');
+        }
+        try {
+            const date = new Date();
+            const updatedComment = await db.GrowthDiaryComment.update({ content: content, updated_at: date, edited: true }, {
+                where: {
+                    user_id,
+                    diary_id,
+                    comment_id,
+                },
+            });
+            return updatedComment;
+        }
+        catch (err) {
+            console.error('Error updating comment:', err);
+            throw new Error('Failed to update comment');
+        }
+    }
+    async deleteComment(user_id, diary_id, comment_id) {
+        if (!user_id || !diary_id || !comment_id) {
+            throw new Error('Missing required fields: content, user_id, diary_id, comment_id');
+        }
+        try {
+            const date = new Date();
+            const result = await db.GrowthDiaryComment.update({ is_deleted: true, updated_at: date }, {
+                where: {
+                    user_id,
+                    diary_id,
+                    comment_id,
+                    is_deleted: false, // 이미 삭제된 건 다시 삭제하지 않음
+                },
+            });
+            return result; // [affectedRowsCount]
+        }
+        catch (err) {
+            console.error('Error deleting comment:', err);
+            throw new Error('Failed to update comment');
+        }
+    }
 }
+//# sourceMappingURL=GrowthDiaryCommentService.js.map

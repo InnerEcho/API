@@ -1,4 +1,4 @@
-import { DataTypes } from "sequelize";
+import { Sequelize, DataTypes, Model } from "sequelize";
 // 모델 반환 함수
 export default function (sequelize) {
     return sequelize.define("growth_diary_comment", {
@@ -54,3 +54,4 @@ export default function (sequelize) {
         comment: "성장 일지에 대한 사용자 답글 정보",
     });
 }
+//# sourceMappingURL=GrowthDiaryComment.js.map

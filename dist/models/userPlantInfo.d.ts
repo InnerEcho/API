@@ -1,4 +1,5 @@
-import { Sequelize, Model, Optional } from "sequelize";
+import { Sequelize, Model } from 'sequelize';
+import type { Optional } from 'sequelize';
 interface PlantAttributes {
     plant_id: BigInt;
     user_id: BigInt;

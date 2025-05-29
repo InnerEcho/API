@@ -1,5 +1,6 @@
-import { UserType } from '../interface/chatbot.js';
-import db from '../models/index.js';
+import { UserType } from '@/interface/chatbot.js';
+import { ChatBot } from '@/services/bots/ChatBot.js';
+import db from '@/models/index.js';
 export class ChatService {
     constructor(chatBot) {
         this.chatBot = chatBot;
@@ -28,3 +29,4 @@ export class ChatService {
         return botMessage;
     }
 }
+//# sourceMappingURL=ChatService.js.map

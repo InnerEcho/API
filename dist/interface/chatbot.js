@@ -14,3 +14,4 @@ export var BotType;
     BotType["RAGDOC"] = "RAGDOC";
     BotType["RAGWEB"] = "RAGWEB";
 })(BotType || (BotType = {}));
+//# sourceMappingURL=chatbot.js.map

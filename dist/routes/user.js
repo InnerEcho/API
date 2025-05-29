@@ -1,6 +1,6 @@
 import express from 'express';
-import { verifyToken } from '../middlewares/auth.js';
-import AuthController from '../controllers/UserController.js';
+import { verifyToken } from '@/middlewares/auth.js';
+import UserController from '@/controllers/UserController.js';
 const router = express.Router();
 /**
  * @swagger
@@ -29,7 +29,7 @@ const router = express.Router();
  *       500:
  *         description: 서버 오류
  */
-router.post("/register", AuthController.registUser);
+router.post("/register", UserController.registUser);
 /**
  * @swagger
  * /auth/login:
@@ -55,7 +55,7 @@ router.post("/register", AuthController.registUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/login", AuthController.loginUser);
+router.post("/login", UserController.loginUser);
 /**
  * @swagger
  * /auth/email:
@@ -77,7 +77,7 @@ router.post("/login", AuthController.loginUser);
  *       500:
  *         description: 서버 오류
  */
-router.post("/email", AuthController.sendEmailVerification);
+router.post("/email", UserController.sendEmailVerification);
 // 토큰 검증
 router.get("/token", verifyToken, (req, res) => {
     res.json({
@@ -87,3 +87,4 @@ router.get("/token", verifyToken, (req, res) => {
     });
 });
 export default router;
+//# sourceMappingURL=user.js.map

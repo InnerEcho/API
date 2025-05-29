@@ -1,5 +1,8 @@
-import { Request, Response } from "express";
+import type { Request, Response } from 'express';
+import type { Sequelize } from 'sequelize';
 declare class PlantStateController {
+    private sequelize;
+    constructor(sequelize: Sequelize);
     /**
      * 🌱 식물 상태 조회
      */

@@ -1,8 +1,13 @@
-import { BaseChatBot } from './BaseChatBot.js';
-import ChatHistoryService from '../ChatHistoryService.js';
+import { BaseChatBot } from '@/services/bots/BaseChatBot.js';
+import { convertPlantState } from '@/utils/plant.js';
+import { ChatHistoryService } from '@/services/ChatHistoryService.js';
 export class GrowthDiaryBot extends BaseChatBot {
+    constructor() {
+        super();
+        this.chatHistoryService = new ChatHistoryService();
+    }
     async createPrompt(plantDbInfo, userId, plantId, userMessage) {
-        const todayHistory = ChatHistoryService.getTodayHistory(userId, plantId);
+        const todayHistory = await this.chatHistoryService.getTodayHistory(userId, plantId);
         return [
             [
                 'system',
@@ -25,3 +30,4 @@ export class GrowthDiaryBot extends BaseChatBot {
         ];
     }
 }
+//# sourceMappingURL=GrowthDiaryBot.js.map

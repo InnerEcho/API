@@ -1,4 +1,4 @@
-import { DataTypes, Model } from "sequelize";
+import { Sequelize, DataTypes, Model } from "sequelize";
 export default function (sequelize) {
     class ChatHistory extends Model {
         static associate(models) {
@@ -69,3 +69,4 @@ export default function (sequelize) {
     });
     return ChatHistory;
 }
+//# sourceMappingURL=chatHistory.js.map

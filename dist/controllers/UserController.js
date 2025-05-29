@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import db from "../models/index.js";
-class AuthController {
+import db from "@/models/index.js";
+class UserController {
     /**
      * 사용자 회원가입
      */
@@ -149,4 +149,5 @@ class AuthController {
     }
 }
 // AuthController 인스턴스 생성
-export default new AuthController();
+export default new UserController();
+//# sourceMappingURL=UserController.js.map

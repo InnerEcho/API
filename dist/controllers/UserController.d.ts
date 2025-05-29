@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-declare class AuthController {
+import type { Request, Response } from "express";
+declare class UserController {
     /**
      * 사용자 회원가입
      */
@@ -13,5 +13,5 @@ declare class AuthController {
      */
     sendEmailVerification(req: Request, res: Response): Promise<void>;
 }
-declare const _default: AuthController;
+declare const _default: UserController;
 export default _default;

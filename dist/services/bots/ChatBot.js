@@ -1,8 +1,13 @@
-import { BaseChatBot } from './BaseChatBot.js';
-import ChatHistoryService from '../ChatHistoryService.js';
+import { BaseChatBot } from '@/services/bots/BaseChatBot.js';
+import { convertPlantState } from '@/utils/plant.js';
+import { ChatHistoryService } from '@/services/ChatHistoryService.js';
 export class ChatBot extends BaseChatBot {
+    constructor() {
+        super();
+        this.chatHistoryService = new ChatHistoryService();
+    }
     async createPrompt(plantDbInfo, userId, plantId, userMessage) {
-        const chatLogs = await ChatHistoryService.getChatHistory(userId, plantId);
+        const chatLogs = await this.chatHistoryService.getChatHistory(userId, plantId);
         const formattedHistory = chatLogs
             .map(log => {
             const speaker = log.user_type === 'User' ? '[User]' : '[Bot]';
@@ -41,3 +46,4 @@ export class ChatBot extends BaseChatBot {
         ];
     }
 }
+//# sourceMappingURL=ChatBot.js.map

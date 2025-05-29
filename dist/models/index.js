@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize';
-import { dbConfig } from '../config/db.config.js';
+import { dbConfig } from '@/config/db.config.js';
 import userDb from './user.js'; // 모델 파일 import
 import userPlantInfoDb from './userPlantInfo.js';
 import optimalSpeciesInfoDb from './optimalSpeciesInfo.js';
@@ -25,18 +25,20 @@ config.password, // 비밀번호
         max: 5, // 최대 연결 수
         min: 0,
         acquire: 30000,
-        idle: 10000
+        idle: 10000,
     },
     retry: {
-        max: 3 // 연결 재시도 최대 횟수
-    }
+        max: 3, // 연결 재시도 최대 횟수
+    },
 });
 // 데이터베이스 연결 확인
-sequelize.authenticate()
+sequelize
+    .authenticate()
     .then(() => {
     console.log('Database connection established successfully.');
     //데이터베이스 동기화 (테이블 생성 및 동기화)
-    sequelize.sync()
+    sequelize
+        .sync()
         .then(() => {
         console.log('Database synchronized successfully.');
     })
@@ -59,8 +61,9 @@ db.Event = eventDb(sequelize);
 db.User_Event = userEventInfoDb(sequelize);
 db.ChatHistory = chatHistoryDb(sequelize);
 db.GrowthDiary = GrowthDiary(sequelize);
-db.GrwothDiaryComment = GrowthDiaryComment(sequelize);
+db.GrowthDiaryComment = GrowthDiaryComment(sequelize);
 // 모델 간의 관계 설정
 db.User.hasMany(db.Plant, { foreignKey: 'user_id' });
 db.Plant.belongsTo(db.User, { foreignKey: 'user_id' });
 export default db;
+//# sourceMappingURL=index.js.map

@@ -1,4 +1,4 @@
-import { Dialect, Sequelize } from "sequelize";
+import { type Dialect, Sequelize } from "sequelize";
 import SpeciesModel from "../models/optimalSpeciesInfo.js"; // 모델 경로 확인
 import fs from "fs";
 import path from "path";

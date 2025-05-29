@@ -46,3 +46,4 @@ export function convertPlantState(plantState) {
     }
     return `${tempStatus} ${humiStatus} ${soilStatus}`;
 }
+//# sourceMappingURL=plant.js.map

@@ -1,5 +1,4 @@
-import { DataTypes } from "sequelize";
-// 모델 반환 함수
+import { Sequelize, DataTypes, Model } from "sequelize";
 export default function (sequelize) {
     return sequelize.define("growth_diary", {
         diary_id: {
@@ -54,8 +53,9 @@ export default function (sequelize) {
             comment: "수정 여부",
         },
     }, {
-        tableName: "growth_diary", // 테이블명
-        timestamps: false, // createdAt, updatedAt 자동 관리 비활성화
+        tableName: "growth_diary",
+        timestamps: false,
         comment: "챗봇이 작성한 성장 일지 정보",
     });
 }
+//# sourceMappingURL=GrowthDiary.js.map

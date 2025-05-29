@@ -1,7 +1,7 @@
-import { Sequelize, Model } from "sequelize";
+import { Sequelize, Model, type Optional } from "sequelize";
 interface GrowthDiaryAttributes {
-    diary_id: BigInt;
-    user_id: BigInt;
+    diary_id: number;
+    user_id: number;
     title: string;
     content: string;
     image_url?: string;
@@ -10,5 +10,7 @@ interface GrowthDiaryAttributes {
     is_deleted: boolean;
     edited: boolean;
 }
-export default function (sequelize: Sequelize): import("sequelize").ModelCtor<Model<GrowthDiaryAttributes, GrowthDiaryAttributes>>;
+interface GrowthDiaryCreationAttributes extends Optional<GrowthDiaryAttributes, 'diary_id' | 'created_at' | 'updated_at'> {
+}
+export default function (sequelize: Sequelize): import("sequelize").ModelCtor<Model<GrowthDiaryAttributes, GrowthDiaryCreationAttributes>>;
 export {};

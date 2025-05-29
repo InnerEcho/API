@@ -1,4 +1,4 @@
-import { DataTypes } from "sequelize";
+import { Sequelize, DataTypes, Model } from "sequelize";
 // 모델 반환 타입 정의
 export default function (sequelize) {
     return sequelize.define("event", {
@@ -39,3 +39,4 @@ export default function (sequelize) {
         //   ],
     });
 }
+//# sourceMappingURL=eventInfo.js.map

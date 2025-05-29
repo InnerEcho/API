@@ -1,4 +1,4 @@
-import { Sequelize, Model, Optional } from "sequelize";
+import { Sequelize, Model, type Optional } from "sequelize";
 interface SpeciesAttributes {
     species_id: BigInt;
     species_name: string;

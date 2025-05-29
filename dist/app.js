@@ -10,18 +10,18 @@ import cors from 'cors';
 import http from 'http';
 import debugModule from 'debug';
 //Swagger 설정 가져오기
-import { swaggerUi, specs } from './config/swagger.config.js';
+import { swaggerUi, specs } from '@/config/swagger.config.js';
 // 라우터와 데이터베이스 모델 가져오기
-import indexRouter from './routes/index.js';
-import authRouter from './routes/user.js';
-import chatRouter from './routes/chat.js';
-import plantRouter from './routes/plant.js';
-import diaryRouter from './routes/diary.js';
-import commentRouter from './routes/comment.js';
-import db from './models/index.js';
+import indexRouter from '@/routes/index.js';
+import authRouter from '@/routes/user.js';
+import chatRouter from '@/routes/chat.js';
+import plantRouter from '@/routes/plant.js';
+import diaryRouter from '@/routes/diary.js';
+import commentRouter from '@/routes/comment.js';
+import db from '@/models/index.js';
 import YAML from 'yamljs';
 dotenv.config();
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
     console.error('[UncaughtException]', err);
 });
 const app = express();
@@ -61,10 +61,31 @@ app.use((req, res, next) => {
 });
 // 에러 핸들러
 app.use((err, req, res, next) => {
+    // 에러 로깅
+    console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        path: req.path,
+        method: req.method,
+    });
     res.locals.message = err.message;
     res.locals.error = req.app.get('env') === 'development' ? err : {};
+    // 라우터 관련 에러인 경우 더 자세한 정보 제공
+    if (err.message.includes('Route') &&
+        err.message.includes('requires a callback function')) {
+        console.error('Router Error:', {
+            path: req.path,
+            method: req.method,
+            error: err.message,
+        });
+    }
     res.status(err.status || 500);
-    res.json('error');
+    res.json({
+        code: err.status || 500,
+        msg: err.message,
+        path: req.path,
+        method: req.method,
+    });
 });
 /**
  * 서버 설정
@@ -109,3 +130,4 @@ function onListening() {
     debug('Listening on ' + bind);
 }
 export default app;
+//# sourceMappingURL=app.js.map

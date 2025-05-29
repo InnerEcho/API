@@ -34,3 +34,4 @@ export const dbConfig = {
     test,
     production
 };
+//# sourceMappingURL=db.config.js.map

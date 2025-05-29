@@ -1,4 +1,4 @@
-import { PlantDbInfo } from '../../interface/chatbot.js';
+import type { PlantDbInfo } from '../../interface/chatbot.js';
 /**
  * 🌱 BaseChatBot (템플릿 메서드 패턴의 추상 클래스)
  * - 대화 처리의 공통 흐름을 고정

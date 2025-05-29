@@ -1,4 +1,4 @@
-import { DataTypes } from "sequelize";
+import { Sequelize, DataTypes, Model } from "sequelize";
 export default function (sequelize) {
     // Species 모델 정의
     const Species = sequelize.define("species", {
@@ -63,3 +63,4 @@ export default function (sequelize) {
     });
     return Species;
 }
+//# sourceMappingURL=optimalSpeciesInfo.js.map

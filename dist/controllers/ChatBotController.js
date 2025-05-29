@@ -1,7 +1,9 @@
-import PlantChatHistoryService from '../services/ChatHistoryService.js';
-import { ChatService } from '../services/ChatService.js';
-import { ChatBot } from '../services/bots/ChatBot.js';
+import { ChatService } from '@/services/ChatService.js';
+import { ChatBot } from '@/services/bots/ChatBot.js';
 class PlantChatBotController {
+    constructor(chatServcie) {
+        this.chatService = chatServcie;
+    }
     /**
      * 🌱 식물 챗봇과의 대화 처리
      */
@@ -9,8 +11,7 @@ class PlantChatBotController {
         const result = { code: 400, data: null, msg: 'Failed' };
         try {
             const { message, user_id, plant_id } = req.body;
-            const chatBot = new ChatService(new ChatBot());
-            const response = await chatBot.create(user_id, plant_id, message);
+            const response = await this.chatService.create(user_id, plant_id, message);
             result.code = 200;
             result.data = response;
             result.msg = 'Ok';
@@ -23,21 +24,6 @@ class PlantChatBotController {
             res.status(500).json(result);
         }
     }
-    /**
-     * 🌱 채팅 기록 조회
-     */
-    async getChatHistory(req, res) {
-        try {
-            const { user_id, plant_id } = req.body;
-            const histories = await PlantChatHistoryService.getChatHistory(user_id, plant_id);
-            res.status(200).json({ code: 200, data: histories, msg: 'Ok' });
-        }
-        catch (error) {
-            console.error('Error fetching chat history:', error);
-            res
-                .status(500)
-                .json({ success: false, message: 'Failed to fetch chat history' });
-        }
-    }
 }
-export default new PlantChatBotController();
+export default new PlantChatBotController(new ChatService(new ChatBot()));
+//# sourceMappingURL=ChatBotController.js.map
