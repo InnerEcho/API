@@ -1,6 +1,7 @@
-import PlantStateController from '@/controllers/PlantStateController.js';
+import PlantStateController from "../controllers/PlantStateController.js";
 import express from 'express';
 const router = express.Router();
+
 /**
  * @swagger
  * /plant/state:
@@ -92,6 +93,6 @@ const router = express.Router();
  *                   type: string
  *                   example: "ServerError"
  */
+
 router.post("/state", PlantStateController.getPlantState);
 export default router;
-//# sourceMappingURL=plant.js.map

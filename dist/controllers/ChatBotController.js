@@ -1,29 +1,35 @@
-import { ChatService } from '@/services/ChatService.js';
-import { ChatBot } from '@/services/bots/ChatBot.js';
+import { ChatService } from "../services/ChatService.js";
+import { ChatBot } from "../services/bots/ChatBot.js";
 class PlantChatBotController {
-    constructor(chatServcie) {
-        this.chatService = chatServcie;
+  constructor(chatServcie) {
+    this.chatService = chatServcie;
+  }
+  /**
+   * 🌱 식물 챗봇과의 대화 처리
+   */
+  async chat(req, res) {
+    const result = {
+      code: 400,
+      data: null,
+      msg: 'Failed'
+    };
+    try {
+      const {
+        message,
+        user_id,
+        plant_id
+      } = req.body;
+      const response = await this.chatService.create(user_id, plant_id, message);
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
+    } catch (err) {
+      console.error(err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
     }
-    /**
-     * 🌱 식물 챗봇과의 대화 처리
-     */
-    async chat(req, res) {
-        const result = { code: 400, data: null, msg: 'Failed' };
-        try {
-            const { message, user_id, plant_id } = req.body;
-            const response = await this.chatService.create(user_id, plant_id, message);
-            result.code = 200;
-            result.data = response;
-            result.msg = 'Ok';
-            res.status(200).json(result);
-        }
-        catch (err) {
-            console.error(err);
-            result.code = 500;
-            result.msg = 'ServerError';
-            res.status(500).json(result);
-        }
-    }
+  }
 }
 export default new PlantChatBotController(new ChatService(new ChatBot()));
-//# sourceMappingURL=ChatBotController.js.map

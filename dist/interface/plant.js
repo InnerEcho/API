@@ -1,5 +1,7 @@
 ;
+
+// 센서 데이터 인터페이스
+
 ;
 ;
 export {};
-//# sourceMappingURL=plant.js.map

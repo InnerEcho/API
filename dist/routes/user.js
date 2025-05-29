@@ -1,7 +1,8 @@
 import express from 'express';
-import { verifyToken } from '@/middlewares/auth.js';
-import UserController from '@/controllers/UserController.js';
+import { verifyToken } from "../middlewares/auth.js";
+import UserController from "../controllers/UserController.js";
 const router = express.Router();
+
 /**
  * @swagger
  * /auth/regist:
@@ -30,6 +31,7 @@ const router = express.Router();
  *         description: 서버 오류
  */
 router.post("/register", UserController.registUser);
+
 /**
  * @swagger
  * /auth/login:
@@ -56,6 +58,7 @@ router.post("/register", UserController.registUser);
  *         description: 서버 오류
  */
 router.post("/login", UserController.loginUser);
+
 /**
  * @swagger
  * /auth/email:
@@ -78,13 +81,13 @@ router.post("/login", UserController.loginUser);
  *         description: 서버 오류
  */
 router.post("/email", UserController.sendEmailVerification);
+
 // 토큰 검증
 router.get("/token", verifyToken, (req, res) => {
-    res.json({
-        code: 200,
-        data: req.body.user,
-        msg: "Ok"
-    });
+  res.json({
+    code: 200,
+    data: req.body.user,
+    msg: "Ok"
+  });
 });
 export default router;
-//# sourceMappingURL=user.js.map

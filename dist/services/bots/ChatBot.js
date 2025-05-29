@@ -1,24 +1,19 @@
-import { BaseChatBot } from '@/services/bots/BaseChatBot.js';
-import { convertPlantState } from '@/utils/plant.js';
-import { ChatHistoryService } from '@/services/ChatHistoryService.js';
+import { BaseChatBot } from "./BaseChatBot.js";
+// 이 타입 정의 필요
+import { ChatHistoryService } from "../ChatHistoryService.js";
 export class ChatBot extends BaseChatBot {
-    constructor() {
-        super();
-        this.chatHistoryService = new ChatHistoryService();
-    }
-    async createPrompt(plantDbInfo, userId, plantId, userMessage) {
-        const chatLogs = await this.chatHistoryService.getChatHistory(userId, plantId);
-        const formattedHistory = chatLogs
-            .map(log => {
-            const speaker = log.user_type === 'User' ? '[User]' : '[Bot]';
-            return `${speaker} ${log.message}`;
-        })
-            .join('\n');
-        console.log(formattedHistory);
-        return [
-            [
-                'system',
-                `
+  constructor() {
+    super();
+    this.chatHistoryService = new ChatHistoryService();
+  }
+  async createPrompt(plantDbInfo, userId, plantId, userMessage) {
+    const chatLogs = await this.chatHistoryService.getChatHistory(userId, plantId);
+    const formattedHistory = chatLogs.map(log => {
+      const speaker = log.user_type === 'User' ? '[User]' : '[Bot]';
+      return `${speaker} ${log.message}`;
+    }).join('\n');
+    console.log(formattedHistory);
+    return [['system', `
             당신의 이름은 '${plantDbInfo.nickname}'이고 말하는 반려식물이에요.
             상대방은은 '${plantDbInfo.user_name}'이에요.
             
@@ -39,11 +34,6 @@ export class ChatBot extends BaseChatBot {
             ---
             ${formattedHistory}
             ---
-      `,
-            ],
-            ['placeholder', '{chat_history}'],
-            ['human', '{input}'],
-        ];
-    }
+      `], ['placeholder', '{chat_history}'], ['human', '{input}']];
+  }
 }
-//# sourceMappingURL=ChatBot.js.map

@@ -1,35 +1,30 @@
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 const options = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'InnerEcho Api',
-            description: 'InnerEcho Web App RESTful API Documentation',
-            contact: {
-                name: 'InnerEcho',
-                email: 'dyddyd134@chungbuk.ac.kr',
-                // url: "",
-            },
-            version: '1.0.0',
-        },
-        servers: [
-            {
-                url: 'http://localhost:3001/',
-                description: 'Local Development',
-            },
-            {
-                url: 'http://test.co.kr/',
-                description: 'Test Server',
-            },
-            {
-                url: 'http://real.co.kr/',
-                description: 'Real Server',
-            },
-        ],
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'InnerEcho Api',
+      description: 'InnerEcho Web App RESTful API Documentation',
+      contact: {
+        name: 'InnerEcho',
+        email: 'dyddyd134@chungbuk.ac.kr'
+        // url: "",
+      },
+      version: '1.0.0'
     },
-    apis: ['./src/routes/*.ts', './swagger/*'],
+    servers: [{
+      url: 'http://localhost:3001/',
+      description: 'Local Development'
+    }, {
+      url: 'http://test.co.kr/',
+      description: 'Test Server'
+    }, {
+      url: 'http://real.co.kr/',
+      description: 'Real Server'
+    }]
+  },
+  apis: ['./src/routes/*.ts', './swagger/*']
 };
 const specs = swaggerJsdoc(options);
 export { swaggerUi, specs };
-//# sourceMappingURL=swagger.config.js.map

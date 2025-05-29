@@ -50,7 +50,7 @@ export default function (sequelize: Sequelize): {
             user_id?: number | import("sequelize/lib/utils").Fn | import("sequelize/lib/utils").Col | import("sequelize/lib/utils").Literal | undefined;
             plant_id?: number | import("sequelize/lib/utils").Fn | import("sequelize/lib/utils").Col | import("sequelize/lib/utils").Literal | undefined;
             send_date?: Date | import("sequelize/lib/utils").Fn | import("sequelize/lib/utils").Col | import("sequelize/lib/utils").Literal | undefined;
-            user_type?: import("sequelize/lib/utils").Fn | import("sequelize/lib/utils").Col | import("sequelize/lib/utils").Literal | "User" | "Bot" | undefined;
+            user_type?: "User" | "Bot" | import("sequelize/lib/utils").Fn | import("sequelize/lib/utils").Col | import("sequelize/lib/utils").Literal | undefined;
         }, options?: import("sequelize").InstanceUpdateOptions<ChatHistoryAttributes> | undefined): Promise</*elided*/ any>;
         destroy(options?: import("sequelize").InstanceDestroyOptions): Promise<void>;
         restore(options?: import("sequelize").InstanceRestoreOptions): Promise<void>;
