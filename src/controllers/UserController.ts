@@ -46,8 +46,8 @@ export class UserController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { userEmail, password } = req.body;
-      const response = await this.userService.signIn(userEmail, password);
+      const { user_email, password } = req.body;
+      const response = await this.userService.signIn(user_email, password);
 
       result.code = 200;
       result.data = response;
@@ -92,11 +92,11 @@ export class UserController {
     });
 
     const randNum = Math.floor(Math.random() * (999999 - 111111 + 1)) + 111111;
-    const user_email = req.body.user_email;
+    const email = req.body.email;
 
     const mailOptions = {
       from: process.env.EMAIL,
-      to: user_email,
+      to: email,
       subject: 'Ohgnoy 메일 인증',
       html: `인증번호를 입력해주세요: ${randNum}`,
     };
@@ -139,11 +139,11 @@ export class UserController {
 
     try {
       const { user_id } = req.params;
-      const { user_name, user_email } = req.body;
+      const { user_name, email } = req.body;
       const response = await this.userService.updateUserInfo(
         parseInt(user_id),
         user_name,
-        user_email,
+        email,
       );
 
       result.code = 200;

@@ -5,10 +5,10 @@ import db from '@/models/index.js';
 export class UserService {
   public async signUp(
     userName: string,
-    email: string,
+    user_email: string,
     password: string,
   ): Promise<any> {
-    const existEmail = await db.User.findOne({ where: { user_email: email } });
+    const existEmail = await db.User.findOne({ where: { user_email: user_email } });
     const existNickName = await db.User.findOne({
       where: { user_name: userName },
     });
@@ -22,7 +22,7 @@ export class UserService {
     const entryPassword = await bcrypt.hash(password, 12);
     const entryUser = {
       user_name: userName,
-      user_email: email,
+      user_email: user_email,
       password: entryPassword,
     };
 
@@ -96,7 +96,7 @@ export class UserService {
   public async updateUserInfo(
     userId: number,
     userName: string,
-    email: string,
+    user_email: string,
   ): Promise<any> {
     const user = await db.User.findOne({ where: { user_id: userId } });
 
@@ -106,7 +106,7 @@ export class UserService {
 
     const updatedUser = await user.update({
       user_name: userName,
-      user_email: email,
+      user_email: user_email,
     });
 
     updatedUser.password = ''; // 비밀번호 숨김 처리

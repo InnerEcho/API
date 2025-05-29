@@ -2,10 +2,10 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from "../models/index.js";
 export class UserService {
-  async signUp(userName, email, password) {
+  async signUp(userName, user_email, password) {
     const existEmail = await db.User.findOne({
       where: {
-        user_email: email
+        user_email: user_email
       }
     });
     const existNickName = await db.User.findOne({
@@ -21,7 +21,7 @@ export class UserService {
     const entryPassword = await bcrypt.hash(password, 12);
     const entryUser = {
       user_name: userName,
-      user_email: email,
+      user_email: user_email,
       password: entryPassword
     };
     const registedUser = await db.User.create(entryUser);
@@ -38,10 +38,10 @@ export class UserService {
     registedUser.password = ''; // 비밀번호 숨김 처리
     return registedUser;
   }
-  async signIn(email, password) {
+  async signIn(userEmail, password) {
     const dbUser = await db.User.findOne({
       where: {
-        user_email: email
+        user_email: userEmail
       }
     });
     if (!dbUser) {
@@ -85,7 +85,7 @@ export class UserService {
     }
     return user;
   }
-  async updateUserInfo(userId, userName, email) {
+  async updateUserInfo(userId, userName, user_email) {
     const user = await db.User.findOne({
       where: {
         user_id: userId
@@ -96,7 +96,7 @@ export class UserService {
     }
     const updatedUser = await user.update({
       user_name: userName,
-      user_email: email
+      user_email: user_email
     });
     updatedUser.password = ''; // 비밀번호 숨김 처리
     return updatedUser;
