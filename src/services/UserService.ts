@@ -42,8 +42,8 @@ export class UserService {
     return registedUser;
   }
 
-  public async signIn(email: string, password: string): Promise<string> {
-    const dbUser = await db.User.findOne({ where: { user_email: email } });
+  public async signIn(userEmail: string, password: string): Promise<string> {
+    const dbUser = await db.User.findOne({ where: { user_email: userEmail } });
 
     if (!dbUser) {
       throw new Error('NotExistEmail');

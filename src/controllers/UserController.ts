@@ -46,8 +46,8 @@ export class UserController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_email, password } = req.body;
-      const response = await this.userService.signIn(user_email, password);
+      const { userEmail, password } = req.body;
+      const response = await this.userService.signIn(userEmail, password);
 
       result.code = 200;
       result.data = response;
