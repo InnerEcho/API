@@ -17,10 +17,10 @@ export class UserController {
     try {
       const {
         user_name,
-        email,
+        user_email,
         password
       } = req.body;
-      const response = await this.userService.signUp(user_name, email, password);
+      const response = await this.userService.signUp(user_name, user_email, password);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -44,10 +44,10 @@ export class UserController {
     };
     try {
       const {
-        email,
+        user_email,
         password
       } = req.body;
-      const response = await this.userService.signIn(email, password);
+      const response = await this.userService.signIn(user_email, password);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -86,10 +86,10 @@ export class UserController {
       }
     });
     const randNum = Math.floor(Math.random() * (999999 - 111111 + 1)) + 111111;
-    const email = req.body.email;
+    const user_email = req.body.user_email;
     const mailOptions = {
       from: process.env.EMAIL,
-      to: email,
+      to: user_email,
       subject: 'Ohgnoy 메일 인증',
       html: `인증번호를 입력해주세요: ${randNum}`
     };
@@ -139,9 +139,9 @@ export class UserController {
       } = req.params;
       const {
         user_name,
-        email
+        user_email
       } = req.body;
-      const response = await this.userService.updateUserInfo(parseInt(user_id), user_name, email);
+      const response = await this.userService.updateUserInfo(parseInt(user_id), user_name, user_email);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
