@@ -62,8 +62,10 @@ export class GrowthDiaryCommentService {
     diary_id: number,
     comment_id: number,
   ): Promise<any> {
-    if (!content || !user_id || !diary_id) {
-      throw new Error('Missing required fields: content, user_id, diary_id');
+    if (!content || !user_id || !diary_id || !comment_id) {
+      throw new Error(
+        'Missing required fields: content, user_id, diary_id, comment_id',
+      );
     }
 
     try {
@@ -83,6 +85,39 @@ export class GrowthDiaryCommentService {
       return updatedComment;
     } catch (err) {
       console.error('Error updating comment:', err);
+      throw new Error('Failed to update comment');
+    }
+  }
+
+  public async deleteComment(
+    user_id: number,
+    diary_id: number,
+    comment_id: number,
+  ): Promise<any> {
+    if (!user_id || !diary_id || !comment_id) {
+      throw new Error(
+        'Missing required fields: content, user_id, diary_id, comment_id',
+      );
+    }
+
+    try {
+      const date = new Date();
+
+      const result = await db.GrowthDiaryComment.update(
+        { is_deleted: true, updated_at: date },
+        {
+          where: {
+            user_id,
+            diary_id,
+            comment_id,
+            is_deleted: false, // 이미 삭제된 건 다시 삭제하지 않음
+          },
+        },
+      );
+
+      return result; // [affectedRowsCount]
+    } catch (err) {
+      console.error('Error deleting comment:', err);
       throw new Error('Failed to update comment');
     }
   }

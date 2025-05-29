@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { ApiResult } from "../interface/api.js";
+import type { Request, Response } from "express";
+import type { ApiResult } from "../interface/api.js";
 
 interface DailyMission {
     start():void;

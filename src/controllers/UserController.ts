@@ -2,10 +2,10 @@ import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import db from "../models/index.js";
-import type { ApiResult } from "../interface/api.js";
+import db from "@/models/index.js";
+import type { ApiResult } from "@/interface/api.js";
 
-class AuthController {
+class UserController {
   /**
    * 사용자 회원가입
    */
@@ -177,4 +177,4 @@ class AuthController {
 }
 
 // AuthController 인스턴스 생성
-export default new AuthController();
+export default new UserController();

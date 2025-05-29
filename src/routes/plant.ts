@@ -1,4 +1,4 @@
-import PlantStateController from '../controllers/PlantStateController.js';
+import PlantStateController from '@/controllers/PlantStateController.js';
 import express from 'express';
 
 const router = express.Router();

@@ -1,30 +1,35 @@
-import { SpeechClient } from "@google-cloud/speech";
-import { ZyphraClient } from "@zyphra/client";
-import fs from "fs";
+import { SpeechClient } from '@google-cloud/speech';
+import { ZyphraClient } from '@zyphra/client';
+import fs from 'fs';
 import type { IMessage } from '../interface/chatbot.js';
 import { UserType } from '../interface/chatbot.js';
 
-class PlantSpeechService {
+export class PlantSpeechService {
   /**
    * Google Cloud STT 처리
    */
-  async speechToText(filePath: string, userId: number, plantId: number): Promise<IMessage> {
+  async speechToText(
+    filePath: string,
+    userId: number,
+    plantId: number,
+  ): Promise<IMessage> {
     const client = new SpeechClient();
     const fileContent = fs.readFileSync(filePath);
 
     const request = {
-      audio: { content: fileContent.toString("base64") },
+      audio: { content: fileContent.toString('base64') },
       config: {
-        encoding: "OGG_OPUS" as const,
+        encoding: 'OGG_OPUS' as const,
         sampleRateHertz: 16000,
-        languageCode: "ko-KR",
+        languageCode: 'ko-KR',
       },
     };
 
     const [response] = await client.recognize(request);
-    const transcription = response.results
-      ?.map((result) => result.alternatives?.[0].transcript)
-      .join("\n") || "";
+    const transcription =
+      response.results
+        ?.map(result => result.alternatives?.[0].transcript)
+        .join('\n') || '';
 
     return {
       user_id: userId,
@@ -40,21 +45,19 @@ class PlantSpeechService {
    */
   async textToSpeech(userMessage: string): Promise<Buffer> {
     if (!process.env.ZONOS_API_KEY) {
-      throw new Error("ZONOS_API_KEY is not defined");
+      throw new Error('ZONOS_API_KEY is not defined');
     }
 
     const client = new ZyphraClient({ apiKey: process.env.ZONOS_API_KEY });
     const audioBlob = await client.audio.speech.create({
       text: userMessage,
       speaking_rate: 15,
-      model: "zonos-v0.1-transformer",
-      mime_type: "audio/ogg",
-      language_iso_code: "ko",
+      model: 'zonos-v0.1-transformer',
+      mime_type: 'audio/ogg',
+      language_iso_code: 'ko',
     });
 
     const arrayBuffer = await audioBlob.arrayBuffer();
     return Buffer.from(arrayBuffer);
   }
 }
-
-export default new PlantSpeechService();
