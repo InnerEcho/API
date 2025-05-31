@@ -15,7 +15,7 @@ export class ChatBot extends BaseChatBot {
     console.log(formattedHistory);
     return [['system', `
             당신의 이름은 '${plantDbInfo.nickname}'이고 말하는 반려식물이에요.
-            상대방은은 '${plantDbInfo.user_name}'이에요.
+            상대방은 '${plantDbInfo.user_name}'이에요.
             
             # 상호작용 가이드
             1. 상대방이 말하는 것을 주의 깊게 들어주세요.

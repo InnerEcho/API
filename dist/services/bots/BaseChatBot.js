@@ -29,14 +29,14 @@ export class BaseChatBot {
   async processChat(userId, plantId, userMessage) {
     // 1. 사용자 & 식물 정보 조회
     const plantDbInfoResult = await db.sequelize.query(`
-        SELECT u.user_name, p.nickname, s.species_name
-        FROM user u, plant p, species s
-        WHERE u.user_id = ${userId} AND p.plant_id = ${plantId} AND p.species_id = s.species_id;
+        SELECT u.user_name, p.nickname
+        FROM user u, plant p
+        WHERE u.user_id = ${userId} AND p.plant_id = ${plantId};
       `, {
       type: db.Sequelize.QueryTypes.SELECT
     });
     if (!plantDbInfoResult || plantDbInfoResult.length === 0) {
-      throw new Error('Not Exists Chatbot DB');
+      throw new Error(`Plant data not found for user_id: ${userId}, plant_id: ${plantId}`);
     }
     const plantDbInfo = plantDbInfoResult[0];
 
