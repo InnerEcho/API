@@ -26,9 +26,9 @@ export class ChatHistoryService {
     const startDateStr = todayStart.toISOString().slice(0, 19).replace('T', ' ');
     const query = `
       SELECT * FROM plant_history
-      WHERE user_id = :userId
-        AND plant_id = :plantId
-        AND send_date >= :startDate
+      WHERE user_id = ${userId}
+        AND plant_id = ${plantId}
+        AND send_date >= '${startDateStr}'
       ORDER BY send_date ASC
     `;
     const results = await db.sequelize.query(query, {
