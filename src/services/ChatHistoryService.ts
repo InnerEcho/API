@@ -35,9 +35,9 @@ export class ChatHistoryService {
 
     const query = `
       SELECT * FROM plant_history
-      WHERE user_id = :userId
-        AND plant_id = :plantId
-        AND send_date >= :startDate
+      WHERE user_id = ${userId}
+        AND plant_id = ${plantId}
+        AND send_date >= '${startDateStr}'
       ORDER BY send_date ASC
     `;
 
