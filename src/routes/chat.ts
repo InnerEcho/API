@@ -8,6 +8,8 @@ import { ChatBot } from '@/services/bots/ChatBot.js';
 import { ChatHistoryService } from '@/services/ChatHistoryService.js';
 import { SpeechService } from '@/services/SpeechService.js';
 
+
+
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
 
@@ -19,6 +21,7 @@ const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);
 const speechService = new SpeechService();
 const plantSpeechController = new PlantSpeechController(speechService);
+
 
 /**
  * @swagger
@@ -189,5 +192,8 @@ router.post(
   '/tts',
   plantSpeechController.textToSpeech.bind(plantSpeechController),
 );
+
+
+router.post('/emotion', plantChatBotController.emotionSave.bind(plantChatBotController));
 
 export default router;

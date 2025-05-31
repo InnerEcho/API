@@ -2,48 +2,21 @@ import type { IMessage } from '@/interface/chatbot.js';
 import { UserType } from '@/interface/chatbot.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
 import db from '@/models/index.js';
-import axios from 'axios';
 
 const { ChatHistory, User } = db;
-
-interface EmotionResponse {
-    success: boolean;
-    predictions: number[];
-}
-
-// Flask 모델의 감정 레이블과 일치하도록 수정
-const EMOTION_LABELS = ["공포", "놀람", "분노", "슬픔", "중립", "행복", "혐오"];
 
 export class ChatService {
   constructor(private chatBot: ChatBot) {}
 
-  async create(userId: number, plantId: number, message: string) {
+  async create(userId: number, plantId: number, message: string, emotion?: string) {
     try {
-      // Flask API를 통한 감정 분류
-      let emotionResult: EmotionResponse;
-      try {
-        const flaskResponse = await axios.post<EmotionResponse>('http://localhost:5000/predict', {
-          text: message
-        });
-        emotionResult = flaskResponse.data;
-        console.log('감정 분류 결과:', emotionResult);
-
-        // 감정 분석 결과를 사용자의 state에 저장
-        if (emotionResult.success && emotionResult.predictions.length > 0) {
-          // 가장 높은 확률의 감정 찾기
-          const maxIndex = emotionResult.predictions.indexOf(Math.max(...emotionResult.predictions));
-          const dominantEmotion = EMOTION_LABELS[maxIndex];
-
-          // 사용자의 state 업데이트
-          await User.update(
-            { state: dominantEmotion },
-            { where: { user_id: userId } }
-          );
-          console.log(`사용자 ${userId}의 현재 감정이 ${dominantEmotion}으로 업데이트되었습니다.`);
-        }
-      } catch (flaskError) {
-        console.error('Flask API 호출 중 오류:', flaskError);
-        throw new Error('감정 분석 중 오류가 발생했습니다.');
+      // 감정 상태가 전달된 경우 사용자 상태 업데이트
+      if (emotion) {
+        await User.update(
+          { state: emotion },
+          { where: { user_id: userId } }
+        );
+        console.log(`사용자 ${userId}의 현재 감정이 ${emotion}으로 업데이트되었습니다.`);
       }
 
       // 기존 챗봇 응답 생성 로직

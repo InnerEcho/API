@@ -204,7 +204,7 @@ export class MissionController {
         res.status(400).json(apiResult);
         return;
       }
-          // 조건 충족 처리만 수행
+          // 미션 완료 처리만 수행
       await this.missionService.completeMission(user_id, mission_id);
 
       apiResult.code = 200;
