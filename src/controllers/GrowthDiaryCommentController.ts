@@ -36,7 +36,7 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id,diary_id } = req.body;
+      const { user_id, diary_id } = req.body;
       const response = await this.growthDiaryCommentService.getComments(
         user_id,
         diary_id,
@@ -58,7 +58,7 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, diary_id,comment_id } = req.body;
+      const { user_id, diary_id, comment_id } = req.body;
       await this.growthDiaryCommentService.deleteComment(
         user_id,
         diary_id,
