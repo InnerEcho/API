@@ -11,9 +11,9 @@ export class GrowthDiaryController {
     try {
       const {
         user_id,
-        created_date
+        date
       } = req.body;
-      const response = await this.growthDiaryService.getDiaryByDate(user_id, created_date);
+      const response = await this.growthDiaryService.getDiaryByDate(user_id, date);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';

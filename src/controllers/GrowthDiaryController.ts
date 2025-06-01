@@ -14,10 +14,10 @@ export class GrowthDiaryController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, created_date } = req.body;
+      const { user_id, date } = req.body;
       const response = await this.growthDiaryService.getDiaryByDate(
         user_id,
-        created_date,
+        date,
       );
 
       result.code = 200;
