@@ -10,8 +10,8 @@ export class SpeechService {
    */
   async speechToText(
     filePath: string,
-    userId: number,
-    plantId: number,
+    user_id: number,
+    plant_id: number,
   ): Promise<IMessage> {
     const client = new SpeechClient();
     const fileContent = fs.readFileSync(filePath);
@@ -32,8 +32,8 @@ export class SpeechService {
         .join('\n') || '';
 
     return {
-      user_id: userId,
-      plant_id: plantId,
+      user_id: user_id,
+      plant_id: plant_id,
       message: transcription,
       user_type: UserType.BOT,
       send_date: new Date(),

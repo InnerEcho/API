@@ -8,7 +8,7 @@ export class ChatService {
   constructor(chatBot) {
     this.chatBot = chatBot;
   }
-  async create(userId, plantId, message, emotion) {
+  async create(user_id, plant_id, message, emotion) {
     try {
       // 감정 상태가 전달된 경우 사용자 상태 업데이트
       if (emotion) {
@@ -16,19 +16,19 @@ export class ChatService {
           state: emotion
         }, {
           where: {
-            user_id: userId
+            user_id: user_id
           }
         });
-        console.log(`사용자 ${userId}의 현재 감정이 ${emotion}으로 업데이트되었습니다.`);
+        console.log(`사용자 ${user_id}의 현재 감정이 ${emotion}으로 업데이트되었습니다.`);
       }
 
       // 기존 챗봇 응답 생성 로직
-      const reply = await this.chatBot.processChat(userId, plantId, message);
+      const reply = await this.chatBot.processChat(user_id, plant_id, message);
 
       // 7. 챗봇 응답 메시지 생성
       const botMessage = {
-        user_id: userId,
-        plant_id: plantId,
+        user_id: user_id,
+        plant_id: plant_id,
         message: reply.toString(),
         user_type: UserType.BOT,
         send_date: new Date()
@@ -36,8 +36,8 @@ export class ChatService {
 
       // 8. 사용자 입력 메시지 기록
       const userMessageEntry = {
-        user_id: userId,
-        plant_id: plantId,
+        user_id: user_id,
+        plant_id: plant_id,
         message: message,
         user_type: UserType.USER,
         send_date: new Date()

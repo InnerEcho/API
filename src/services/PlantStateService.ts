@@ -3,13 +3,13 @@ import { QueryTypes } from 'sequelize';
 import type { PlantData } from '@/interface/plant.js';
 
 export class PlantStateService {
-  public async getPlantState(plantId: number): Promise<PlantData> {
+  public async getPlantState(plant_id: number): Promise<PlantData> {
     const plantDb = await db.sequelize.query(
       `
         SELECT p.nickname, p.current_temp, p.current_light, p.current_moisture, 
                p.temp_state, p.light_state, p.moisture_state
         FROM plant p
-        WHERE p.plant_id = ${plantId};
+        WHERE p.plant_id = ${plant_id};
       `,
       { type: QueryTypes.SELECT },
     );
@@ -20,7 +20,7 @@ export class PlantStateService {
 
     const plant = plantDb[0];
     return {
-      plant_id: plantId,
+      plant_id: plant_id,
       plant_name: plant.nickname,
       current_temp: {
         value: plant.current_temp,
@@ -40,8 +40,8 @@ export class PlantStateService {
     };
   }
 
-  public async updatePlantState(plantId: number, state: any): Promise<any> {
-    const plant = await db.Plant.findOne({ where: { plant_id: plantId } });
+  public async updatePlantState(plant_id: number, state: any): Promise<any> {
+    const plant = await db.Plant.findOne({ where: { plant_id: plant_id } });
 
     if (!plant) {
       throw new Error('PlantNotFound');

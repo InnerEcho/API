@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from "../models/index.js";
 export class UserService {
-  async signUp(userName, user_email, password) {
+  async signUp(user_name, user_email, password) {
     const existEmail = await db.User.findOne({
       where: {
         user_email: user_email
@@ -10,7 +10,7 @@ export class UserService {
     });
     const existNickName = await db.User.findOne({
       where: {
-        user_name: userName
+        user_name: user_name
       }
     });
     if (existEmail) {
@@ -20,7 +20,7 @@ export class UserService {
     }
     const entryPassword = await bcrypt.hash(password, 12);
     const entryUser = {
-      user_name: userName,
+      user_name: user_name,
       user_email: user_email,
       password: entryPassword
     };
@@ -38,10 +38,10 @@ export class UserService {
     registedUser.password = ''; // 비밀번호 숨김 처리
     return registedUser;
   }
-  async signIn(userEmail, password) {
+  async signIn(user_email, password) {
     const dbUser = await db.User.findOne({
       where: {
-        user_email: userEmail
+        user_email: user_email
       }
     });
     if (!dbUser) {
@@ -71,10 +71,10 @@ export class UserService {
       issuer: 'InnerEcho'
     });
   }
-  async getUserInfo(userId) {
+  async getUserInfo(user_id) {
     const user = await db.User.findOne({
       where: {
-        user_id: userId
+        user_id: user_id
       },
       attributes: {
         exclude: ['password']
@@ -85,26 +85,26 @@ export class UserService {
     }
     return user;
   }
-  async updateUserInfo(userId, userName, user_email) {
+  async updateUserInfo(user_id, user_name, user_email) {
     const user = await db.User.findOne({
       where: {
-        user_id: userId
+        user_id: user_id
       }
     });
     if (!user) {
       throw new Error('UserNotFound');
     }
     const updatedUser = await user.update({
-      user_name: userName,
+      user_name: user_name,
       user_email: user_email
     });
     updatedUser.password = ''; // 비밀번호 숨김 처리
     return updatedUser;
   }
-  async deleteUser(userId) {
+  async deleteUser(user_id) {
     const user = await db.User.findOne({
       where: {
-        user_id: userId
+        user_id: user_id
       }
     });
     if (!user) {

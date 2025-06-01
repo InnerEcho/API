@@ -4,13 +4,13 @@ import db from '@/models/index.js';
 
 export class UserService {
   public async signUp(
-    userName: string,
+    user_name: string,
     user_email: string,
     password: string,
   ): Promise<any> {
     const existEmail = await db.User.findOne({ where: { user_email: user_email } });
     const existNickName = await db.User.findOne({
-      where: { user_name: userName },
+      where: { user_name: user_name },
     });
 
     if (existEmail) {
@@ -21,7 +21,7 @@ export class UserService {
 
     const entryPassword = await bcrypt.hash(password, 12);
     const entryUser = {
-      user_name: userName,
+      user_name: user_name,
       user_email: user_email,
       password: entryPassword,
     };
@@ -42,8 +42,8 @@ export class UserService {
     return registedUser;
   }
 
-  public async signIn(userEmail: string, password: string): Promise<string> {
-    const dbUser = await db.User.findOne({ where: { user_email: userEmail } });
+  public async signIn(user_email: string, password: string): Promise<string> {
+    const dbUser = await db.User.findOne({ where: { user_email: user_email } });
 
     if (!dbUser) {
       throw new Error('NotExistEmail');
@@ -80,9 +80,9 @@ export class UserService {
     });
   }
 
-  public async getUserInfo(userId: number): Promise<any> {
+  public async getUserInfo(user_id: number): Promise<any> {
     const user = await db.User.findOne({
-      where: { user_id: userId },
+      where: { user_id: user_id },
       attributes: { exclude: ['password'] },
     });
 
@@ -94,18 +94,18 @@ export class UserService {
   }
 
   public async updateUserInfo(
-    userId: number,
-    userName: string,
+    user_id: number,
+    user_name: string,
     user_email: string,
   ): Promise<any> {
-    const user = await db.User.findOne({ where: { user_id: userId } });
+    const user = await db.User.findOne({ where: { user_id: user_id } });
 
     if (!user) {
       throw new Error('UserNotFound');
     }
 
     const updatedUser = await user.update({
-      user_name: userName,
+      user_name: user_name,
       user_email: user_email,
     });
 
@@ -113,8 +113,8 @@ export class UserService {
     return updatedUser;
   }
 
-  public async deleteUser(userId: number): Promise<void> {
-    const user = await db.User.findOne({ where: { user_id: userId } });
+  public async deleteUser(user_id: number): Promise<void> {
+    const user = await db.User.findOne({ where: { user_id: user_id } });
 
     if (!user) {
       throw new Error('UserNotFound');

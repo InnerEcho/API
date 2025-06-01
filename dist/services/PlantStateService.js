@@ -1,12 +1,12 @@
 import db from "../models/index.js";
 import { QueryTypes } from 'sequelize';
 export class PlantStateService {
-  async getPlantState(plantId) {
+  async getPlantState(plant_id) {
     const plantDb = await db.sequelize.query(`
         SELECT p.nickname, p.current_temp, p.current_light, p.current_moisture, 
                p.temp_state, p.light_state, p.moisture_state
         FROM plant p
-        WHERE p.plant_id = ${plantId};
+        WHERE p.plant_id = ${plant_id};
       `, {
       type: QueryTypes.SELECT
     });
@@ -15,7 +15,7 @@ export class PlantStateService {
     }
     const plant = plantDb[0];
     return {
-      plant_id: plantId,
+      plant_id: plant_id,
       plant_name: plant.nickname,
       current_temp: {
         value: plant.current_temp,
@@ -36,10 +36,10 @@ export class PlantStateService {
       last_measured_date: '2024-12-08T15:30:00Z' // 더미 데이터
     };
   }
-  async updatePlantState(plantId, state) {
+  async updatePlantState(plant_id, state) {
     const plant = await db.Plant.findOne({
       where: {
-        plant_id: plantId
+        plant_id: plant_id
       }
     });
     if (!plant) {

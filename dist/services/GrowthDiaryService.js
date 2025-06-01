@@ -23,9 +23,9 @@ export class GrowthDiaryService {
       throw new Error('Failed to fetch diary');
     }
   }
-  async create(userId, plantId, userMessage) {
+  async create(user_id, plant_id, message) {
     // 1. 챗봇 응답 생성
-    const reply = await this.growthDiaryBot.processChat(userId, plantId, userMessage);
+    const reply = await this.growthDiaryBot.processChat(user_id, plant_id, message);
 
     // 2. DB 저장용 메시지 객체 생성
     const now = new Date();
@@ -38,7 +38,7 @@ export class GrowthDiaryService {
     // 3. 오늘 날짜의 일지가 있는지 확인
     const existingDiary = await db.GrowthDiary.findOne({
       where: {
-        user_id: userId,
+        user_id: user_id,
         is_deleted: false,
         [db.Sequelize.Op.and]: [db.Sequelize.where(db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), '=', today)]
       }
@@ -54,7 +54,7 @@ export class GrowthDiaryService {
     } else {
       // 새 일지 생성
       result = await db.GrowthDiary.create({
-        user_id: userId,
+        user_id: user_id,
         title,
         content,
         image_url: null,

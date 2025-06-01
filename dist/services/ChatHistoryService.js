@@ -11,30 +11,30 @@ export class ChatHistoryService {
   /**
    * 특정 사용자와 식물 간의 대화 이력 조회
    */
-  async getChatHistory(userId, plantId) {
+  async getChatHistory(user_id, plant_id) {
     return ChatHistory.findAll({
       where: {
-        user_id: userId,
-        plant_id: plantId
+        user_id: user_id,
+        plant_id: plant_id
       },
       order: [['send_date', 'ASC']]
     });
   }
-  async getTodayHistory(userId, plantId) {
+  async getTodayHistory(user_id, plant_id) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const startDateStr = todayStart.toISOString().slice(0, 19).replace('T', ' ');
     const query = `
       SELECT * FROM plant_history
-      WHERE user_id = ${userId}
-        AND plant_id = ${plantId}
+      WHERE user_id = ${user_id}
+        AND plant_id = ${plant_id}
         AND send_date >= '${startDateStr}'
       ORDER BY send_date ASC
     `;
     const results = await db.sequelize.query(query, {
       replacements: {
-        userId,
-        plantId,
+        user_id,
+        plant_id,
         startDate: startDateStr
       },
       type: db.Sequelize.QueryTypes.SELECT

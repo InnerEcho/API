@@ -6,7 +6,7 @@ export class SpeechService {
   /**
    * Google Cloud STT 처리
    */
-  async speechToText(filePath, userId, plantId) {
+  async speechToText(filePath, user_id, plant_id) {
     const client = new SpeechClient();
     const fileContent = fs.readFileSync(filePath);
     const request = {
@@ -22,8 +22,8 @@ export class SpeechService {
     const [response] = await client.recognize(request);
     const transcription = response.results?.map(result => result.alternatives?.[0].transcript).join('\n') || '';
     return {
-      user_id: userId,
-      plant_id: plantId,
+      user_id: user_id,
+      plant_id: plant_id,
       message: transcription,
       user_type: UserType.BOT,
       send_date: new Date()

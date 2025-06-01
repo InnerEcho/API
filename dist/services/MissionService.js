@@ -1,9 +1,9 @@
 import db from "../models/index.js";
 export class MissionService {
-  async getMissions(userId) {
+  async getMissions(user_id) {
     const missions = await db.Mission.findAll({
       where: {
-        user_id: userId
+        user_id: user_id
       },
       order: [['created_at', 'DESC']]
     });
@@ -11,11 +11,11 @@ export class MissionService {
   }
 
   // public async startMission(
-  //   userId: number,
-  //   missionId: number,
+  //   user_id: number,
+  //   mission_id: number,
   // ): Promise<any> {
   //   const mission = await db.Mission.findOne({
-  //     where: { user_id: userId, mission_id: missionId },
+  //     where: { user_id: user_id, mission_id: mission_id },
   //   });
 
   //   if (!mission) {
@@ -33,14 +33,14 @@ export class MissionService {
   // }
 
   // public async updateWalkProgress(
-  //   userId: number,
-  //   missionId: number,
+  //   user_id: number,
+  //   mission_id: number,
   //   steps: number
   // ): Promise<any> {
   //   const mission = await db.Mission.findOne({
   //     where: { 
-  //       user_id: userId, 
-  //       mission_id: missionId,
+  //       user_id: user_id, 
+  //       mission_id: mission_id,
   //       status: 'in_progress'
   //     },
   //   });
@@ -57,17 +57,17 @@ export class MissionService {
 
   //   // 목표 걸음 수 달성 시 미션 완료
   //   if (steps >= 1000) {
-  //     await this.completeMission(userId, missionId);
+  //     await this.completeMission(user_id, mission_id);
   //   }
 
   //   return updatedMission;
   // }
 
-  async completeMission(userId, missionId) {
+  async completeMission(user_id, mission_id) {
     const mission = await db.Mission.findOne({
       where: {
-        user_id: userId,
-        mission_id: missionId
+        user_id: user_id,
+        mission_id: mission_id
       }
     });
     if (!mission) {

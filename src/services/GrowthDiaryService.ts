@@ -36,12 +36,12 @@ export class GrowthDiaryService {
     }
   }
 
-  async create(userId: number, plantId: number, userMessage: string) {
+  async create(user_id: number, plant_id: number, message: string) {
     // 1. 챗봇 응답 생성
     const reply = await this.growthDiaryBot.processChat(
-      userId,
-      plantId,
-      userMessage,
+      user_id,
+      plant_id,
+      message,
     );
 
     // 2. DB 저장용 메시지 객체 생성
@@ -55,7 +55,7 @@ export class GrowthDiaryService {
     // 3. 오늘 날짜의 일지가 있는지 확인
     const existingDiary = await db.GrowthDiary.findOne({
       where: {
-        user_id: userId,
+        user_id: user_id,
         is_deleted: false,
         [db.Sequelize.Op.and]: [
           db.Sequelize.where(
@@ -78,7 +78,7 @@ export class GrowthDiaryService {
     } else {
       // 새 일지 생성
       result = await db.GrowthDiary.create({
-        user_id: userId,
+        user_id: user_id,
         title,
         content,
         image_url: null,
