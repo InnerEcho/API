@@ -14,7 +14,7 @@ export class MissionController {
     try {
       const {
         user_id
-      } = req.params;
+      } = req.body;
       const response = await this.missionService.getMissions(parseInt(user_id));
       result.code = 200;
       result.data = response;

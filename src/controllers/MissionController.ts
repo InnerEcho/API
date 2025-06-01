@@ -22,7 +22,7 @@ export class MissionController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id } = req.params;
+      const { user_id } = req.body;
       const response = await this.missionService.getMissions(parseInt(user_id));
 
       result.code = 200;

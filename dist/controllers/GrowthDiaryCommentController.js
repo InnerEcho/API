@@ -34,12 +34,10 @@ export class GrowthDiaryCommentController {
     };
     try {
       const {
+        user_id,
         diary_id
-      } = req.params;
-      const {
-        user_id
       } = req.body;
-      const response = await this.growthDiaryCommentService.getComments(user_id, parseInt(diary_id));
+      const response = await this.growthDiaryCommentService.getComments(user_id, diary_id);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -59,13 +57,11 @@ export class GrowthDiaryCommentController {
     };
     try {
       const {
-        comment_id
-      } = req.params;
-      const {
         user_id,
-        diary_id
+        diary_id,
+        comment_id
       } = req.body;
-      await this.growthDiaryCommentService.deleteComment(user_id, diary_id, parseInt(comment_id));
+      await this.growthDiaryCommentService.deleteComment(user_id, diary_id, comment_id);
       result.code = 200;
       result.msg = 'Ok';
       res.status(200).json(result);

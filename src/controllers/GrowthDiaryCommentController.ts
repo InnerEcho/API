@@ -36,11 +36,10 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { diary_id } = req.params;
-      const { user_id } = req.body;
+      const { user_id,diary_id } = req.body;
       const response = await this.growthDiaryCommentService.getComments(
         user_id,
-        parseInt(diary_id),
+        diary_id,
       );
 
       result.code = 200;
@@ -59,12 +58,11 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { comment_id } = req.params;
-      const { user_id, diary_id } = req.body;
+      const { user_id, diary_id,comment_id } = req.body;
       await this.growthDiaryCommentService.deleteComment(
         user_id,
         diary_id,
-        parseInt(comment_id),
+        comment_id,
       );
 
       result.code = 200;
