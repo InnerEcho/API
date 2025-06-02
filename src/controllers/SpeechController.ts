@@ -14,7 +14,7 @@ export class PlantSpeechController {
    * STT 처리
    */
   public async speechToText(req: Request, res: Response): Promise<void> {
-    const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
+    let result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
       if (!req.file) {
