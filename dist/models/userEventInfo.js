@@ -54,7 +54,7 @@ export default function (sequelize) {
       onUpdate: "CASCADE" // 유저 ID 변경 시 업데이트
     },
     status: {
-      type: DataTypes.STRING(5),
+      type: DataTypes.STRING(20),
       // 사용자 ID를 STING로 변경
       allowNull: false,
       comment: "진행 상태"

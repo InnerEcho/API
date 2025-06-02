@@ -20,6 +20,7 @@ import chatRouter from "./routes/chat.js";
 import plantRouter from "./routes/plant.js";
 import diaryRouter from "./routes/diary.js";
 import commentRouter from "./routes/comment.js";
+import speechRouter from "./routes/speech.js";
 import db from "./models/index.js";
 import YAML from 'yamljs';
 dotenv.config();
@@ -61,6 +62,7 @@ app.use('/chat', chatRouter);
 app.use('/plant', plantRouter);
 app.use('/diary', diaryRouter);
 app.use('/comment', commentRouter);
+app.use('/speech', speechRouter);
 
 //swagger 모듈 호출하기
 app.use('/api-docs-old', swaggerUi.serve, swaggerUi.setup(specs));

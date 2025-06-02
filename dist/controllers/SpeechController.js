@@ -34,30 +34,27 @@ export class PlantSpeechController {
       res.status(500).json(result);
     }
   }
-
-  /**
-   * TTS 처리
-   */
   async textToSpeech(req, res) {
-    const result = {
-      code: 400,
-      data: null,
-      msg: 'Failed'
-    };
     try {
       const {
-        text
+        message
       } = req.body;
-      const response = await this.speechService.textToSpeech(text);
-      result.code = 200;
-      result.data = response;
-      result.msg = 'Ok';
-      res.status(200).json(result);
+      const {
+        audioStream,
+        mimeType
+      } = await this.speechService.textToSpeech(message);
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Content-Disposition', 'inline; filename=speech.ogg');
+      audioStream.on('end', () => console.log('✅ Streaming finished to client.'));
+      audioStream.on('error', err => console.error('❌ Stream error:', err));
+      audioStream.pipe(res);
     } catch (err) {
-      console.error(err);
-      result.code = 500;
-      result.msg = 'Server Error';
-      res.status(500).json(result);
+      console.error('TTS Stream Error:', err);
+      res.status(500).json({
+        code: 500,
+        msg: 'TTS stream error'
+      });
     }
   }
 }
