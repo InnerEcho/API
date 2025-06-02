@@ -8,6 +8,7 @@ const router = express.Router();
 const growthDiaryBot = new GrowthDiaryBot();
 const growthDiaryService = new GrowthDiaryService(growthDiaryBot);
 const growthDiaryController = new GrowthDiaryController(growthDiaryService);
+router.post('/month', growthDiaryController.getDiaryDatesForMonth.bind(growthDiaryController));
 router.post('/date', growthDiaryController.getDiaryByDate.bind(growthDiaryController));
 router.post('/create', growthDiaryController.create.bind(growthDiaryController));
 export default router;

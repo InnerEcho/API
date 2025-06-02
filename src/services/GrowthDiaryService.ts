@@ -3,9 +3,43 @@ import { UserType } from '../interface/chatbot.js';
 import { GrowthDiaryBot } from './bots/GrowthDiaryBot.js';
 import db from '../models/index.js';
 import { Op } from 'sequelize';
+import dayjs from 'dayjs';
+
 
 export class GrowthDiaryService {
   constructor(private growthDiaryBot: GrowthDiaryBot) {}
+
+  public async getDiaryDatesForMonth(user_id: number, year_month: string): Promise<string[]> {
+    if (!user_id || !year_month) {
+      throw new Error('Missing required fields: user_id or year_month');
+    }
+
+    const start = dayjs(`${year_month}-01`).startOf('month').format('YYYY-MM-DD HH:mm:ss');
+    const end = dayjs(`${year_month}-01`).endOf('month').format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+      const diaries = await db.GrowthDiary.findAll({
+        attributes: [
+          [db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), 'date'],
+        ],
+        where: {
+          user_id,
+          is_deleted: false,
+          created_at: {
+            [db.Sequelize.Op.between]: [start, end],
+          },
+        },
+        group: [db.Sequelize.fn('DATE', db.Sequelize.col('created_at'))],
+        raw: true,
+      });
+
+      // diaries는 [{ date: '2025-06-01' }, { date: '2025-06-05' }, ...]
+      return diaries.map((d: any) => d.date);
+    } catch (err) {
+      console.error('Error fetching diary dates:', err);
+      throw new Error('Failed to fetch diary dates');
+    }
+  }
 
   public async getDiaryByDate(user_id: number, date: string): Promise<any> {
     if (!user_id || !date) {

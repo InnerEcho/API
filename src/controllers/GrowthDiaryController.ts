@@ -10,6 +10,32 @@ export class GrowthDiaryController {
     this.growthDiaryService = growthDiaryService;
   }
 
+  public async getDiaryDatesForMonth(req: Request, res: Response): Promise<void> {
+    const result:ApiResult = { code: 400, data: null, msg: 'Failed' };
+    try {
+      const { user_id, year_month } = req.body;
+
+      if (!user_id || !year_month || !/^\d{4}-\d{2}$/.test(year_month)) {
+        result.code = 400;
+        result.msg = 'Invalid or missing parameters';
+        res.status(400).json(result);
+        return;
+      }
+
+      const dates = await this.growthDiaryService.getDiaryDatesForMonth(user_id, year_month);
+      result.code = 200;
+      result.msg = 'Ok';
+      result.data = { dates }; // 날짜 리스트 반환
+      res.status(200).json(result);
+    } catch (err) {
+      console.error('Error in getDiaryDatesForMonth:', err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
+    }
+  }
+  
+
   public async getDiaryByDate(req: Request, res: Response): Promise<void> {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
