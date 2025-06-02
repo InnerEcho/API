@@ -51,7 +51,7 @@ export class SpeechService {
   }
 
 
-  // 🎤 Service (SpeechService.ts)
+
   async textToSpeech(message: string) {
     const { stream, mimeType } = await this.client.audio.speech.createStream({
       text: message,
@@ -68,7 +68,7 @@ export class SpeechService {
     const passThrough = new PassThrough();
     const reader = stream.getReader();
 
-    const push = async () => {
+    (async () => {
       console.log('🔄 Start pushing stream data...');
       while (true) {
         const { done, value } = await reader.read();
@@ -80,10 +80,9 @@ export class SpeechService {
         console.log(`📦 Pushing chunk of size: ${value.length}`);
         passThrough.write(value);
       }
-    };
-    
+    })();
 
-    push();
     return { audioStream: passThrough, mimeType };
   }
+  
 }

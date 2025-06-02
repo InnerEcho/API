@@ -1,13 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApiResult } from '@/interface/api.js';
 import { SpeechService } from '@/services/SpeechService.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-
-// __dirname 대체
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { PassThrough } from 'stream';
 
 export class PlantSpeechController {
   private speechService: SpeechService;
@@ -47,26 +41,24 @@ export class PlantSpeechController {
     }
   }
 
-  /**
-
-
-   * TTS 처리
-
-
-   */
-
+  // controllers/SpeechController.ts
   async textToSpeech(req: Request, res: Response) {
     try {
-      const { message } = req.query;
+      const { message } = req.body;  // POST로 받는 경우
+      if (!message || typeof message !== 'string') {
+        res.status(400).json({ code: 400, msg: 'Missing or invalid message' });
+        return;
+      }
+
       const { audioStream, mimeType } = await this.speechService.textToSpeech(message);
-  
+
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Transfer-Encoding', 'chunked');
       res.setHeader('Content-Disposition', 'inline; filename=speech.ogg');
-  
+
       audioStream.on('end', () => console.log('✅ Streaming finished to client.'));
       audioStream.on('error', (err) => console.error('❌ Stream error:', err));
-  
+
       audioStream.pipe(res);
     } catch (err) {
       console.error('TTS Stream Error:', err);

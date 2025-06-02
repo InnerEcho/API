@@ -11,7 +11,6 @@ import { SpeechService } from '@/services/SpeechService.js';
 
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
 
 // 의존성 주입
 const chatBot = new ChatBot();
@@ -19,8 +18,7 @@ const chatService = new ChatService(chatBot);
 const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);
-const speechService = new SpeechService();
-const plantSpeechController = new PlantSpeechController(speechService);
+
 
 
 /**
