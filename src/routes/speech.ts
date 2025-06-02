@@ -1,8 +1,10 @@
 import express from 'express';
 import { PlantSpeechController } from '@/controllers/SpeechController.js';
 import { SpeechService } from '@/services/SpeechService.js';
+import multer from 'multer';
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/' }); // 파일을 임시로 'uploads' 폴더에 저장
 
 // 의존성 주입
 const speechService = new SpeechService();
@@ -10,6 +12,7 @@ const plantSpeechController = new PlantSpeechController(speechService);
 
 router.post(
   '/stt',
+  upload.single('file'),
   plantSpeechController.speechToText.bind(plantSpeechController),
 );
 // HLS playlist(.m3u8) 제공 엔드포인트
