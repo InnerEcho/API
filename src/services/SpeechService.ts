@@ -1,10 +1,20 @@
 import { SpeechClient } from '@google-cloud/speech';
 import { ZyphraClient } from '@zyphra/client';
+import { PassThrough } from "stream";
 import fs from 'fs';
 import type { IMessage } from '../interface/chatbot.js';
 import { UserType } from '../interface/chatbot.js';
 
 export class SpeechService {
+  
+  private client: ZyphraClient;
+
+  constructor() {
+    if (!process.env.ZONOS_API_KEY) {
+      throw new Error("ZONOS_API_KEY is not defined");
+    }
+    this.client = new ZyphraClient({ apiKey: process.env.ZONOS_API_KEY });
+  }
   /**
    * Google Cloud STT 처리
    */
@@ -40,24 +50,39 @@ export class SpeechService {
     };
   }
 
-  /**
-   * Zonos TTS 처리
-   */
-  async textToSpeech(userMessage: string): Promise<Buffer> {
-    if (!process.env.ZONOS_API_KEY) {
-      throw new Error('ZONOS_API_KEY is not defined');
-    }
-
-    const client = new ZyphraClient({ apiKey: process.env.ZONOS_API_KEY });
-    const audioBlob = await client.audio.speech.create({
-      text: userMessage,
-      speaking_rate: 15,
-      model: 'zonos-v0.1-transformer',
-      mime_type: 'audio/ogg',
-      language_iso_code: 'ko',
+  // 🎤 Service (SpeechService.ts)
+  async textToSpeech(message: string) {
+    const { stream, mimeType } = await this.client.audio.speech.createStream({
+      text: message,
+      model: "zonos-v0.1-transformer",
+      language_iso_code: "ko",
+      speaking_rate: 20,
+      mime_type: "audio/ogg",
+      emotion: {
+        happiness: 0.8,
+        neutral: 0.3,
+      },
     });
 
-    const arrayBuffer = await audioBlob.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    const passThrough = new PassThrough();
+    const reader = stream.getReader();
+
+    const push = async () => {
+      console.log('🔄 Start pushing stream data...');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          console.log('✅ Reader finished reading all chunks.');
+          passThrough.end();
+          break;
+        }
+        console.log(`📦 Pushing chunk of size: ${value.length}`);
+        passThrough.write(value);
+      }
+    };
+    
+
+    push();
+    return { audioStream: passThrough, mimeType };
   }
 }
