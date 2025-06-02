@@ -54,7 +54,7 @@ export class UserService {
     const dbPlant = await db.sequelize.query(`
       SELECT p.plant_id, p.nickname
       FROM user u, plant p
-      WHERE u.user_id = p.user_id AND u.user_id = ${dbUser.user_id} AND p.plant_id = 1;
+      WHERE u.user_id = p.user_id AND u.user_id = ${dbUser.user_id};
     `, {
       type: db.Sequelize.QueryTypes.SELECT
     });
