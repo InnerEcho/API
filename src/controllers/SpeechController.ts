@@ -42,7 +42,7 @@ export class PlantSpeechController {
 
   async textToSpeech(req: Request, res: Response) {
     try {
-      const { message } = req.body;
+      const { message } = req.query;
       const { audioStream, mimeType } = await this.speechService.textToSpeech(message);
   
       res.setHeader('Content-Type', mimeType);

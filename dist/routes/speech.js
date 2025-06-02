@@ -7,5 +7,5 @@ const router = express.Router();
 const speechService = new SpeechService();
 const plantSpeechController = new PlantSpeechController(speechService);
 router.post('/stt', plantSpeechController.speechToText.bind(plantSpeechController));
-router.post('/tts', plantSpeechController.textToSpeech.bind(plantSpeechController));
+router.get('/tts', plantSpeechController.textToSpeech.bind(plantSpeechController));
 export default router;

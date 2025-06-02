@@ -38,7 +38,7 @@ export class PlantSpeechController {
     try {
       const {
         message
-      } = req.body;
+      } = req.query;
       const {
         audioStream,
         mimeType

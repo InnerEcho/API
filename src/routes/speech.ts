@@ -12,7 +12,7 @@ router.post(
   '/stt',
   plantSpeechController.speechToText.bind(plantSpeechController),
 );
-router.post(
+router.get(
   '/tts',
   plantSpeechController.textToSpeech.bind(plantSpeechController),
 );
