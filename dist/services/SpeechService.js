@@ -1,7 +1,8 @@
 import { SpeechClient } from '@google-cloud/speech';
 import { ZyphraClient } from '@zyphra/client';
-import { PassThrough } from "stream";
 import fs from 'fs';
+import path from 'path';
+import ffmpeg from 'fluent-ffmpeg';
 import { UserType } from "../interface/chatbot.js";
 export class SpeechService {
   constructor() {
@@ -38,9 +39,7 @@ export class SpeechService {
       send_date: new Date()
     };
   }
-
-  // 🎤 Service (SpeechService.ts)
-  async textToSpeech(message) {
+  async generateHLS(message, outputDir) {
     const {
       stream,
       mimeType
@@ -55,28 +54,30 @@ export class SpeechService {
         neutral: 0.3
       }
     });
-    const passThrough = new PassThrough();
+    const tempOggPath = path.join(outputDir, 'temp_audio.ogg');
+    const writeStream = fs.createWriteStream(tempOggPath);
     const reader = stream.getReader();
-    const push = async () => {
-      console.log('🔄 Start pushing stream data...');
-      while (true) {
-        const {
-          done,
-          value
-        } = await reader.read();
-        if (done) {
-          console.log('✅ Reader finished reading all chunks.');
-          passThrough.end();
-          break;
-        }
-        console.log(`📦 Pushing chunk of size: ${value.length}`);
-        passThrough.write(value);
+    while (true) {
+      const {
+        done,
+        value
+      } = await reader.read();
+      if (done) {
+        writeStream.end();
+        break;
       }
-    };
-    push();
-    return {
-      audioStream: passThrough,
-      mimeType
-    };
+      writeStream.write(value);
+    }
+
+    // HLS 변환: ffmpeg를 이용해 .ogg를 .ts 세그먼트와 .m3u8로 변환
+    return new Promise((resolve, reject) => {
+      ffmpeg(tempOggPath).outputOptions(['-codec:a aac', '-f hls', '-hls_time 2', '-hls_list_size 0', '-hls_segment_filename', path.join(outputDir, 'segment_%03d.ts')]).output(path.join(outputDir, 'playlist.m3u8')).on('end', () => {
+        console.log('✅ HLS 변환 완료');
+        resolve(true);
+      }).on('error', err => {
+        console.error('❌ HLS 변환 실패:', err);
+        reject(err);
+      }).run();
+    });
   }
 }

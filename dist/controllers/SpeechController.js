@@ -1,3 +1,10 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+// __dirname 대체
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 export class PlantSpeechController {
   constructor(speechService) {
     this.speechService = speechService;
@@ -34,27 +41,52 @@ export class PlantSpeechController {
       res.status(500).json(result);
     }
   }
-  async textToSpeech(req, res) {
+  async textToSpeechHLS(req, res) {
     try {
       const {
         message
       } = req.query;
-      const {
-        audioStream,
-        mimeType
-      } = await this.speechService.textToSpeech(message);
-      res.setHeader('Content-Type', mimeType);
-      res.setHeader('Transfer-Encoding', 'chunked');
-      res.setHeader('Content-Disposition', 'inline; filename=speech.ogg');
-      audioStream.on('end', () => console.log('✅ Streaming finished to client.'));
-      audioStream.on('error', err => console.error('❌ Stream error:', err));
-      audioStream.pipe(res);
+      const sessionId = Date.now().toString();
+      const hlsDir = path.join(__dirname, `../../hls/${sessionId}`);
+      fs.mkdirSync(hlsDir, {
+        recursive: true
+      });
+      await this.speechService.generateHLS(message, hlsDir);
+      res.json({
+        sessionId,
+        hlsUrl: `/speech/tts/stream/${sessionId}.m3u8`
+      });
     } catch (err) {
-      console.error('TTS Stream Error:', err);
+      console.error('TTS HLS Error:', err);
       res.status(500).json({
         code: 500,
-        msg: 'TTS stream error'
+        msg: 'TTS HLS Error'
       });
+    }
+  }
+  getPlaylist(req, res) {
+    const {
+      sessionId
+    } = req.params;
+    const playlistPath = path.join(__dirname, `../../hls/${sessionId}/playlist.m3u8`);
+    if (fs.existsSync(playlistPath)) {
+      res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+      fs.createReadStream(playlistPath).pipe(res);
+    } else {
+      res.status(404).send('Playlist not found');
+    }
+  }
+  getSegment(req, res) {
+    const {
+      sessionId,
+      segment
+    } = req.params;
+    const segmentPath = path.join(__dirname, `../../hls/${sessionId}/${segment}`);
+    if (fs.existsSync(segmentPath)) {
+      res.setHeader('Content-Type', 'video/MP2T');
+      fs.createReadStream(segmentPath).pipe(res);
+    } else {
+      res.status(404).send('Segment not found');
     }
   }
 }

@@ -182,16 +182,16 @@ router.post(
  *                   type: string
  *                   example: "Server Error"
  */
-router.post(
-  '/stt',
-  upload.single('file'),
-  plantSpeechController.speechToText.bind(plantSpeechController),
-);
+// router.post(
+//   '/stt',
+//   upload.single('file'),
+//   plantSpeechController.speechToText.bind(plantSpeechController),
+// );
 
-router.post(
-  '/tts',
-  plantSpeechController.textToSpeech.bind(plantSpeechController),
-);
+// router.post(
+//   '/tts',
+//   plantSpeechController.textToSpeech.bind(plantSpeechController),
+// );
 
 
 router.post('/emotion', plantChatBotController.emotionSave.bind(plantChatBotController));
