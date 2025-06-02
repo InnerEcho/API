@@ -2,8 +2,6 @@ import { SpeechClient } from '@google-cloud/speech';
 import { ZyphraClient } from '@zyphra/client';
 import fs from 'fs';
 import { PassThrough } from 'stream';
-import path from 'path';
-import ffmpeg from 'fluent-ffmpeg';
 import type { IMessage } from '../interface/chatbot.js';
 import { UserType } from '../interface/chatbot.js';
 
@@ -53,49 +51,39 @@ export class SpeechService {
   }
 
 
-  async generateHLS(message: string, outputDir: string) {
+  // 🎤 Service (SpeechService.ts)
+  async textToSpeech(message: string) {
     const { stream, mimeType } = await this.client.audio.speech.createStream({
       text: message,
       model: "zonos-v0.1-transformer",
       language_iso_code: "ko",
       speaking_rate: 20,
       mime_type: "audio/ogg",
-      emotion: { happiness: 0.8, neutral: 0.3 },
+      emotion: {
+        happiness: 0.8,
+        neutral: 0.3,
+      },
     });
 
-    const tempOggPath = path.join(outputDir, 'temp_audio.ogg');
-    const writeStream = fs.createWriteStream(tempOggPath);
+    const passThrough = new PassThrough();
     const reader = stream.getReader();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        writeStream.end();
-        break;
+    const push = async () => {
+      console.log('🔄 Start pushing stream data...');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          console.log('✅ Reader finished reading all chunks.');
+          passThrough.end();
+          break;
+        }
+        console.log(`📦 Pushing chunk of size: ${value.length}`);
+        passThrough.write(value);
       }
-      writeStream.write(value);
-    }
+    };
+    
 
-    // HLS 변환: ffmpeg를 이용해 .ogg를 .ts 세그먼트와 .m3u8로 변환
-    return new Promise((resolve, reject) => {
-      ffmpeg(tempOggPath)
-        .outputOptions([
-          '-codec:a aac',
-          '-f hls',
-          '-hls_time 2',
-          '-hls_list_size 0',
-          '-hls_segment_filename', path.join(outputDir, 'segment_%03d.ts'),
-        ])
-        .output(path.join(outputDir, 'playlist.m3u8'))
-        .on('end', () => {
-          console.log('✅ HLS 변환 완료');
-          resolve(true);
-        })
-        .on('error', (err) => {
-          console.error('❌ HLS 변환 실패:', err);
-          reject(err);
-        })
-        .run();
-    });
+    push();
+    return { audioStream: passThrough, mimeType };
   }
 }

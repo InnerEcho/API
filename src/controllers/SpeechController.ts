@@ -9,7 +9,6 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
 export class PlantSpeechController {
   private speechService: SpeechService;
 
@@ -48,41 +47,30 @@ export class PlantSpeechController {
     }
   }
 
-  async textToSpeechHLS(req: Request, res: Response) {
+  /**
+
+
+   * TTS 처리
+
+
+   */
+
+  async textToSpeech(req: Request, res: Response) {
     try {
       const { message } = req.query;
-      const sessionId = Date.now().toString();
-      const hlsDir = path.join(__dirname, `../../hls/${sessionId}`);
-      fs.mkdirSync(hlsDir, { recursive: true });
-
-      await this.speechService.generateHLS(message as string, hlsDir);
-
-      res.json({ sessionId, hlsUrl: `/speech/tts/stream/${sessionId}.m3u8` });
+      const { audioStream, mimeType } = await this.speechService.textToSpeech(message);
+  
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Content-Disposition', 'inline; filename=speech.ogg');
+  
+      audioStream.on('end', () => console.log('✅ Streaming finished to client.'));
+      audioStream.on('error', (err) => console.error('❌ Stream error:', err));
+  
+      audioStream.pipe(res);
     } catch (err) {
-      console.error('TTS HLS Error:', err);
-      res.status(500).json({ code: 500, msg: 'TTS HLS Error' });
-    }
-  }
-
-  getPlaylist(req: Request, res: Response) {
-    const { sessionId } = req.params;
-    const playlistPath = path.join(__dirname, `../../hls/${sessionId}/playlist.m3u8`);
-    if (fs.existsSync(playlistPath)) {
-      res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-      fs.createReadStream(playlistPath).pipe(res);
-    } else {
-      res.status(404).send('Playlist not found');
-    }
-  }
-
-  getSegment(req: Request, res: Response) {
-    const { sessionId, segment } = req.params;
-    const segmentPath = path.join(__dirname, `../../hls/${sessionId}/${segment}`);
-    if (fs.existsSync(segmentPath)) {
-      res.setHeader('Content-Type', 'video/MP2T');
-      fs.createReadStream(segmentPath).pipe(res);
-    } else {
-      res.status(404).send('Segment not found');
+      console.error('TTS Stream Error:', err);
+      res.status(500).json({ code: 500, msg: 'TTS stream error' });
     }
   }
 }
