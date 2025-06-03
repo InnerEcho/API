@@ -1,16 +1,10 @@
 import express from 'express';
 import { PlantChatBotController } from "../controllers/ChatBotController.js";
-import multer from 'multer';
-import { PlantSpeechController } from "../controllers/SpeechController.js";
 import { ChatHistoryController } from "../controllers/ChatHistoryController.js";
 import { ChatService } from "../services/ChatService.js";
 import { ChatBot } from "../services/bots/ChatBot.js";
 import { ChatHistoryService } from "../services/ChatHistoryService.js";
-import { SpeechService } from "../services/SpeechService.js";
 const router = express.Router();
-const upload = multer({
-  dest: 'uploads/'
-}); // 파일을 임시로 'uploads' 폴더에 저장
 
 // 의존성 주입
 const chatBot = new ChatBot();
@@ -18,8 +12,6 @@ const chatService = new ChatService(chatBot);
 const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);
-const speechService = new SpeechService();
-const plantSpeechController = new PlantSpeechController(speechService);
 
 /**
  * @swagger

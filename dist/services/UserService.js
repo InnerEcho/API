@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from "../models/index.js";
 export class UserService {
-  async signUp(user_name, user_email, password) {
+  async signUp(user_name, user_email, password, user_gender) {
     const existEmail = await db.User.findOne({
       where: {
         user_email: user_email
@@ -22,7 +22,8 @@ export class UserService {
     const entryUser = {
       user_name: user_name,
       user_email: user_email,
-      password: entryPassword
+      password: entryPassword,
+      user_gender: user_gender
     };
     const registedUser = await db.User.create(entryUser);
     const entryPlant = {

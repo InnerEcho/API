@@ -18,9 +18,10 @@ export class UserController {
       const {
         user_name,
         user_email,
-        password
+        password,
+        user_gender
       } = req.body;
-      const response = await this.userService.signUp(user_name, user_email, password);
+      const response = await this.userService.signUp(user_name, user_email, password, user_gender);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';

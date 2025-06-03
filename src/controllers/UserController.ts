@@ -20,11 +20,12 @@ export class UserController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_name, user_email, password } = req.body;
+      const { user_name, user_email, password, user_gender } = req.body;
       const response = await this.userService.signUp(
         user_name,
         user_email,
         password,
+        user_gender,
       );
 
       result.code = 200;

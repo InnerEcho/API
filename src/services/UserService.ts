@@ -7,6 +7,7 @@ export class UserService {
     user_name: string,
     user_email: string,
     password: string,
+    user_gender: string,
   ): Promise<any> {
     const existEmail = await db.User.findOne({ where: { user_email: user_email } });
     const existNickName = await db.User.findOne({
@@ -24,6 +25,7 @@ export class UserService {
       user_name: user_name,
       user_email: user_email,
       password: entryPassword,
+      user_gender: user_gender,
     };
 
     const registedUser = await db.User.create(entryUser);
