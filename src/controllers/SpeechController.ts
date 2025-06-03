@@ -44,25 +44,22 @@ export class PlantSpeechController {
   // controllers/SpeechController.ts
   async textToSpeech(req: Request, res: Response) {
     try {
-      const { message } = req.body;  // POST로 받는 경우
+      const { message } = req.body;
       if (!message || typeof message !== 'string') {
         res.status(400).json({ code: 400, msg: 'Missing or invalid message' });
         return;
       }
-
-      const { audioStream, mimeType } = await this.speechService.textToSpeech(message);
-
+  
+      const { audioBlob, mimeType } = await this.speechService.textToSpeech(message);
+  
       res.setHeader('Content-Type', mimeType);
-      res.setHeader('Transfer-Encoding', 'chunked');
       res.setHeader('Content-Disposition', 'inline; filename=speech.ogg');
-
-      audioStream.on('end', () => console.log('✅ Streaming finished to client.'));
-      audioStream.on('error', (err) => console.error('❌ Stream error:', err));
-
-      audioStream.pipe(res);
+  
+      res.send(audioBlob);  // Blob 데이터를 직접 전송
+      console.log('✅ Blob data sent to client.');
     } catch (err) {
-      console.error('TTS Stream Error:', err);
-      res.status(500).json({ code: 500, msg: 'TTS stream error' });
+      console.error('TTS Error:', err);
+      res.status(500).json({ code: 500, msg: 'TTS error' });
     }
   }
 }

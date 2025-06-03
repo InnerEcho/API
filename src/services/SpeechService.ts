@@ -53,18 +53,18 @@ export class SpeechService {
   async textToSpeech(message: string) {
     console.log('🔔 textToSpeech 호출 시작');
     console.log(`📤 입력 메시지: ${message}`);
-
+  
     try {
-      console.log('🚀 Zyphra createStream 요청 시작...');
-      const { stream, mimeType } = await this.client.audio.speech.createStream({
+      console.log('🚀 Zyphra create 요청 시작...');
+      const audioBlob = await this.client.audio.speech.create({
         text: message,
         model: 'zonos-v0.1-transformer', // 공식 모델
         default_voice_name: 'anime_girl',
-        language_iso_code: 'ko', // 지원 언어
-        speaking_rate: 15, // 공식 기본 속도
-        mime_type: 'audio/ogg', // 유지: Ogg 포맷
+        language_iso_code: 'ko',
+        speaking_rate: 15,
+        mime_type: 'audio/ogg', // 유지
         emotion: {
-          happiness: 0.8, // 공식 emotion 기본값
+          happiness: 0.8,
           neutral: 0.3,
           sadness: 0.05,
           disgust: 0.05,
@@ -74,34 +74,9 @@ export class SpeechService {
           other: 0.5,
         },
       });
-      console.log('✅ Zyphra createStream 요청 성공');
-      console.log(`📄 MIME 타입: ${mimeType}`);
-
-      const passThrough = new PassThrough();
-      const reader = stream.getReader();
-
-      (async () => {
-        console.log('🔄 Start pushing stream data...');
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              console.log('✅ Reader finished reading all chunks.');
-              passThrough.end();
-              break;
-            }
-            console.log(`📦 Pushing chunk of size: ${value.length}`);
-            passThrough.write(value);
-          }
-        } catch (streamErr) {
-          console.error('❌ Stream 처리 중 오류:', streamErr);
-          // TypeScript에서 타입 단언 추가
-          passThrough.destroy(streamErr as Error);
-        }
-      })();
-      
-
-      return { audioStream: passThrough, mimeType };
+      console.log('✅ Zyphra create 요청 성공');
+  
+      return { audioBlob, mimeType: 'audio/ogg' };
     } catch (error: unknown) {
       const zyphraError = error as ZyphraError;
       if (zyphraError instanceof ZyphraError) {

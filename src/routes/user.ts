@@ -2,12 +2,14 @@ import express from 'express';
 import { verifyToken } from '@/middlewares/auth.js';
 import { UserController } from '@/controllers/UserController.js';
 import { UserService } from '@/services/UserService.js';
+import { EmotionController } from '@/controllers/EmotionController.js';
 
 const router = express.Router();
 
 // 의존성 주입
 const userService = new UserService();
 const userController = new UserController(userService);
+const emotionController = new EmotionController();
 
 /**
  * @swagger
@@ -90,6 +92,8 @@ router.post(
   '/email',
   userController.sendEmailVerification.bind(userController),
 );
+
+router.post('/emotion', emotionController.getEmotion.bind(emotionController));
 
 // 토큰 검증
 router.get('/token', verifyToken, (req, res) => {
