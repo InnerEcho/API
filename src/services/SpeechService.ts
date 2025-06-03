@@ -59,6 +59,7 @@ export class SpeechService {
       const { stream, mimeType } = await this.client.audio.speech.createStream({
         text: message,
         model: 'zonos-v0.1-transformer', // 공식 모델
+        default_voice_name: 'anime_girl',
         language_iso_code: 'ko', // 지원 언어
         speaking_rate: 15, // 공식 기본 속도
         mime_type: 'audio/ogg', // 유지: Ogg 포맷

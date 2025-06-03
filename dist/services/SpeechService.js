@@ -51,6 +51,7 @@ export class SpeechService {
         text: message,
         model: 'zonos-v0.1-transformer',
         // 공식 모델
+        default_voice_name: 'anime_girl',
         language_iso_code: 'ko',
         // 지원 언어
         speaking_rate: 15,
