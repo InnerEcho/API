@@ -70,7 +70,7 @@ export default function (sequelize) {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       // 등록 시 현재 시간을 기본값으로 설정
-      allowNull: false,
+      allowNull: true,
       comment: "완료 날짜"
     }
   }, {

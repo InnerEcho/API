@@ -63,20 +63,25 @@ export class MissionService {
   //   return updatedMission;
   // }
 
-  async completeMission(user_id, mission_id) {
-    const mission = await db.Mission.findOne({
+  async completeMission(user_id, event_id) {
+    const mission = await db.User_Event.findOne({
       where: {
         user_id: user_id,
-        mission_id: mission_id
+        event_id: event_id
       }
     });
     if (!mission) {
       throw new Error('MissionNotFound');
     }
-    const updatedMission = await mission.update({
+    const updatedMission = await db.User_Event.update({
       status: 'completed',
       is_completed: true,
       completed_at: new Date()
+    }, {
+      where: {
+        user_id: user_id,
+        event_id: event_id
+      }
     });
     return updatedMission;
   }
