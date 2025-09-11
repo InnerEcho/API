@@ -20,41 +20,12 @@ const sequelize = new Sequelize(
   config.username, // 사용자명
   config.password, // 비밀번호
   {
-    host: config.host, // 호스트
-    dialect: config.dialect as Dialect, // 데이터베이스 종류
-    port: config.port, // 포트 번호
-    timezone: config.timezone,
-    logging: config.logging, // 로그 여부
-    pool: {
-      max: 5, // 최대 연결 수
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
-    },
-    retry: {
-      max: 3, // 연결 재시도 최대 횟수
-    },
+    host: config.host, // 호스트 ('db')
+    dialect: config.dialect as Dialect,
+    port: config.port,
+    logging: false, // 프로덕션에서는 false 권장
   },
 );
-
-// 데이터베이스 연결 확인
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log('Database connection established successfully.');
-    //데이터베이스 동기화 (테이블 생성 및 동기화)
-    sequelize
-      .sync()
-      .then(() => {
-        console.log('Database synchronized successfully.');
-      })
-      .catch((err: Error) => {
-        console.error('Error during database synchronization:', err.message);
-      });
-  })
-  .catch((err: Error) => {
-    console.error('Unable to connect to the database:', err.message);
-  });
 
 // Sequelize 객체와 모델을 db 객체에 저장
 const db: any = {};

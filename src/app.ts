@@ -35,11 +35,50 @@ process.on('uncaughtException', err => {
 const app = express();
 const swaggerDocument = YAML.load('./src/docs/leafy.yaml');
 
-db.sequelize
-  .sync({ alter: true }) // 데이터베이스 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
-  .catch((err: Error) => {
-    console.error('Unable to create DB:', err);
-  });
+// db.sequelize
+//   .sync({ alter: true }) // 데이터베이스 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
+//   .catch((err: Error) => {
+//     console.error('Unable to create DB:', err);
+//   });
+
+// 재시도 관련 상수 (타입을 명시적으로 지정)
+const MAX_RETRIES: number = 5;
+const RETRY_DELAY: number = 5000; // 5초 (ms)
+
+/**
+ * DB 연결을 재시도하는 함수.
+ * @param retries 남은 재시도 횟수
+ * @returns 연결 성공 또는 프로세스 종료로 인해 반환 값 없음 (Promise<void>)
+ */
+const connectWithRetry = async (retries: number = MAX_RETRIES): Promise<void> => {
+  try {
+    // 1. DB 연결 인증
+    await db.sequelize.authenticate();
+    console.log('DB 연결 성공');
+
+    // 2. DB 모델 동기화
+    await db.sequelize.sync({ alter: true }); // alter: true 옵션 등을 추가할 수 있습니다.
+    console.log('모델 동기화 완료');
+
+  } catch (err: unknown) { // 3. catch 절의 에러 변수는 'unknown' 타입으로 지정
+    
+    // 4. 에러가 Error 인스턴스인지 확인하여 타입 안정성 확보
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error(`DB 연결 실패. 남은 시도: ${retries - 1}`, errorMessage);
+
+    if (retries > 1) {
+      // 5. 재귀 호출 (setTimeout은 Promise를 반환하지 않으므로 await 없음)
+      setTimeout(() => connectWithRetry(retries - 1), RETRY_DELAY);
+    } else {
+      console.error('DB 연결 시도 모두 실패. 서버 종료');
+      process.exit(1);
+    }
+  }
+};
+
+// 애플리케이션 시작 시 DB 연결 함수 호출
+connectWithRetry();
+
 
 const debug = debugModule('ohgnoy-backend:server');
 
