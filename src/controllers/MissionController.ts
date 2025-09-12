@@ -72,17 +72,28 @@ export class MissionController {
       if (!user_id || !mission_id) {
         apiResult.msg = 'Missing required fields: user_id, mission_id';
         res.status(400).json(apiResult);
+        return;
       }
       // 실제로 이미지가 전송되지 않을 때(추후 이미지가 전송되는 multer 작성해야함)
       if (!req.file) {
         apiResult.msg = 'Image file is required';
         res.status(400).json(apiResult);
+        return;
       }
 
+      const User_Id = parseInt(user_id as string);
+      const Mission_Id = parseInt(mission_id as string);
+
+      // 변환된 값이 NaN인지 확인
+      if (isNaN(User_Id) || isNaN(Mission_Id)) {
+        apiResult.msg = '유효하지 않은 user_id 또는 mission_id 입니다.';
+        res.status(400).json(apiResult);
+        return;
+}
       // 이미지가 정상적으로 전송되었으면 미션 완료 처리
       const response = await this.missionService.completeMission(
-        user_id,
-        mission_id
+        User_Id,
+        Mission_Id
       );
 
       apiResult.code = 200;
@@ -90,44 +101,7 @@ export class MissionController {
       apiResult.msg = 'Mission completed successfully';
       res.status(200).json(apiResult);
     } catch (err) {
-      apiResult.code = 500;
-      apiResult.msg = 'ServerError';
-      res.status(500).json(apiResult);
-    }0
-  }
-
-  public async walk(req: Request, res: Response): Promise<void> {
-    const apiResult: ApiResult = {
-      code: 400,
-      data: null,
-      msg: '',
-    };
-
-    try {
-      const { user_id, mission_id, steps } = req.body;
-   
-      // 필수 필드 검증
-      if (!user_id || !mission_id || steps === undefined) {
-        apiResult.msg = 'Missing required fields: user_id, mission_id, steps';
-        res.status(400).json(apiResult);
-        return;
-      }
-   
-      // 걸음 수 검증
-      if (typeof steps !== 'number' || steps < 1000) { // 걸어야하는 스텝 수 설정
-        apiResult.msg = 'You need to walk at least 1000 steps to complete this mission';
-        res.status(400).json(apiResult);
-        return;
-      }
-   
-      // 미션 완료 처리
-      const response = await this.missionService.completeMission(user_id, mission_id);
-   
-      apiResult.code = 200;
-      apiResult.data = response;
-      apiResult.msg = 'Mission completed successfully';
-      res.status(200).json(apiResult);
-    } catch (err) {
+      console.error("오류 발생:", err); // 에러 로그 추가
       apiResult.code = 500;
       apiResult.msg = 'ServerError';
       res.status(500).json(apiResult);
@@ -168,23 +142,42 @@ export class MissionController {
         res.status(200).json(apiResult);
       }
     } catch (err) {
+      console.error("오류 발생:", err);
       apiResult.code = 500;
       apiResult.msg = 'ServerError';
       res.status(500).json(apiResult);
     }
   }
 
-  public async talkWithPlant(req: Request, res: Response): Promise<void> { // 미완료
+  public async completeStretching(req: Request, res: Response): Promise<void> {
     const apiResult: ApiResult = {
       code: 400,
       data: null,
       msg: '',
     };
-
+  
     try {
+      const { user_id, mission_id } = req.body;
+  
+      // 필수 필드 검증
+      if (!user_id || !mission_id) {
+        apiResult.msg = 'Missing required fields: user_id, mission_id';
+        res.status(400).json(apiResult);
+        return;
+      }
+      
+      // MissionService를 통해 미션을 완료 처리합니다.
+      const response = await this.missionService.completeMission(user_id, mission_id);
+  
+      apiResult.code = 200;
+      apiResult.data = response;
+      apiResult.msg = '스트레칭 미션 성공';
+      res.status(200).json(apiResult);
+  
     } catch (err) {
+      console.error(err);
       apiResult.code = 500;
-      apiResult.msg = 'ServerError';
+      apiResult.msg = '서버 에러';
       res.status(500).json(apiResult);
     }
   }
@@ -195,26 +188,49 @@ export class MissionController {
       data: null,
       msg: '',
     };
-
+  
     try {
-      const { user_id, mission_id, image } = req.body;
-
-      if (!user_id || !mission_id || !image) {
-        apiResult.msg = 'Missing required fields: user_id, mission_id, image';
+      const { user_id, mission_id } = req.body;
+  
+      if (!user_id || !mission_id) {
+        apiResult.msg = 'Missing required fields: user_id, mission_id';
         res.status(400).json(apiResult);
         return;
       }
-          // 미션 완료 처리만 수행
-      await this.missionService.completeMission(user_id, mission_id);
+      
+      // 파일이 업로드 되었는지 req.file 확인
+      if (!req.file) {
+        apiResult.msg = 'Image file is required';
+        res.status(400).json(apiResult);
+        return;
+      }
+  
+      const User_Id = parseInt(user_id as string);
+      const Mission_Id = parseInt(mission_id as string);
+
+      // 변환된 값이 NaN인지 확인
+      if (isNaN(User_Id) || isNaN(Mission_Id)) {
+        apiResult.msg = '유효하지 않은 user_id 또는 mission_id 입니다.';
+        res.status(400).json(apiResult);
+        return;
+}
+      // 이미지가 정상적으로 전송되었으면 미션 완료 처리
+      const response = await this.missionService.completeMission(
+        User_Id,
+        Mission_Id
+      );
 
       apiResult.code = 200;
-      apiResult.data = { message: 'Smile image received and condition fulfilled' };
-      apiResult.msg = 'Smile mission condition fulfilled';
+      apiResult.data = {
+        message: 'Smile image received and mission completed',
+      };
+      apiResult.msg = '웃는 사진 미션 성공';
       res.status(200).json(apiResult);
- 
+  
     } catch (err) {
+      console.error(err);
       apiResult.code = 500;
-      apiResult.msg = 'ServerError';
+      apiResult.msg = '서버 에러';
       res.status(500).json(apiResult);
     }
   }
