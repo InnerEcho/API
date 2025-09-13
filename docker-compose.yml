@@ -1,54 +1,28 @@
-# docker-compose.yml
-
 services:
   # Node.js API 서비스
-  api:
-    build: .
-    container_name: leafy-api-container
-    ports:
-      - ${PORT}:${PORT}
+  leafy_api:
+    build:
+      context: . # 👈 경로 수정: 현재 폴더(leafy)를 기준으로 빌드
+    container_name: leafy_api_container # 👈 이름 변경: 충돌 방지
     env_file:
-      - ./.env
-    volumes:
-      - ./uploads:/usr/src/app/uploads
-      - ./hls:/usr/src/app/hls
+      - ./.env # 👈 경로 수정: 현재 폴더의 .env 파일 사용
+    ports:
+      - "3001:3001" # 👈 포트 노출: 직접 접속을 위해 포트를 열어줌
     restart: unless-stopped
-    # 'db' 서비스가 'healthy' 상태가 될 때까지 시작을 기다립니다.
-    depends_on:
-      db:
-        condition: service_healthy
+    # networks는 Docker Compose가 자동으로 생성하는 기본 네트워크를 사용
 
-  # MySQL 데이터베이스 서비스
-  db:
+  # 🐘 Leafy DB 서비스
+  leafy_db:
     image: mysql:8.0
+    container_name: leafy_db_container # 👈 이름 변경: 충돌 방지
     command: --default-authentication-plugin=mysql_native_password
     restart: always
-    # .env 파일의 변수를 참조하여 DB 컨테이너를 초기화합니다.
-    environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PW}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PW}
+    env_file:
+      - ./.env # 👈 경로 수정: 현재 폴더의 .env 파일 사용
     volumes:
-      - db_data:/var/lib/mysql
-    # DB 서버가 연결을 받을 준비가 되었는지 확인하는 healthcheck 설정입니다.
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - leafy_db_volumes:/var/lib/mysql # 👈 볼륨 이름 변경: 충돌 방지
 
-  nginx:
-    image: nginx:latest
-    container_name: api-nginx-compose
-    restart: always
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    ports:
-      - "80:80"
-    depends_on:
-      - api
 
 # DB 데이터를 영속적으로 저장하기 위한 Docker 볼륨을 정의합니다.
 volumes:
-  db_data:
+  leafy_db_volumes:
