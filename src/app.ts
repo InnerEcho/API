@@ -20,6 +20,7 @@ import indexRouter from '@/routes/index.js';
 import authRouter from '@/routes/user.js';
 import chatRouter from '@/routes/chat.js';
 import plantRouter from '@/routes/plant.js';
+import plantStateRouter from '@/routes/plantState.js'
 import diaryRouter from '@/routes/diary.js';
 import commentRouter from '@/routes/comment.js';
 import speechRouter from '@/routes/speech.js';
@@ -105,6 +106,7 @@ app.use('/', indexRouter);
 app.use('/user', authRouter);
 app.use('/chat', chatRouter);
 app.use('/plant', plantRouter);
+app.use('/plant-state',plantStateRouter);
 app.use('/diary', diaryRouter);
 app.use('/comment', commentRouter);
 app.use('/speech',speechRouter);

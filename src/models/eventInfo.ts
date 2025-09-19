@@ -1,55 +1,55 @@
-import { Sequelize, DataTypes, Model, type Optional } from "sequelize";
+import { Sequelize, DataTypes, Model } from "sequelize";
 
-// 인터페이스 정의 - 이 모델에서 사용할 속성 정의
-interface EventAttributes {
-  event_id: BigInt; // 이벤트 ID(PK)
-  event_title: string; // 이벤트 제목
-  event_content: string; // 이벤트 내용
-  update_at: Date; // 생성 날짜
+// event 모델 속성 인터페이스 정의
+interface eventAttributes {
+  event_id: BigInt;           // 미션 ID (PK)
+  event_title: string;        // 미션 제목
+  event_content: string;      // 미션 내용
+  exp_reward: number;          // 미션 완료 시 지급되는 경험치
+  created_at: Date;             // 생성 날짜
 }
 
-
-// 모델 반환 타입 정의
+// event 모델 반환 타입 정의
 export default function (sequelize: Sequelize) {
-  return sequelize.define<Model<EventAttributes>>(
+  return sequelize.define<Model<eventAttributes>>(
     "event",
     {
       event_id: {
-        type: DataTypes.BIGINT,       // 사용자 ID를 INT로 변경
-        primaryKey: true,             // 기본 키 설정
-        autoIncrement: true,          // 자동 증가
+        type: DataTypes.BIGINT,
+        primaryKey: true,
+        autoIncrement: true,
         allowNull: false,
-        comment: "이벤트 ID (Primary Key)",
+        comment: "미션 ID (Primary Key)",
       },
       event_title: {
-        type: DataTypes.STRING(256),      // 이벤트 제목을 STRING로 변경
+        type: DataTypes.STRING(256),
         allowNull: false,
-        comment: "이벤트 제목",
+        comment: "미션 제목",
       },
       event_content: {
-        type: DataTypes.STRING(256),      // 이벤트 내용용를 STRING로 변경
+        type: DataTypes.TEXT, // 내용은 길어질 수 있으므로 TEXT 타입으로 변경하는 것을 추천합니다.
         allowNull: false,
-        comment: "이벤트 내용",
+        comment: "미션 내용",
       },
-      update_at: {
-        type: DataTypes.DATE,      // 사용자 ID를 INT로 변경
-        defaultValue: DataTypes.NOW, // 등록 시 현재 시간을 기본값으로 설정
+      // 요청하신 경험치 필드를 추가했습니다.
+      exp_reward: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0, // 기본값을 0으로 설정하여 안정성을 높입니다.
+        comment: "미션 완료 시 지급되는 경험치",
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
         allowNull: false,
         comment: "생성 날짜",
       },
     },
     {
       // 테이블 설정
-      tableName: "event",                // 실제 DB에서 사용될 테이블 이름
-      timestamps: false,                // createdAt, updatedAt 자동 생성 비활성화
-      comment: "이벤트 정보",        // 테이블에 대한 설명
-    //   indexes: [
-    //     {
-    //       name: "user_email_unique",    // 유니크 인덱스 이름
-    //       unique: true,                 // 인덱스를 유니크로 설정
-    //       fields: ["user_email"],       // 인덱스를 적용할 필드
-    //     },
-    //   ],
+      tableName: "event",             // 실제 DB에서 사용될 테이블 이름
+      timestamps: false,                // createdAt, updatedAt 자동 생성을 비활성화합니다.
+      comment: "미션 정보",         // 테이블에 대한 설명
     }
   );
 }

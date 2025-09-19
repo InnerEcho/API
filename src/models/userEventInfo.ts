@@ -9,7 +9,6 @@ interface UserEventAttributes {
     status: String;   // 진행 상태
     assigned_at: Date; // 미션 할당 날짜
     completed_at: Date; // 미션 완료 날짜
-    
   }
 
 // 모델 반환 타입 정의
