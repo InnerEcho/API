@@ -8,6 +8,7 @@ import userEventInfoDb from "./userEventInfo.js";
 import chatHistoryDb from "./chatHistory.js";
 import GrowthDiary from "./GrowthDiary.js";
 import GrowthDiaryComment from "./GrowthDiaryComment.js";
+import userFriendsDb from "./userFriends.js";
 
 // 현재 환경을 가져옴 (development, test, production)
 const env = process.env.NODE_ENV || 'development';
@@ -42,6 +43,7 @@ db.User_Event = userEventInfoDb(sequelize);
 db.ChatHistory = chatHistoryDb(sequelize);
 db.GrowthDiary = GrowthDiary(sequelize);
 db.GrowthDiaryComment = GrowthDiaryComment(sequelize);
+db.UserFriends = userFriendsDb(sequelize);
 
 // 모델 간의 관계 설정
 db.User.hasMany(db.Plant, {
