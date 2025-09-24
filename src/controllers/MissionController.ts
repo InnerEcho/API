@@ -234,4 +234,56 @@ export class MissionController {
       res.status(500).json(apiResult);
     }
   }
+
+  public async positiveChatWithPlant(req: Request, res: Response): Promise<void> {
+    const apiResult: ApiResult = {
+      code: 400,
+      data: null,
+      msg: '',
+    };
+  
+    try {
+      const { user_id, mission_id, plant_id, message } = req.body;
+  
+      // 필수 필드 검증
+      if (!user_id || !mission_id || !plant_id || !message) {
+        apiResult.msg = 'Missing required fields: user_id, mission_id, plant_id, message';
+        res.status(400).json(apiResult);
+        return;
+      }
+  
+      // 챗봇과 대화 처리
+      const chatService = new ChatService(new ChatBot());
+      const chatResponse = await chatService.create(user_id, plant_id, message);
+  
+      // 감정 분석 처리 (행복, 슬픔, 분노 등 반환한다고 가정)
+      const emotionResult = await this.emotionService.analyze(message);
+  
+      // 기본값: 미션 미완료
+      let missionCompleted: any = null;
+  
+      // 긍정적 말하기 미션 → '행복' 감정일 때만 미션 완료 처리
+      if (emotionResult === '행복') {
+        missionCompleted = await this.missionService.completeMission(user_id, mission_id);
+      }
+  
+      // 응답 구성
+      apiResult.code = 200;
+      apiResult.data = {
+        chat_response: chatResponse,
+        emotion: emotionResult,
+        mission_completed: missionCompleted, // null이면 미완료
+      };
+      apiResult.msg = missionCompleted
+        ? 'Chat completed and mission finished successfully'
+        : 'Chat completed but mission not finished (condition not met)';
+      res.status(200).json(apiResult);
+  
+    } catch (err) {
+      console.error("오류 발생:", err);
+      apiResult.code = 500;
+      apiResult.msg = 'ServerError';
+      res.status(500).json(apiResult);
+    }
+  }
 }
