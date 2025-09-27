@@ -93,8 +93,7 @@ router.post(
   userController.sendEmailVerification.bind(userController),
 );
 
-router.post('/emotion', emotionController.getEmotion.bind(emotionController));
-
+router.get('/emotion/:user_id', emotionController.getEmotion.bind(emotionController)); // POST -> GET
 // 토큰 검증
 router.get('/token', verifyToken, (req, res) => {
   res.json({

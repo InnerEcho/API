@@ -36,10 +36,11 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, diary_id } = req.body;
+      const { diary_id } = req.params;
+      const { user_id } = req.query;
       const response = await this.growthDiaryCommentService.getComments(
-        user_id,
-        diary_id,
+        parseInt(user_id as string),
+        parseInt(diary_id),
       );
 
       result.code = 200;

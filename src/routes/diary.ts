@@ -10,15 +10,16 @@ const growthDiaryBot = new GrowthDiaryBot();
 const growthDiaryService = new GrowthDiaryService(growthDiaryBot);
 const growthDiaryController = new GrowthDiaryController(growthDiaryService);
 
-router.post('/month', growthDiaryController.getDiaryDatesForMonth.bind(growthDiaryController));
+router.get('/month/:user_id/:year_month', growthDiaryController.getDiaryDatesForMonth.bind(growthDiaryController));
 
-router.post(
-  '/date',
+router.get(
+  '/date/:user_id/:date',
   growthDiaryController.getDiaryByDate.bind(growthDiaryController),
 );
 router.post(
   '/create',
   growthDiaryController.create.bind(growthDiaryController),
 );
+
 
 export default router;

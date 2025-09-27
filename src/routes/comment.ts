@@ -10,20 +10,23 @@ const growthDiaryCommentController = new GrowthDiaryCommentController(
   growthDiaryCommentService,
 );
 
-router.post(
-  '/list',
+router.get(
+  '/:diary_id',
   growthDiaryCommentController.getComments.bind(growthDiaryCommentController),
 );
+// 댓글 생성 (POST)
 router.post(
-  '/create',
+  '/',
   growthDiaryCommentController.create.bind(growthDiaryCommentController),
 );
-router.post(
-  '/update',
+// 댓글 수정 (PUT)
+router.put(
+  '/:comment_id',
   growthDiaryCommentController.update.bind(growthDiaryCommentController),
 );
-router.post(
-  '/delete',
+// 댓글 삭제 (DELETE)
+router.delete(
+  '/:comment_id',
   growthDiaryCommentController.delete.bind(growthDiaryCommentController),
 );
 

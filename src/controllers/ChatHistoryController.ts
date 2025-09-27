@@ -16,10 +16,10 @@ export class ChatHistoryController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, plant_id } = req.body;
+      const { user_id, plant_id } = req.params;
       const response = await this.chatHistoryService.getChatHistory(
-        user_id,
-        plant_id,
+        parseInt(user_id),
+        parseInt(plant_id),
       );
 
       result.code = 200;
