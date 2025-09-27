@@ -26,6 +26,9 @@ RUN npm install --omit=dev
 COPY --from=build /usr/src/app/dist ./dist
 COPY --from=build /usr/src/app/src/docs/leafy.yaml ./src/docs/leafy.yaml
 COPY --from=build /usr/src/app/src/public/plantdata.json ./src/public/plantdata.json
+COPY --from=build /usr/src/app/config ./config
+COPY --from=build /usr/src/app/migrations ./migrations
+COPY --from=build /usr/src/app/.sequelizerc ./.sequelizerc
 
 EXPOSE 3000
 
