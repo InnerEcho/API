@@ -1,5 +1,7 @@
 // Sequelize-CLI용 설정 (CommonJS)
 require('dotenv').config();
+console.log('[Sequelize Config Loaded]', process.env.DB_USER, process.env.DB_NAME, process.env.DB_HOST);
+
 
 module.exports = {
   development: {

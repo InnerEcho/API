@@ -12,11 +12,11 @@
     "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
     "seed": "sequelize-cli db:seed:all",
     "seed:undo": "sequelize-cli db:seed:undo:all",
-    "seed:essential": "sequelize-cli db:seed --seed 20250927072134-essential-species-data.js",
-    "seed:dev": "NODE_ENV=development sequelize-cli db:seed --seed 20250927072136-dev-species-data.js",
-    "seed:dev:undo": "NODE_ENV=development sequelize-cli db:seed:undo --seed 20250927072136-dev-species-data.js",
-    "seed:dev:win": "set NODE_ENV=development && sequelize-cli db:seed --seed 20250927072136-dev-species-data.js",
-    "seed:dev:undo:win": "set NODE_ENV=development && sequelize-cli db:seed:undo --seed 20250927072136-dev-species-data.js"
+    "seed:essential": "sequelize-cli db:seed --seed essential-species-data.cjs",
+    "seed:dev": "NODE_ENV=development sequelize-cli db:seed --seed dev-species-data.cjs",
+    "seed:dev:undo": "NODE_ENV=development sequelize-cli db:seed:undo --seed dev-species-data.cjs",
+    "seed:dev:win": "set NODE_ENV=development && sequelize-cli db:seed --seed dev-species-data.cjs",
+    "seed:dev:undo:win": "set NODE_ENV=development && sequelize-cli db:seed:undo --seed dev-species-data.cjs"
   },
   "dependencies": {
     "@google-cloud/speech": "^6.7.0",
@@ -31,7 +31,7 @@
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",
     "debug": "~2.6.9",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
     "ejs": "~2.6.1",
     "express": "~4.16.1",
     "fluent-ffmpeg": "^2.1.3",

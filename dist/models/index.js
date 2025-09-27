@@ -2,7 +2,7 @@ import { Sequelize } from 'sequelize';
 import { dbConfig } from "../config/db.config.js";
 import userDb from "./user.js"; // 모델 파일 import
 import userPlantInfoDb from "./userPlantInfo.js";
-import optimalSpeciesInfoDb from "./optimalSpeciesInfo.js";
+import optimalSpeciesInfoDb from "./species.js";
 import eventDb from "./eventInfo.js";
 import userEventInfoDb from "./userEventInfo.js";
 import chatHistoryDb from "./chatHistory.js";

@@ -3,6 +3,13 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
+    // 테이블이 이미 존재하는지 확인
+    const tableExists = await queryInterface.describeTable('species').catch(() => null);
+    if (tableExists) {
+      console.log('Species table already exists, skipping creation');
+      return;
+    }
+
     await queryInterface.createTable('species', {
       species_id: {
         type: Sequelize.BIGINT,
@@ -53,12 +60,17 @@ module.exports = {
       }
     });
 
-    // 유니크 인덱스 추가
-    await queryInterface.addIndex('species', {
-      name: 'species_name_unique',
-      unique: true,
-      fields: ['species_name']
-    });
+    // 유니크 인덱스 추가 (이미 존재하는지 확인)
+    const indexes = await queryInterface.showIndex('species');
+    const indexExists = indexes.some(index => index.name === 'species_name_unique');
+    
+    if (!indexExists) {
+      await queryInterface.addIndex('species', {
+        name: 'species_name_unique',
+        unique: true,
+        fields: ['species_name']
+      });
+    }
   },
 
   async down (queryInterface, Sequelize) {

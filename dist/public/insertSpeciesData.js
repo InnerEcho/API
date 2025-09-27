@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import SpeciesModel from "../models/optimalSpeciesInfo.js"; // 모델 경로 확인
+import SpeciesModel from "../models/species.js"; // 모델 경로 확인
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
