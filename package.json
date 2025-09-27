@@ -6,7 +6,17 @@
     "dev": "nodemon --watch src --ext ts --exec \"tsx -r tsconfig-paths/register\" src/app.ts",
     "build": "babel src --out-dir dist --extensions \".ts\"",
     "start": "node dist/app.js",
-    "db": "node --loader ts-node/esm src/public/insertSpeciesData.ts"
+    "db": "node --loader ts-node/esm src/public/insertSpeciesData.ts",
+    "migrate": "sequelize-cli db:migrate",
+    "migrate:undo": "sequelize-cli db:migrate:undo",
+    "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
+    "seed": "sequelize-cli db:seed:all",
+    "seed:undo": "sequelize-cli db:seed:undo:all",
+    "seed:essential": "sequelize-cli db:seed --seed 20250927072134-essential-species-data.js",
+    "seed:dev": "NODE_ENV=development sequelize-cli db:seed --seed 20250927072136-dev-species-data.js",
+    "seed:dev:undo": "NODE_ENV=development sequelize-cli db:seed:undo --seed 20250927072136-dev-species-data.js",
+    "seed:dev:win": "set NODE_ENV=development && sequelize-cli db:seed --seed 20250927072136-dev-species-data.js",
+    "seed:dev:undo:win": "set NODE_ENV=development && sequelize-cli db:seed:undo --seed 20250927072136-dev-species-data.js"
   },
   "dependencies": {
     "@google-cloud/speech": "^6.7.0",
@@ -60,6 +70,7 @@
     "@types/yamljs": "^0.2.34",
     "babel-plugin-module-resolver": "^5.0.2",
     "nodemon": "^3.1.7",
+    "sequelize-cli": "^6.6.3",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.19.4",

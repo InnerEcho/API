@@ -1,4 +1,4 @@
-import { Sequelize, DataTypes, Model } from 'sequelize';
+import { Sequelize, DataTypes, Model} from 'sequelize';
 
 // 인터페이스 정의 - 이 모델에서 사용할 속성 정의
 interface UserAttributes {
@@ -28,7 +28,6 @@ export default function (sequelize: Sequelize) {
       user_email: {
         type: DataTypes.STRING(254), // 이메일 필드
         allowNull: false,
-        unique: true,
         validate: {
           isEmail: true, // 유효한 이메일 형식인지 확인
         },
@@ -52,6 +51,7 @@ export default function (sequelize: Sequelize) {
       state: {
         type: DataTypes.STRING(50),
         allowNull: true,
+        defaultValue: '중립',
         comment: '사용자 상태 값',
       },
       phone_number: {
@@ -76,6 +76,14 @@ export default function (sequelize: Sequelize) {
       tableName: 'user', // 실제 DB에서 사용될 테이블 이름
       timestamps: false, // createdAt, updatedAt 자동 생성 비활성화
       comment: '사용자 계정정보', // 테이블에 대한 설명
+      indexes: [
+        {
+          name: "unique_user_email", // 인덱스 이름 고정
+          unique: true,              // 유니크 인덱스
+          fields: ["user_email"],    // 단일 컬럼 인덱스
+        },
+      ],
     },
+    
   );
 }

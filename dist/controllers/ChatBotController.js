@@ -29,7 +29,7 @@ export class PlantChatBotController {
       res.status(500).json(result);
     }
   }
-  // state 저장 호출출
+  // state 저장 호출
   async emotionSave(req, res) {
     try {
       const {
