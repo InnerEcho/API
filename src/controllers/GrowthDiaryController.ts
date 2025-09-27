@@ -10,10 +10,10 @@ export class GrowthDiaryController {
     this.growthDiaryService = growthDiaryService;
   }
 
-  public async getDiaryDatesForMonth(req: Request, res: Response): Promise<void> {
+public async getDiaryDatesForMonth(req: Request, res: Response): Promise<void> {
     const result:ApiResult = { code: 400, data: null, msg: 'Failed' };
     try {
-      const { user_id, year_month } = req.body;
+      const { user_id, year_month } = req.params;
 
       if (!user_id || !year_month || !/^\d{4}-\d{2}$/.test(year_month)) {
         result.code = 400;
@@ -21,8 +21,10 @@ export class GrowthDiaryController {
         res.status(400).json(result);
         return;
       }
-
-      const dates = await this.growthDiaryService.getDiaryDatesForMonth(user_id, year_month);
+ 
+      const numericUserId = parseInt(user_id, 10); 
+      
+      const dates = await this.growthDiaryService.getDiaryDatesForMonth(numericUserId, year_month);
       result.code = 200;
       result.msg = 'Ok';
       result.data = { dates }; // 날짜 리스트 반환
