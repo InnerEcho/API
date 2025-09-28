@@ -12,14 +12,15 @@ export class GrowthDiaryController {
       const {
         user_id,
         year_month
-      } = req.body;
+      } = req.params;
       if (!user_id || !year_month || !/^\d{4}-\d{2}$/.test(year_month)) {
         result.code = 400;
         result.msg = 'Invalid or missing parameters';
         res.status(400).json(result);
         return;
       }
-      const dates = await this.growthDiaryService.getDiaryDatesForMonth(user_id, year_month);
+      const numericUserId = parseInt(user_id, 10);
+      const dates = await this.growthDiaryService.getDiaryDatesForMonth(numericUserId, year_month);
       result.code = 200;
       result.msg = 'Ok';
       result.data = {

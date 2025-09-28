@@ -99,5 +99,9 @@ const plantStateController = new PlantStateController(plantStateService);
  *                   example: "ServerError"
  */
 
-router.post('/state', plantStateController.getPlantState.bind(plantStateController));
+router.get(
+// POST -> GET
+'/state/:plant_id',
+// URL 파라미터 사용
+plantStateController.getPlantState.bind(plantStateController));
 export default router;

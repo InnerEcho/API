@@ -103,7 +103,7 @@ const chatHistoryController = new ChatHistoryController(chatHistoryService);
 router.post('/plant', plantChatBotController.chat.bind(plantChatBotController));
 
 // PlantChatBotController.getChatHistory 호출
-router.post('/history', chatHistoryController.getChatHistory.bind(chatHistoryController));
+router.get('/history/:user_id/:plant_id', chatHistoryController.getChatHistory.bind(chatHistoryController));
 
 /**
  * @swagger

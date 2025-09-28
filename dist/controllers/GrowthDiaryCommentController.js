@@ -34,10 +34,12 @@ export class GrowthDiaryCommentController {
     };
     try {
       const {
-        user_id,
         diary_id
-      } = req.body;
-      const response = await this.growthDiaryCommentService.getComments(user_id, diary_id);
+      } = req.params;
+      const {
+        user_id
+      } = req.query;
+      const response = await this.growthDiaryCommentService.getComments(parseInt(user_id), parseInt(diary_id));
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';

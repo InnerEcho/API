@@ -16,8 +16,8 @@ export class ChatHistoryController {
       const {
         user_id,
         plant_id
-      } = req.body;
-      const response = await this.chatHistoryService.getChatHistory(user_id, plant_id);
+      } = req.params;
+      const response = await this.chatHistoryService.getChatHistory(parseInt(user_id), parseInt(plant_id));
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
