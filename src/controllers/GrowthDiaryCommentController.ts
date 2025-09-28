@@ -81,12 +81,13 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, diary_id, comment_id, content } = req.body;
+      const { user_id, diary_id, content } = req.body;
+      const { comment_id } = req.params;
       const response = await this.growthDiaryCommentService.updateComment(
         content,
         user_id,
         diary_id,
-        comment_id,
+        parseInt(comment_id),
       );
 
       result.code = 200;

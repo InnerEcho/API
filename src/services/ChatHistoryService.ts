@@ -15,10 +15,12 @@ export class ChatHistoryService {
     user_id: number,
     plant_id: number,
   ): Promise<IMessage[]> {
-    return ChatHistory.findAll({
+    const chatHistory = await ChatHistory.findAll({
       where: { user_id: user_id, plant_id: plant_id },
       order: [['send_date', 'ASC']],
     });
+
+    return chatHistory;
   }
 
   public async getTodayHistory(

@@ -42,9 +42,9 @@ public async getDiaryDatesForMonth(req: Request, res: Response): Promise<void> {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, date } = req.body;
+      const { user_id, date } = req.params;
       const response = await this.growthDiaryService.getDiaryByDate(
-        user_id,
+        parseInt(user_id),
         date,
       );
 

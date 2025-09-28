@@ -1,453 +1,586 @@
-openapi: 3.0.0
+openapi: 3.0.1
 info:
-  title: Leafy API
-  description: Leafy 서비스의 API 명세서입니다. 식물과 교감하며 성장 일기를 기록하는 서비스입니다.
-  version: 1.0.0
+  title: InnerEcho API - (1) User
+  description: InnerEcho 서비스의 사용자 인증 및 정보 조회 API 명세서입니다.
+  version: 1.0.1
+
 servers:
-  - url: http://localhost:3000
-    description: Development server
+  - url: http://localhost:3001
+    description: 로컬 개발 서버
 
 tags:
   - name: User
-    description: 사용자 인증 및 정보 관련 API
+    description: "🧑‍🤝‍🧑 사용자 회원가입, 로그인, 인증 및 정보 조회 API"
   - name: Plant
-    description: 사용자 식물 관련 API
-  - name: Diary
-    description: 성장 일기 관련 API
-  - name: Comment
-    description: 성장 일기 댓글 관련 API
+    description: "🌱 사용자의 식물 상태(레벨, 경험치, 호감도) 조회 API"
   - name: Chat
-    description: 식물과의 대화(채팅) 관련 API
-  - name: ChatHistory
-    description: 채팅 기록 조회 API
-  - name: Friend
-    description: 친구 관계 API
-  - name: Mission
-    description: 미션 관련 API (추가 구현 필요)
-  - name: Speech
-    description: 음성 서비스 (TTS/STT) 관련 API
+    description: "💬 식물 챗봇과의 대화 및 이전 대화 기록 조회 API"
+  - name: Diary
+    description: "📔 성장 일기 CRUD API"
+  - name: Comment
+    description: "✍️ 성장 일기 댓글 CRUD API"
 
+# ===============================================================
+# == Paths (Endpoints)
+# ===============================================================
 paths:
   /user/register:
     post:
       tags:
         - User
-      summary: 회원가입 (사용자 등록 및 초기 식물 생성)
+      summary: 사용자 회원가입
+      description: 새로운 사용자를 등록합니다. 성공 시, 해당 사용자에게 '금쪽이'라는 이름의 기본 식물도 함께 생성됩니다.
       requestBody:
+        description: 회원가입에 필요한 사용자 정보
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: '#/components/schemas/UserRegisterRequest'
       responses:
-        '201':
+        '200':
           description: 회원가입 성공
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '409':
-          $ref: '#/components/responses/Conflict'
+          description: 필수 필드가 누락되었거나, 이메일 또는 닉네임이 이미 존재하는 경우
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                msg: "이미 존재하는 이메일입니다."
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /user/login:
     post:
       tags:
         - User
-      summary: 로그인
+      summary: 사용자 로그인
+      description: 이메일과 비밀번호로 사용자를 인증하고, API 접근을 위한 JWT(Access Token)를 발급합니다.
       requestBody:
+        description: 로그인에 필요한 이메일과 비밀번호
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: '#/components/schemas/UserLoginRequest'
       responses:
         '200':
-          description: 로그인 성공
+          description: 로그인 성공. JWT 토큰을 반환합니다.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/TokenResponse'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: 이메일이 존재하지 않거나 비밀번호가 일치하지 않는 경우
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 401
+                msg: "비밀번호가 일치하지 않습니다."
+        '500':
+          $ref: '#/components/responses/ServerError'
 
-  /user/emotion/{user_id}:
-    get:
+  /user/email:
+    post:
       tags:
         - User
-      summary: 사용자 감정 조회
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: 감정 조회 성공
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /plant/create:
-    post:
-      tags:
-        - Plant
-      summary: 새로운 식물 등록
-      security:
-        - BearerAuth: []
+      summary: 이메일 인증번호 발송
+      description: 회원가입 시 본인 인증을 위해 입력된 이메일 주소로 6자리 인증번호를 발송합니다.
       requestBody:
+        description: 인증번호를 발송할 이메일 주소
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PlantCreateRequest'
-      responses:
-        '201':
-          description: 식물 등록 성공
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /plant/all/{user_id}:
-    get:
-      tags:
-        - Plant
-      summary: 사용자의 모든 식물 목록 조회
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: 조회 성공
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlantListResponse'
-
-  /plant/detail/{plant_id}:
-    get:
-      tags:
-        - Plant
-      summary: 특정 식물 상세 정보 조회
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: plant_id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: 조회 성공
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlantDetailResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /plant/state/{plant_id}:
-    get:
-      tags:
-        - Plant
-      summary: 식물 상태 조회
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: plant_id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: 조회 성공
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /diary/create:
-    post:
-      tags:
-        - Diary
-      summary: 성장 일기 생성
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
               type: object
+              required:
+                - email
               properties:
-                user_id:
-                  type: integer
-                plant_id:
-                  type: integer
-                content:
+                email:
                   type: string
-                image:
-                  type: string
-                  format: binary
-      responses:
-        '201':
-          description: 생성 성공
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /diary/month/{user_id}/{year_month}:
-    get:
-      tags:
-        - Diary
-      summary: 월별 성장 일기 작성일 조회
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: year_month
-          required: true
-          schema:
-            type: string
-            example: '2023-10'
+                  format: email
+                  description: "인증번호를 받을 이메일 주소"
+                  example: "test@example.com"
       responses:
         '200':
-          description: 조회 성공
+          description: 인증번호 발송 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  dates:
-                    type: array
-                    items:
-                      type: string
-                      example: "2023-10-27"
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: integer
+                    description: "생성된 6자리 인증번호"
+                    example: 123456
+                  msg:
+                    type: string
+                    example: "SendMail"
+        '500':
+          $ref: '#/components/responses/ServerError'
 
-  /diary/date/{user_id}/{date}:
+  /user/token:
     get:
       tags:
-        - Diary
-      summary: 특정 날짜의 성장 일기 조회
+        - User
+      summary: JWT 토큰 유효성 검증
+      description: HTTP 헤더의 `Authorization` 필드에 담긴 JWT 토큰을 검증하고, 유효하다면 토큰에 담긴 사용자 정보를 반환합니다. (로그인 유지 확인용)
       security:
         - BearerAuth: []
+      responses:
+        '200':
+          description: 토큰이 유효한 경우, 디코딩된 사용자 정보를 반환합니다.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: '#/components/schemas/DecodedToken'
+                  msg:
+                    type: string
+                    example: "Ok"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/emotion/{user_id}:
+    get:
+      tags:
+        - User
+      summary: 사용자의 현재 감정 상태 조회
+      description: 특정 사용자의 현재 설정된 감정(state) 값을 조회합니다.
       parameters:
         - in: path
           name: user_id
           required: true
           schema:
             type: integer
+          description: 조회할 사용자의 ID
+      responses:
+        '200':
+          description: 감정 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      emotion:
+                        type: string
+                        description: "사용자의 현재 감정 상태 (예: 행복, 슬픔)"
+                        example: "행복"
+                  msg:
+                    type: string
+                    example: "Ok"
+        '404':
+          description: 해당 사용자를 찾을 수 없음
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+
+  # -------------------- Plant API --------------------
+  /plant/state/{plant_id}:
+    get:
+      tags:
+        - Plant
+      summary: 식물의 현재 상태 조회
+      description: 식물의 ID를 이용해 해당 식물의 이름, 레벨, 경험치, 호감도를 포함한 종합적인 상태 정보를 조회합니다.
+      parameters:
+        - in: path
+          name: plant_id
+          required: true
+          schema:
+            type: integer
+          description: 조회할 식물의 고유 ID
+          example: 1
+      responses:
+        '200':
+          description: 식물 상태 정보 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlantStateResponse'
+        '404':
+          description: 해당 식물 데이터를 찾을 수 없는 경우
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 404
+                msg: "식물 정보를 찾을 수 없습니다."
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # -------------------- Chat APIs --------------------
+  /chat/plant:
+    post:
+      tags:
+        - Chat
+      summary: 식물 챗봇과 대화하기
+      description: 사용자가 식물에게 메시지를 보내고, 챗봇의 응답을 받습니다. 이전 대화 기록을 바탕으로 답변이 생성되며, 모든 대화는 DB에 기록됩니다.
+      requestBody:
+        description: 챗봇에게 보낼 메시지와 사용자/식물 정보
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: 챗봇의 응답 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '404':
+          description: 요청에 포함된 사용자나 식물을 찾을 수 없는 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /chat/history/{user_id}/{plant_id}:
+    get:
+      tags:
+        - Chat
+      summary: 특정 식물과의 채팅 기록 조회
+      description: 특정 사용자와 특정 식물 간의 전체 대화 기록을 시간 순으로 조회합니다.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: 대화 기록을 조회할 사용자 ID
+          example: 1
+        - in: path
+          name: plant_id
+          required: true
+          schema:
+            type: integer
+          description: 대화 기록을 조회할 식물 ID
+          example: 1
+      responses:
+        '200':
+          description: 채팅 기록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChatHistory'
+                  msg:
+                    type: string
+                    example: "Ok"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+
+  # -------------------- Diary APIs --------------------
+  /diary/create:
+    post:
+      tags:
+        - Diary
+      summary: 성장 일기 생성 (챗봇 기반)
+      description: 사용자와 챗봇의 하루 대화 기록을 바탕으로 새로운 성장 일기를 생성합니다. 같은 날짜에 다시 요청하면 기존 일기를 업데이트합니다.
+      requestBody:
+        description: 일기 생성을 위한 사용자, 식물 정보 및 트리거 메시지
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiaryCreateRequest'
+      responses:
+        '200':
+          description: 일기 생성 또는 업데이트 성공. 생성/업데이트된 일기 데이터를 반환합니다.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiaryResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /diary/month/{user_id}/{year_month}:
+    get:
+      tags:
+        - Diary
+      summary: 특정 월의 일기 작성 날짜 목록 조회
+      description: 특정 사용자가 지정된 연월(YYYY-MM)에 작성한 일기가 있는 모든 날짜를 배열로 반환합니다. (캘린더 표기용)
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: "사용자 ID"
+          example: 1
+        - in: path
+          name: year_month
+          required: true
+          schema:
+            type: string
+          description: "조회할 연월 (YYYY-MM 형식)"
+          example: "2025-10"
+      responses:
+        '200':
+          description: 날짜 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      type: string
+                      format: date
+                      example: "2025-10-01"
+                  msg:
+                    type: string
+                    example: "Ok"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /diary/date/{user_id}/{date}:
+    get:
+      tags:
+        - Diary
+      summary: 특정 날짜의 일기 조회
+      description: 특정 사용자가 지정된 날짜(YYYY-MM-DD)에 작성한 일기를 조회합니다.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: "사용자 ID"
+          example: 1
         - in: path
           name: date
           required: true
           schema:
             type: string
             format: date
-            example: '2023-10-27'
+          description: "조회할 날짜 (YYYY-MM-DD 형식)"
+          example: "2025-10-01"
       responses:
         '200':
-          description: 조회 성공
+          description: 일기 조회 성공
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DiaryResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: 해당 날짜에 작성된 일기가 없음
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /comment:
     post:
       tags:
         - Comment
-      summary: 댓글 생성
-      security:
-        - BearerAuth: []
+      summary: 새로운 댓글 작성
+      description: 요청 본문에 포함된 diary_id에 해당하는 일기에 새로운 댓글을 작성합니다.
       requestBody:
+        description: 댓글이 달릴 일기 ID, 작성자 ID, 그리고 댓글 내용
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CommentRequest'
+              $ref: '#/components/schemas/CommentCreateRequest'
       responses:
-        '201':
-          description: 생성 성공
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        '200':
+          description: 댓글 작성 성공. 생성된 댓글 객체를 반환합니다.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /comment/{diary_id}:
     get:
       tags:
         - Comment
-      summary: 특정 일기의 댓글 목록 조회
-      security:
-        - BearerAuth: []
+      summary: 특정 일기의 모든 댓글 조회
+      description: 일기 ID를 지정하여 해당 일기에 달린 모든 댓글 목록을 조회합니다. user_id는 댓글에 대한 사용자의 추가 정보를 위해 사용될 수 있습니다.
       parameters:
         - in: path
           name: diary_id
           required: true
           schema:
             type: integer
+          description: "댓글을 조회할 일기의 ID"
+          example: 10
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: "조회하는 사용자의 ID"
+          example: 1
       responses:
         '200':
-          description: 조회 성공
+          description: 댓글 목록 조회 성공. 댓글 객체의 배열을 반환합니다.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommentListResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GrowthDiaryComment'
+                  msg:
+                    type: string
+                    example: "Ok"
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /comment/{comment_id}:
     put:
       tags:
         - Comment
       summary: 댓글 수정
-      security:
-        - BearerAuth: []
+      description: 댓글 ID를 사용하여 기존 댓글의 내용을 수정합니다. 실제 로직은 요청 본문(body)에 포함된 comment_id를 사용합니다.
       parameters:
         - in: path
           name: comment_id
           required: true
           schema:
             type: integer
+          description: "API 경로 구분을 위한 댓글 ID"
+          example: 25
       requestBody:
+        description: 수정할 댓글의 내용과 관련 ID 정보
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                content:
-                  type: string
+              $ref: '#/components/schemas/CommentUpdateRequest'
       responses:
         '200':
-          description: 수정 성공
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 댓글 수정 성공. 수정된 댓글 객체를 반환합니다.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          
     delete:
       tags:
         - Comment
       summary: 댓글 삭제
-      security:
-        - BearerAuth: []
+      description: 댓글 ID를 사용하여 특정 댓글을 삭제합니다. 실제 로직은 요청 본문(body)에 포함된 comment_id를 사용합니다.
       parameters:
         - in: path
           name: comment_id
           required: true
           schema:
             type: integer
-      responses:
-        '200':
-          description: 삭제 성공
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-          
-  /chat:
-    post:
-      tags:
-        - Chat
-      summary: 식물에게 채팅 메시지 전송
-      security:
-        - BearerAuth: []
+          description: "API 경로 구분을 위한 댓글 ID"
+          example: 25
       requestBody:
+        description: 삭제할 댓글을 식별하기 위한 ID 정보
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                user_id:
-                  type: integer
-                plant_id:
-                  type: integer
-                content:
-                  type: string
+              $ref: '#/components/schemas/CommentDeleteRequest'
       responses:
         '200':
-          description: 메시지 전송 및 봇 응답 반환
+          description: 댓글 삭제 성공. 별도의 데이터 없이 성공 메시지만 반환합니다.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  response:
-                    type: string
-  
-  /history/{user_id}/{plant_id}:
-    get:
-      tags:
-        - ChatHistory
-      summary: 채팅 기록 조회
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: plant_id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: 조회 성공
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatHistoryResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                  code: { type: integer, example: 200 }
+                  msg: { type: string, example: "Ok" }
+        '500':
+          $ref: '#/components/responses/ServerError'
 
-  /friend/add:
+
+  # -------------------- Friend APIs --------------------
+  /friend/request:
     post:
       tags:
         - Friend
-      summary: 친구 추가
-      security:
-        - BearerAuth: []
+      summary: 친구 요청 보내기
+      description: 다른 사용자에게 친구 관계를 요청합니다.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                user_id:
-                  type: integer
-                friend_id:
-                  type: integer
+              $ref: '#/components/schemas/FriendRequest'
       responses:
-        '201':
-          description: 친구 추가 성공
-        '409':
-          $ref: '#/components/responses/Conflict'
+        '200':
+          description: 친구 요청 성공
+        '400':
+          description: 자기 자신에게 요청, 이미 친구이거나 요청 대기중인 경우
+        '404':
+          description: 요청을 보내거나 받는 사용자를 찾을 수 없는 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
 
-  /friend/list/{user_id}:
+  /friend/accept:
+    post:
+      tags:
+        - Friend
+      summary: 친구 요청 수락
+      description: 받은 친구 요청을 수락하여 친구 관계를 맺습니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FriendRequest' # FriendRequest 스키마 재사용
+      responses:
+        '200':
+          description: 친구 요청 수락 성공
+        '400':
+          description: 해당 친구 요청이 존재하지 않는 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /friend/{user_id}:
     get:
       tags:
         - Friend
       summary: 친구 목록 조회
-      security:
-        - BearerAuth: []
+      description: 특정 사용자의 모든 친구 목록을 조회합니다.
       parameters:
         - in: path
           name: user_id
@@ -456,40 +589,70 @@ paths:
             type: integer
       responses:
         '200':
-          description: 조회 성공
+          description: 친구 목록 조회 성공
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FriendListResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/FriendInfo'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
-  /speech/tts:
+  # -------------------- Mission APIs --------------------
+  /mission/{user_id}:
+    get:
+      tags:
+        - Mission
+      summary: 오늘의 미션 조회
+      description: 특정 사용자의 오늘 날짜 미션 내용과 완료 여부를 조회합니다.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 미션 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MissionResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /mission/complete:
     post:
       tags:
-        - Speech
-      summary: Text-to-Speech (TTS)
+        - Mission
+      summary: 미션 완료 처리
+      description: 사용자의 오늘의 미션을 완료 상태로 변경합니다.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [user_id]
               properties:
-                text:
-                  type: string
+                user_id:
+                  type: integer
       responses:
         '200':
-          description: 오디오 파일 스트림 반환
-          content:
-            audio/mpeg:
-              schema:
-                type: string
-                format: binary
+          description: 미션 완료 처리 성공
+        '400':
+          description: 이미 완료된 미션인 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
 
+  # -------------------- Speech APIs --------------------
   /speech/stt:
     post:
       tags:
         - Speech
-      summary: Speech-to-Text (STT)
+      summary: 음성을 텍스트로 변환 (STT)
+      description: OGG(Opus) 형식의 음성 파일을 받아 텍스트로 변환합니다.
       requestBody:
         required: true
         content:
@@ -497,63 +660,314 @@ paths:
             schema:
               type: object
               properties:
-                audio:
+                file:
                   type: string
                   format: binary
+                  description: "OGG_OPUS 인코딩, 16000Hz 샘플링 레이트의 음성 파일"
+                user_id:
+                  type: integer
+                plant_id:
+                  type: integer
       responses:
         '200':
-          description: 변환된 텍스트 반환
+          description: STT 변환 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  data:
+                    type: string
+                    description: "변환된 텍스트"
+                    example: "오늘 날씨 정말 좋다."
+                  msg: { type: string, example: "Ok" }
+        '400':
+          description: 음성 파일이 첨부되지 않은 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
 
+  /speech/tts:
+    post:
+      tags:
+        - Speech
+      summary: 텍스트를 음성으로 변환 (TTS)
+      description: 입력된 텍스트 메시지를 OGG 형식의 음성 파일(Blob)으로 변환하여 반환합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  description: "음성으로 변환할 텍스트"
+                  example: "오늘 하루도 수고 많으셨어요."
+      responses:
+        '200':
+          description: TTS 변환 성공. audio/ogg 형식의 Blob 데이터를 반환합니다.
+          content:
+            audio/ogg:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: 변환할 메시지가 없는 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+
+# ===============================================================
+# == Components (전체 기능 최종 통합본)
+# ===============================================================
 components:
+  # -------------------- Security Schemes --------------------
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: "로그인 시 발급받은 JWT 토큰을 'Bearer {token}' 형식으로 입력하세요."
 
+  # -------------------- Schemas (모든 모델/요청/응답) --------------------
   schemas:
-    # Requests
-    RegisterRequest:
+    # -------------------- User Schemas --------------------
+    User:
       type: object
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-        nickname:
-          type: string
-        plantInfo:
-          type: object
-          properties:
-            species:
-              type: string
-            nickname:
-              type: string
-
-    LoginRequest:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          format: password
-
-    PlantCreateRequest:
-      type: object
+      description: 사용자 정보 스키마 (DB 모델 기준)
       properties:
         user_id:
           type: integer
-        species:
+          description: "사용자 고유 ID"
+          readOnly: true
+        user_email:
           type: string
+          format: email
+        user_name:
+          type: string
+        user_gender:
+          type: string
+        state:
+          type: string
+          description: "사용자의 현재 감정 상태 (예: 행복, 슬픔, 중립)"
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: "계정 생성일"
+          readOnly: true
+
+    UserRegisterRequest:
+      type: object
+      description: 회원가입 요청 시 Body에 포함될 데이터
+      required:
+        - user_name
+        - user_email
+        - password
+        - user_gender
+      properties:
+        user_name:
+          type: string
+          example: "김Inner"
+        user_email:
+          type: string
+          format: email
+          example: "innerecho@example.com"
+        password:
+          type: string
+          format: password
+          description: "암호화되어 저장될 사용자 비밀번호"
+          example: "password123!"
+        user_gender:
+          type: string
+          example: "남성"
+
+    UserLoginRequest:
+      type: object
+      description: 로그인 요청 시 Body에 포함될 데이터
+      required:
+        - user_email
+        - password
+      properties:
+        user_email:
+          type: string
+          format: email
+          example: "innerecho@example.com"
+        password:
+          type: string
+          format: password
+          example: "password123!"
+
+    DecodedToken:
+      type: object
+      description: JWT 토큰을 디코딩했을 때 얻을 수 있는 사용자 정보 페이로드
+      properties:
+        user_id:
+          type: integer
+        user_email:
+          type: string
+          format: email
+        user_name:
+          type: string
+        state:
+          type: string
+          nullable: true
+        plant_id:
+          type: integer
+          description: "사용자가 소유한 기본 식물의 ID"
         nickname:
           type: string
-          
-    CommentRequest:
+          description: "사용자가 소유한 기본 식물의 이름"
+
+    # -------------------- Plant & Chat Schemas --------------------
+    UserPlant:
       type: object
+      description: 사용자가 소유한 식물 정보 스키마 (DB 모델 기준)
+      properties:
+        plant_id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+        species_id:
+          type: integer
+        nickname:
+          type: string
+          description: "식물의 애칭"
+          example: "금쪽이"
+        plant_level:
+          type: integer
+          description: "식물 레벨"
+          example: 1
+        plant_experience:
+          type: integer
+          description: "식물 경험치"
+          example: 50
+        plant_hogamdo:
+          type: integer
+          description: "식물과의 호감도"
+          example: 10
+        last_measured_date:
+          type: string
+          format: date-time
+          description: "마지막으로 상태를 측정한 날짜"
+
+    ChatHistory:
+      type: object
+      description: 채팅 기록 스키마 (DB 모델 기준)
+      properties:
+        history_id:
+          type: integer
+          readOnly: true
+        message:
+          type: string
+        user_id:
+          type: integer
+        plant_id:
+          type: integer
+        send_date:
+          type: string
+          format: date-time
+        user_type:
+          type: string
+          enum: [User, Bot]
+          description: "메시지 발신자 (사용자 또는 챗봇)"
+
+    ChatRequest:
+      type: object
+      description: 챗봇에게 메시지 전송 시 Body에 포함될 데이터
+      required:
+        - user_id
+        - plant_id
+        - message
+      properties:
+        user_id:
+          type: integer
+          description: "메시지를 보내는 사용자 ID"
+          example: 1
+        plant_id:
+          type: integer
+          description: "대화할 식물 ID"
+          example: 1
+        message:
+          type: string
+          description: "사용자가 입력한 메시지"
+          example: "오늘 하루 어땠어?"
+        emotion:
+          type: string
+          description: "(선택) 사용자의 현재 감정 상태. 챗봇 답변에 영향을 줄 수 있습니다."
+          nullable: true
+          example: "행복"
+
+    # -------------------- Diary Schemas --------------------
+    GrowthDiary:
+      type: object
+      description: 성장 일기 스키마 (DB 모델 기준)
+      properties:
+        diary_id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+        title:
+          type: string
+          example: "금쪽이와의 하루"
+        content:
+          type: string
+          example: "오늘 금쪽이와 많은 이야기를 나누었다. 행복한 하루였다."
+        image_url:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        is_deleted:
+          type: boolean
+        edited:
+          type: boolean
+
+    DiaryCreateRequest:
+      type: object
+      required: [user_id, plant_id, message]
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        plant_id:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: "오늘 하루를 일기로 만들어줘."
+
+    # -------------------- Comment Schemas --------------------
+    GrowthDiaryComment:
+      type: object
+      description: 성장 일기 댓글 스키마 (DB 모델 기준)
+      properties:
+        comment_id:
+          type: integer
+        diary_id:
+          type: integer
+        user_id:
+          type: integer
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CommentCreateRequest:
+      type: object
+      required: [diary_id, user_id, content]
       properties:
         diary_id:
           type: integer
@@ -562,150 +976,198 @@ components:
         content:
           type: string
 
-    # Responses
-    User:
+    CommentUpdateRequest:
       type: object
+      required: [user_id, diary_id, comment_id, content]
       properties:
-        id:
-          type: integer
-        email:
-          type: string
-          format: email
-        nickname:
-          type: string
-
-    UserResponse:
-      type: object
-      properties:
-        data:
-          $ref: '#/components/schemas/User'
-
-    LoginResponse:
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            user:
-              $ref: '#/components/schemas/User'
-            token:
-              type: string
-
-    Plant:
-      type: object
-      properties:
-        id:
-          type: integer
-        species:
-          type: string
-        nickname:
-          type: string
-        level:
-          type: integer
-        
-    PlantListResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Plant'
-
-    PlantDetailResponse:
-      type: object
-      properties:
-        data:
-          $ref: '#/components/schemas/Plant'
-
-    Diary:
-      type: object
-      properties:
-        id:
-          type: integer
         user_id:
           type: integer
-        plant_id:
+        diary_id:
+          type: integer
+        comment_id:
           type: integer
         content:
           type: string
-        image_url:
+
+    CommentDeleteRequest:
+      type: object
+      required: [user_id, diary_id, comment_id]
+      properties:
+        user_id:
+          type: integer
+        diary_id:
+          type: integer
+        comment_id:
+          type: integer
+
+    # -------------------- Response Schemas --------------------
+    UserResponse:
+      type: object
+      description: 사용자 관련 API의 기본 성공 응답
+      properties:
+        code:
+          type: integer
+          example: 200
+        data:
+          $ref: '#/components/schemas/User'
+        msg:
           type: string
-        date:
+          example: "Ok"
+
+    TokenResponse:
+      type: object
+      description: 로그인 성공 시 반환되는 JWT 토큰 응답
+      properties:
+        code:
+          type: integer
+          example: 200
+        data:
           type: string
-          format: date
-        comments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Comment'
+          description: "API 인증에 사용될 JWT Access Token"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJpYXQiOjE2MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        msg:
+          type: string
+          example: "Ok"
+
+    PlantStateResponse:
+      type: object
+      description: 식물 상태 조회 성공 응답
+      properties:
+        code:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            plant_name:
+              type: string
+              description: "식물 애칭"
+              example: "금쪽이"
+            level:
+              type: integer
+              example: 1
+            experience:
+              type: integer
+              example: 50
+            likeability:
+              type: integer
+              description: "호감도"
+              example: 10
+        msg:
+          type: string
+          example: "Ok"
+
+    ChatResponse:
+      type: object
+      description: 챗봇 대화 성공 응답
+      properties:
+        code:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            user_id:
+              type: integer
+              example: 1
+            plant_id:
+              type: integer
+              example: 1
+            message:
+              type: string
+              description: "챗봇의 응답 메시지"
+              example: "오늘 하루도 정말 즐거웠어요! 주인님은 어떠셨나요?"
+            user_type:
+              type: string
+              example: "Bot"
+            send_date:
+              type: string
+              format: date-time
+        msg:
+          type: string
+          example: "Ok"
 
     DiaryResponse:
       type: object
+      description: 일기 생성 및 조회 성공 응답
       properties:
+        code:
+          type: integer
+          example: 200
         data:
-          $ref: '#/components/schemas/Diary'
+          $ref: '#/components/schemas/GrowthDiary'
+        msg:
+          type: string
+          example: "Ok"
 
-    Comment:
+    CommentResponse:
+      type: object
+      description: 댓글 생성 및 수정 성공 응답
+      properties:
+        code:
+          type: integer
+          example: 200
+        data:
+          $ref: '#/components/schemas/GrowthDiaryComment'
+        msg:
+          type: string
+          example: "Ok"
+
+    ErrorResponse:
+      type: object
+      description: API 실패 시 공통 응답
+      properties:
+        code:
+          type: integer
+        msg:
+          type: string
+    FriendRequest:
+      type: object
+      required: [from_user_id, to_user_id]
+      properties:
+        from_user_id:
+          type: integer
+          description: "요청을 보내는 사용자 ID"
+        to_user_id:
+          type: integer
+          description: "요청을 받는 사용자 ID"
+
+    FriendInfo:
+      type: object
+      description: 친구 목록에 표시될 사용자 정보
+      properties:
+        user_id:
+          type: integer
+        user_name:
+          type: string
+        state:
+          type: string
+          description: "친구의 현재 감정 상태"
+
+    Mission:
       type: object
       properties:
-        id:
+        mission_id:
           type: integer
-        user:
-          type: object
-          properties:
-            id:
-              type: integer
-            nickname:
-              type: string
         content:
           type: string
-        createdAt:
-          type: string
-          format: date-time
-
-    CommentListResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Comment'
-
-    ChatHistory:
-      type: object
-      properties:
-        is_user_chat:
+          example: "식물에게 말 걸기"
+        is_completed:
           type: boolean
-        content:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-          
-    ChatHistoryResponse:
+
+    MissionResponse:
       type: object
       properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChatHistory'
-            
-    Friend:
-      type: object
-      properties:
-        id:
+        code:
           type: integer
-        nickname:
-          type: string
-
-    FriendListResponse:
-      type: object
-      properties:
+          example: 200
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Friend'
+          $ref: '#/components/schemas/Mission'
+        msg:
+          type: string
+          example: "Ok"
 
-    Error:
+    ErrorResponse:
       type: object
       properties:
         code:
@@ -713,49 +1175,25 @@ components:
         msg:
           type: string
 
+
+  # -------------------- Responses (공통 응답) --------------------
   responses:
-    BadRequest:
-      description: 잘못된 요청 (파라미터 누락 또는 형식 오류)
+    ServerError:
+      description: 서버 내부 오류
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/ErrorResponse'
           example:
-            code: 400
-            msg: "Invalid or missing parameters"
-    Unauthorized:
-      description: 인증 실패 (자격 증명 오류)
+            code: 500
+            msg: "ServerError"
+            
+    UnauthorizedError:
+      description: 인증 실패 (토큰이 없거나 유효하지 않음)
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/ErrorResponse'
           example:
             code: 401
-            msg: "Invalid credentials"
-    Forbidden:
-      description: 권한 없음 (작성자가 아님)
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: 403
-            msg: "Forbidden"
-    NotFound:
-      description: 리소스를 찾을 수 없음
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: 404
-            msg: "Not Found"
-    Conflict:
-      description: 충돌 발생 (데이터가 이미 존재함)
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: 409
-            msg: "User already exists"
+            msg: "유효하지 않은 토큰입니다."

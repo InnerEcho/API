@@ -16,6 +16,7 @@ router.get(
   '/date/:user_id/:date',
   growthDiaryController.getDiaryByDate.bind(growthDiaryController),
 );
+
 router.post(
   '/create',
   growthDiaryController.create.bind(growthDiaryController),
