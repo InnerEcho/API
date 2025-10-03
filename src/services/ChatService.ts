@@ -8,16 +8,8 @@ const { ChatHistory, User } = db;
 export class ChatService {
   constructor(private chatBot: ChatBot) {}
 
-  async create(user_id: number, plant_id: number, message: string, emotion?: string) {
+  async create(user_id: number, plant_id: number, message: string) {
     try {
-      // 감정 상태가 전달된 경우 사용자 상태 업데이트
-      if (emotion) {
-        await User.update(
-          { state: emotion },
-          { where: { user_id: user_id } }
-        );
-        console.log(`사용자 ${user_id}의 현재 감정이 ${emotion}으로 업데이트되었습니다.`);
-      }
 
       // 기존 챗봇 응답 생성 로직
       const reply = await this.chatBot.processChat(user_id, plant_id, message);
