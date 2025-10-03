@@ -180,5 +180,5 @@ router.get('/history/:user_id/:plant_id', chatHistoryController.getChatHistory.b
 //   plantSpeechController.textToSpeech.bind(plantSpeechController),
 // );
 
-router.post('/emotion', plantChatBotController.emotionSave.bind(plantChatBotController));
+router.post('/chat', plantChatBotController.chat.bind(plantChatBotController));
 export default router;

@@ -84,10 +84,12 @@ export class GrowthDiaryCommentController {
       const {
         user_id,
         diary_id,
-        comment_id,
         content
       } = req.body;
-      const response = await this.growthDiaryCommentService.updateComment(content, user_id, diary_id, comment_id);
+      const {
+        comment_id
+      } = req.params;
+      const response = await this.growthDiaryCommentService.updateComment(content, user_id, diary_id, parseInt(comment_id));
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';

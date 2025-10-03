@@ -192,6 +192,6 @@ router.get(
 // );
 
 
-router.post('/emotion', plantChatBotController.emotionSave.bind(plantChatBotController));
+router.post('/chat', plantChatBotController.chat.bind(plantChatBotController));
 
 export default router;

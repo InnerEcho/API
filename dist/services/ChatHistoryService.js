@@ -12,13 +12,14 @@ export class ChatHistoryService {
    * 특정 사용자와 식물 간의 대화 이력 조회
    */
   async getChatHistory(user_id, plant_id) {
-    return ChatHistory.findAll({
+    const chatHistory = await ChatHistory.findAll({
       where: {
         user_id: user_id,
         plant_id: plant_id
       },
       order: [['send_date', 'ASC']]
     });
+    return chatHistory;
   }
   async getTodayHistory(user_id, plant_id) {
     const todayStart = new Date();

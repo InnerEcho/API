@@ -44,8 +44,8 @@ export class GrowthDiaryController {
       const {
         user_id,
         date
-      } = req.body;
-      const response = await this.growthDiaryService.getDiaryByDate(user_id, date);
+      } = req.params;
+      const response = await this.growthDiaryService.getDiaryByDate(parseInt(user_id), date);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
