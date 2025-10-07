@@ -17,15 +17,15 @@ import { swaggerUi, specs } from '@/config/swagger.config.js';
 
 // 라우터와 데이터베이스 모델 가져오기
 import indexRouter from '@/routes/index.js';
-import authRouter from '@/routes/user.js';
+import userRouter from '@/routes/user.js';
+import authV2Router from '@/routes/authV2.js';
 import chatRouter from '@/routes/chat.js';
 import plantRouter from '@/routes/plant.js';
-import plantStateRouter from '@/routes/plantState.js'
 import diaryRouter from '@/routes/diary.js';
-import commentRouter from '@/routes/comment.js';
 import speechRouter from '@/routes/speech.js';
 import missionRouter from '@/routes/mission.js';
 import friendRouter from '@/routes/friend.js';
+import emotionRouter from '@/routes/emotion.js';
 import db from '@/models/index.js';
 import YAML from 'yamljs';
 
@@ -104,15 +104,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // 라우터 설정
 app.use('/', indexRouter);
-app.use('/user', authRouter);
-app.use('/chat', chatRouter);
-app.use('/plant', plantRouter);
-app.use('/plant-state',plantStateRouter);
-app.use('/diary', diaryRouter);
-app.use('/comment', commentRouter);
-app.use('/speech',speechRouter);
-app.use('/mission', missionRouter);
-app.use('/friend', friendRouter);
+app.use('/users', userRouter);         // 사용자 리소스
+app.use('/auth', userRouter);          // 인증 리소스 (세션, 인증) - V1
+app.use('/auth/v2', authV2Router);     // 인증 V2 리소스 (Access Token + Refresh Token)
+app.use('/emotions', emotionRouter);   // 감정 리소스
+app.use('/chat', chatRouter);          // 채팅 리소스
+app.use('/plant', plantRouter);        // 식물 리소스 (상태, 경험치, 호감도 포함)
+app.use('/diaries', diaryRouter);      // 일기 리소스 (댓글 포함: /diaries/:diary_id/comments)
+app.use('/speech', speechRouter);      // 음성 리소스
+app.use('/missions', missionRouter);   // 미션 리소스
+app.use('/friends', friendRouter);     // 친구 리소스
 
 //swagger 모듈 호출하기
 app.use('/api-docs-old', swaggerUi.serve, swaggerUi.setup(specs));
