@@ -5,31 +5,42 @@ info:
   version: 1.0.1
 
 servers:
-  - url: http://localhost:3001
+  - url: http://localhost:3002
     description: 로컬 개발 서버
 
 tags:
   - name: User
-    description: "🧑‍🤝‍🧑 사용자 회원가입, 로그인, 인증 및 정보 조회 API"
+    description: "🧑‍🤝‍🧑 사용자 리소스 관리 API (회원가입, 정보 조회/수정/삭제)"
+  - name: Auth
+    description: "🔐 인증 리소스 관리 API (로그인, 세션 발급, 이메일 인증)"
+  - name: Auth V2
+    description: "🔐✨ 인증 V2 API (Access Token + Refresh Token, 보안 강화)"
+  - name: Emotion
+    description: "😊 사용자 감정 상태 리소스 관리 API"
   - name: Plant
     description: "🌱 사용자의 식물 상태(레벨, 경험치, 호감도) 조회 API"
   - name: Chat
     description: "💬 식물 챗봇과의 대화 및 이전 대화 기록 조회 API"
   - name: Diary
-    description: "📔 성장 일기 CRUD API"
-  - name: Comment
-    description: "✍️ 성장 일기 댓글 CRUD API"
+    description: "📔 성장 일기 리소스 관리 API (댓글 포함)"
+  - name: Friend
+    description: "👥 친구 리소스 관리 API"
+  - name: Mission
+    description: "🎯 미션 리소스 관리 API"
+  - name: Speech
+    description: "🎤 음성 인식 및 합성 API (STT, TTS)"
 
 # ===============================================================
 # == Paths (Endpoints)
 # ===============================================================
 paths:
-  /user/register:
+  # ==================== User APIs ====================
+  /users:
     post:
       tags:
         - User
-      summary: 사용자 회원가입
-      description: 새로운 사용자를 등록합니다. 성공 시, 해당 사용자에게 '금쪽이'라는 이름의 기본 식물도 함께 생성됩니다.
+      summary: 사용자 생성 (회원가입)
+      description: 새로운 사용자 리소스를 생성합니다. 성공 시, 해당 사용자에게 '금쪽이'라는 이름의 기본 식물도 함께 생성됩니다.
       requestBody:
         description: 회원가입에 필요한 사용자 정보
         required: true
@@ -39,7 +50,7 @@ paths:
               $ref: '#/components/schemas/UserRegisterRequest'
       responses:
         '200':
-          description: 회원가입 성공
+          description: 사용자 생성 성공
           content:
             application/json:
               schema:
@@ -56,12 +67,128 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /user/login:
-    post:
+  /users/{user_id}:
+    get:
       tags:
         - User
-      summary: 사용자 로그인
-      description: 이메일과 비밀번호로 사용자를 인증하고, API 접근을 위한 JWT(Access Token)를 발급합니다.
+      summary: 특정 사용자 정보 조회
+      description: 사용자 ID로 특정 사용자 리소스의 정보를 조회합니다.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: 조회할 사용자의 ID
+      responses:
+        '200':
+          description: 사용자 정보 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: 해당 사용자를 찾을 수 없음
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - User
+      summary: 사용자 정보 수정
+      description: 특정 사용자 리소스의 정보를 수정합니다.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_name:
+                  type: string
+                user_gender:
+                  type: string
+                state:
+                  type: string
+      responses:
+        '200':
+          description: 사용자 정보 수정 성공
+        '404':
+          description: 해당 사용자를 찾을 수 없음
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - User
+      summary: 사용자 삭제
+      description: 특정 사용자 리소스를 삭제합니다.
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 사용자 삭제 성공
+        '404':
+          description: 해당 사용자를 찾을 수 없음
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== Emotion APIs ====================
+  /emotions:
+    get:
+      tags:
+        - Emotion
+      summary: 사용자의 현재 감정 상태 조회
+      description: |
+        인증된 사용자의 현재 설정된 감정(state) 값을 조회합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 감정 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      emotion:
+                        type: string
+                        description: "사용자의 현재 감정 상태 (예: 행복, 슬픔)"
+                        example: "행복"
+                  msg:
+                    type: string
+                    example: "Ok"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '404':
+          description: 해당 사용자를 찾을 수 없음
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # ==================== Auth APIs ====================
+  /auth/sessions:
+    post:
+      tags:
+        - Auth
+      summary: 세션 생성 (로그인)
+      description: 이메일과 비밀번호로 사용자를 인증하고, API 접근을 위한 JWT 토큰 리소스를 생성합니다.
       requestBody:
         description: 로그인에 필요한 이메일과 비밀번호
         required: true
@@ -71,7 +198,7 @@ paths:
               $ref: '#/components/schemas/UserLoginRequest'
       responses:
         '200':
-          description: 로그인 성공. JWT 토큰을 반환합니다.
+          description: 세션 생성 성공. JWT 토큰을 반환합니다.
           content:
             application/json:
               schema:
@@ -88,12 +215,38 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /user/email:
+    get:
+      tags:
+        - Auth
+      summary: 세션 검증 (JWT 토큰 유효성 검증)
+      description: HTTP 헤더의 `Authorization` 필드에 담긴 JWT 토큰을 검증하고, 유효하다면 토큰에 담긴 사용자 정보를 반환합니다. (로그인 유지 확인용)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 토큰이 유효한 경우, 디코딩된 사용자 정보를 반환합니다.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: '#/components/schemas/DecodedToken'
+                  msg:
+                    type: string
+                    example: "Ok"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/verifications:
     post:
       tags:
-        - User
-      summary: 이메일 인증번호 발송
-      description: 회원가입 시 본인 인증을 위해 입력된 이메일 주소로 6자리 인증번호를 발송합니다.
+        - Auth
+      summary: 이메일 인증번호 생성 및 발송
+      description: 회원가입 시 본인 인증을 위해 이메일 인증번호 리소스를 생성하고 발송합니다.
       requestBody:
         description: 인증번호를 발송할 이메일 주소
         required: true
@@ -130,17 +283,250 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /user/token:
+  # ==================== Auth V2 APIs ====================
+  /auth/v2/login:
+    post:
+      tags:
+        - Auth V2
+      summary: 로그인 (Access Token + Refresh Token 발급)
+      description: |
+        V2 인증 시스템을 사용한 로그인입니다.
+        - Access Token (15분 유효): API 요청에 사용
+        - Refresh Token (7일 유효): Access Token 갱신에 사용
+        - Rate Limiting: 5분에 5회로 제한
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "innerecho@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password123!"
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Login successful"
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                        description: "15분 유효한 Access Token"
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      refreshToken:
+                        type: string
+                        description: "7일 유효한 Refresh Token"
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      tokenType:
+                        type: string
+                        example: "Bearer"
+                      expiresIn:
+                        type: string
+                        example: "15m"
+        '400':
+          description: 이메일 또는 비밀번호 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailNotExist:
+                  value:
+                    code: 400
+                    message: "Email does not exist"
+                    error: "NOT_EXIST_EMAIL"
+                incorrectPassword:
+                  value:
+                    code: 400
+                    message: "Incorrect password"
+                    error: "INCORRECT_PASSWORD"
+        '429':
+          description: 로그인 시도 횟수 초과
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many login attempts, please try again after 5 minutes"
+                  error:
+                    type: string
+                    example: "RATE_LIMIT_EXCEEDED"
+                  retryAfter:
+                    type: string
+                    example: "300 seconds"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/v2/refresh:
+    post:
+      tags:
+        - Auth V2
+      summary: Access Token 갱신
+      description: |
+        Refresh Token을 사용하여 새로운 Access Token을 발급받습니다.
+        Access Token이 만료되었을 때 사용합니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: "로그인 시 발급받은 Refresh Token"
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: 토큰 갱신 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Token refreshed successfully"
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                        description: "새로 발급된 Access Token"
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      tokenType:
+                        type: string
+                        example: "Bearer"
+                      expiresIn:
+                        type: string
+                        example: "15m"
+        '401':
+          description: Refresh Token이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                  error:
+                    type: string
+              examples:
+                expired:
+                  value:
+                    code: 401
+                    message: "Refresh token has expired"
+                    error: "REFRESH_TOKEN_EXPIRED"
+                revoked:
+                  value:
+                    code: 401
+                    message: "Refresh token has been revoked"
+                    error: "REFRESH_TOKEN_REVOKED"
+                invalid:
+                  value:
+                    code: 401
+                    message: "Invalid refresh token"
+                    error: "INVALID_REFRESH_TOKEN"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/v2/logout:
+    post:
+      tags:
+        - Auth V2
+      summary: 로그아웃
+      description: |
+        현재 Access Token과 Refresh Token을 무효화합니다.
+        로그아웃 후에는 해당 토큰들을 사용할 수 없습니다.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  description: "무효화할 Refresh Token (선택사항)"
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: 로그아웃 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+        '400':
+          description: Access Token이 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Access token is required in Authorization header"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/v2/verify:
     get:
       tags:
-        - User
-      summary: JWT 토큰 유효성 검증
-      description: HTTP 헤더의 `Authorization` 필드에 담긴 JWT 토큰을 검증하고, 유효하다면 토큰에 담긴 사용자 정보를 반환합니다. (로그인 유지 확인용)
+        - Auth V2
+      summary: 토큰 검증 및 사용자 정보 조회
+      description: |
+        현재 Access Token이 유효한지 검증하고, 토큰에 포함된 사용자 정보를 반환합니다.
+        로그인 상태 확인 및 사용자 정보 조회에 사용합니다.
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: 토큰이 유효한 경우, 디코딩된 사용자 정보를 반환합니다.
+          description: 토큰이 유효함
           content:
             application/json:
               schema:
@@ -149,61 +535,113 @@ paths:
                   code:
                     type: integer
                     example: 200
-                  data:
-                    $ref: '#/components/schemas/DecodedToken'
-                  msg:
+                  message:
                     type: string
-                    example: "Ok"
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /user/emotion/{user_id}:
-    get:
-      tags:
-        - User
-      summary: 사용자의 현재 감정 상태 조회
-      description: 특정 사용자의 현재 설정된 감정(state) 값을 조회합니다.
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-          description: 조회할 사용자의 ID
-      responses:
-        '200':
-          description: 감정 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                    example: 200
+                    example: "Token is valid"
                   data:
                     type: object
                     properties:
-                      emotion:
+                      user_id:
+                        type: integer
+                        example: 1
+                      user_email:
                         type: string
-                        description: "사용자의 현재 감정 상태 (예: 행복, 슬픔)"
-                        example: "행복"
-                  msg:
+                        example: "innerecho@example.com"
+                      user_name:
+                        type: string
+                        example: "김Inner"
+                      state:
+                        type: string
+                        example: "중립"
+                      plant_id:
+                        type: integer
+                        example: 5
+                      nickname:
+                        type: string
+                        example: "금쪽이"
+        '401':
+          description: 토큰이 유효하지 않거나 만료됨
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
                     type: string
-                    example: "Ok"
-        '404':
-          description: 해당 사용자를 찾을 수 없음
+                  error:
+                    type: string
+              examples:
+                expired:
+                  value:
+                    code: 401
+                    message: "Access token has expired"
+                    error: "TOKEN_EXPIRED"
+                revoked:
+                  value:
+                    code: 401
+                    message: "Token has been revoked (logged out)"
+                    error: "TOKEN_REVOKED"
+                invalid:
+                  value:
+                    code: 401
+                    message: "Invalid token format"
+                    error: "INVALID_TOKEN"
+
+  /auth/v2/revoke-all:
+    post:
+      tags:
+        - Auth V2
+      summary: 모든 세션 무효화 (강제 로그아웃)
+      description: |
+        현재 사용자의 모든 Refresh Token을 무효화하여 모든 디바이스에서 강제 로그아웃합니다.
+        보안 위협이 감지되었을 때 사용합니다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 모든 세션 무효화 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "All sessions have been revoked"
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: "Authentication required"
         '500':
           $ref: '#/components/responses/ServerError'
 
 
-  # -------------------- Plant API --------------------
-  /plant/state/{plant_id}:
+  # -------------------- Plant State APIs --------------------
+  /plant/{plant_id}:
     get:
       tags:
         - Plant
       summary: 식물의 현재 상태 조회
-      description: 식물의 ID를 이용해 해당 식물의 이름, 레벨, 경험치, 호감도를 포함한 종합적인 상태 정보를 조회합니다.
+      description: |
+        식물의 ID를 이용해 해당 식물의 이름, 레벨, 경험치, 호감도를 포함한 종합적인 상태 정보를 조회합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       parameters:
         - in: path
           name: plant_id
@@ -218,33 +656,225 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlantStateResponse'
-        '404':
-          description: 해당 식물 데이터를 찾을 수 없는 경우
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      plant_name:
+                        type: string
+                        description: 식물 이름 (닉네임)
+                        example: "금쪽이"
+                      level:
+                        type: integer
+                        description: 식물 레벨
+                        example: 5
+                      experience:
+                        type: integer
+                        description: 현재 경험치
+                        example: 120
+                      likeability:
+                        type: integer
+                        description: 호감도 (0-100)
+                        example: 75
+                  msg:
+                    type: string
+                    example: "Ok"
+        '400':
+          description: 잘못된 plant_id
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                code: 404
-                msg: "식물 정보를 찾을 수 없습니다."
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  msg:
+                    type: string
+                    example: "Invalid plant ID"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '404':
+          description: 해당 식물을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 404
+                  msg:
+                    type: string
+                    example: "Plant not found"
         '500':
           $ref: '#/components/responses/ServerError'
 
-  # -------------------- Chat APIs --------------------
-  /chat/plant:
+  /plant/{plant_id}/experience:
     post:
       tags:
-        - Chat
-      summary: 식물 챗봇과 대화하기
-      description: 사용자가 식물에게 메시지를 보내고, 챗봇의 응답을 받습니다. 이전 대화 기록을 바탕으로 답변이 생성되며, 모든 대화는 DB에 기록됩니다.
+        - Plant
+      summary: 식물 경험치 획득
+      description: |
+        식물에게 경험치를 부여하고, 자동으로 레벨업을 처리합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: plant_id
+          required: true
+          schema:
+            type: integer
+          description: 경험치를 부여할 식물의 ID
+          example: 1
       requestBody:
-        description: 챗봇에게 보낼 메시지와 사용자/식물 정보
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              type: object
+              required:
+                - expGained
+              properties:
+                expGained:
+                  type: number
+                  description: 획득할 경험치 양
+                  example: 50
+      responses:
+        '200':
+          description: 경험치 획득 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      level:
+                        type: integer
+                        description: 현재 레벨
+                        example: 6
+                      experience:
+                        type: integer
+                        description: 현재 경험치
+                        example: 20
+                      leveledUp:
+                        type: boolean
+                        description: 레벨업 여부
+                        example: true
+                  msg:
+                    type: string
+                    example: "Ok"
+        '400':
+          description: 잘못된 입력 데이터
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /plant/{plant_id}/likeability:
+    post:
+      tags:
+        - Plant
+      summary: 식물 호감도 증가
+      description: |
+        식물의 호감도를 증가시킵니다. 최대 100까지 증가합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: plant_id
+          required: true
+          schema:
+            type: integer
+          description: 호감도를 증가시킬 식물의 ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  description: 증가시킬 호감도 양
+                  example: 10
+      responses:
+        '200':
+          description: 호감도 증가 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      likeability:
+                        type: integer
+                        description: 현재 호감도
+                        example: 85
+                  msg:
+                    type: string
+                    example: "Ok"
+        '400':
+          description: 잘못된 입력 데이터
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # -------------------- Chat APIs --------------------
+  /chat:
+    post:
+      tags:
+        - Chat
+      summary: 식물 챗봇과 대화하기
+      description: |
+        사용자가 식물에게 메시지를 보내고, 챗봇의 응답을 받습니다. 이전 대화 기록을 바탕으로 답변이 생성되며, 모든 대화는 DB에 기록됩니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: 챗봇에게 보낼 메시지와 식물 정보 (user_id는 토큰에서 자동 추출)
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - plant_id
+                - message
+              properties:
+                plant_id:
+                  type: integer
+                  description: "대화할 식물 ID"
+                  example: 1
+                message:
+                  type: string
+                  description: "사용자가 입력한 메시지"
+                  example: "오늘 하루 어땠어?"
+                emotion:
+                  type: string
+                  description: "(선택) 사용자의 현재 감정 상태. 챗봇 답변에 영향을 줄 수 있습니다."
+                  nullable: true
+                  example: "행복"
       responses:
         '200':
           description: 챗봇의 응답 성공
@@ -252,25 +882,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatResponse'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '404':
           description: 요청에 포함된 사용자나 식물을 찾을 수 없는 경우
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /chat/history/{user_id}/{plant_id}:
+  /chat/history/{plant_id}:
     get:
       tags:
         - Chat
       summary: 특정 식물과의 채팅 기록 조회
-      description: 특정 사용자와 특정 식물 간의 전체 대화 기록을 시간 순으로 조회합니다.
+      description: |
+        인증된 사용자와 특정 식물 간의 전체 대화 기록을 시간 순으로 조회합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-          description: 대화 기록을 조회할 사용자 ID
-          example: 1
         - in: path
           name: plant_id
           required: true
@@ -296,24 +925,38 @@ paths:
                   msg:
                     type: string
                     example: "Ok"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
 
-  # -------------------- Diary APIs --------------------
-  /diary/create:
+  # ==================== Diary APIs ====================
+  /diaries:
     post:
       tags:
         - Diary
       summary: 성장 일기 생성 (챗봇 기반)
-      description: 사용자와 챗봇의 하루 대화 기록을 바탕으로 새로운 성장 일기를 생성합니다. 같은 날짜에 다시 요청하면 기존 일기를 업데이트합니다.
+      description: |
+        일기 리소스를 생성합니다. 사용자와 챗봇의 하루 대화 기록을 바탕으로 새로운 성장 일기를 생성하며, 같은 날짜에 다시 요청하면 기존 일기를 업데이트합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       requestBody:
-        description: 일기 생성을 위한 사용자, 식물 정보 및 트리거 메시지
+        description: 일기 생성을 위한 식물 정보 및 트리거 메시지 (user_id는 토큰에서 자동 추출)
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DiaryCreateRequest'
+              type: object
+              required: [plant_id, message]
+              properties:
+                plant_id:
+                  type: integer
+                  example: 1
+                message:
+                  type: string
+                  example: "오늘 하루를 일기로 만들어줘."
       responses:
         '200':
           description: 일기 생성 또는 업데이트 성공. 생성/업데이트된 일기 데이터를 반환합니다.
@@ -321,23 +964,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DiaryResponse'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /diary/month/{user_id}/{year_month}:
+  /diaries/{year_month}:
     get:
       tags:
         - Diary
-      summary: 특정 월의 일기 작성 날짜 목록 조회
-      description: 특정 사용자가 지정된 연월(YYYY-MM)에 작성한 일기가 있는 모든 날짜를 배열로 반환합니다. (캘린더 표기용)
+      summary: 월별 일기 날짜 목록 조회
+      description: |
+        인증된 사용자가 특정 월에 작성한 일기의 날짜 목록을 조회합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-          description: "사용자 ID"
-          example: 1
         - in: path
           name: year_month
           required: true
@@ -365,23 +1007,22 @@ paths:
                   msg:
                     type: string
                     example: "Ok"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /diary/date/{user_id}/{date}:
+  /diaries/date/{date}:
     get:
       tags:
         - Diary
       summary: 특정 날짜의 일기 조회
-      description: 특정 사용자가 지정된 날짜(YYYY-MM-DD)에 작성한 일기를 조회합니다.
+      description: |
+        인증된 사용자가 지정된 날짜(YYYY-MM-DD)에 작성한 일기 리소스를 조회합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
-          description: "사용자 ID"
-          example: 1
         - in: path
           name: date
           required: true
@@ -397,40 +1038,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DiaryResponse'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '404':
           description: 해당 날짜에 작성된 일기가 없음
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /comment:
-    post:
-      tags:
-        - Comment
-      summary: 새로운 댓글 작성
-      description: 요청 본문에 포함된 diary_id에 해당하는 일기에 새로운 댓글을 작성합니다.
-      requestBody:
-        description: 댓글이 달릴 일기 ID, 작성자 ID, 그리고 댓글 내용
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CommentCreateRequest'
-      responses:
-        '200':
-          description: 댓글 작성 성공. 생성된 댓글 객체를 반환합니다.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommentResponse'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /comment/{diary_id}:
+  # ==================== Comment APIs (Diary의 하위 리소스) ====================
+  /diaries/{diary_id}/comments:
     get:
       tags:
-        - Comment
-      summary: 특정 일기의 모든 댓글 조회
-      description: 일기 ID를 지정하여 해당 일기에 달린 모든 댓글 목록을 조회합니다. user_id는 댓글에 대한 사용자의 추가 정보를 위해 사용될 수 있습니다.
+        - Diary
+      summary: 특정 일기의 댓글 목록 조회
+      description: |
+        특정 일기에 속한 댓글 리소스 컬렉션을 조회합니다.
+        Comment는 Diary의 하위 리소스입니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       parameters:
         - in: path
           name: diary_id
@@ -439,13 +1065,6 @@ paths:
             type: integer
           description: "댓글을 조회할 일기의 ID"
           example: 10
-        - in: query
-          name: user_id
-          required: true
-          schema:
-            type: integer
-          description: "조회하는 사용자의 ID"
-          example: 1
       responses:
         '200':
           description: 댓글 목록 조회 성공. 댓글 객체의 배열을 반환합니다.
@@ -464,30 +1083,93 @@ paths:
                   msg:
                     type: string
                     example: "Ok"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /comment/{comment_id}:
+    post:
+      tags:
+        - Diary
+      summary: 댓글 생성
+      description: |
+        특정 일기에 새로운 댓글 리소스를 생성합니다.
+        Comment는 Diary의 하위 리소스입니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: diary_id
+          required: true
+          schema:
+            type: integer
+          description: "댓글이 달릴 일기의 ID"
+          example: 10
+      requestBody:
+        description: 댓글 내용 (user_id와 diary_id는 토큰 및 URL에서 자동 추출)
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  description: "댓글 내용"
+                  example: "좋은 글이네요!"
+      responses:
+        '200':
+          description: 댓글 작성 성공. 생성된 댓글 객체를 반환합니다.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /diaries/{diary_id}/comments/{comment_id}:
     put:
       tags:
-        - Comment
+        - Diary
       summary: 댓글 수정
-      description: 댓글 ID를 사용하여 기존 댓글의 내용을 수정합니다. 실제 로직은 요청 본문(body)에 포함된 comment_id를 사용합니다.
+      description: |
+        특정 댓글 리소스의 내용을 수정합니다.
+        Comment는 Diary의 하위 리소스입니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       parameters:
+        - in: path
+          name: diary_id
+          required: true
+          schema:
+            type: integer
+          description: "댓글이 속한 일기의 ID"
+          example: 10
         - in: path
           name: comment_id
           required: true
           schema:
             type: integer
-          description: "API 경로 구분을 위한 댓글 ID"
+          description: "수정할 댓글의 ID"
           example: 25
       requestBody:
-        description: 수정할 댓글의 내용과 관련 ID 정보
+        description: 수정할 댓글의 내용 (user_id, diary_id, comment_id는 토큰 및 URL에서 자동 추출)
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CommentUpdateRequest'
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  description: "수정할 댓글 내용"
+                  example: "수정된 댓글 내용입니다!"
       responses:
         '200':
           description: 댓글 수정 성공. 수정된 댓글 객체를 반환합니다.
@@ -495,29 +1177,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommentResponse'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
-          
+
     delete:
       tags:
-        - Comment
+        - Diary
       summary: 댓글 삭제
-      description: 댓글 ID를 사용하여 특정 댓글을 삭제합니다. 실제 로직은 요청 본문(body)에 포함된 comment_id를 사용합니다.
+      description: |
+        특정 댓글 리소스를 삭제합니다.
+        Comment는 Diary의 하위 리소스입니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       parameters:
+        - in: path
+          name: diary_id
+          required: true
+          schema:
+            type: integer
+          description: "댓글이 속한 일기의 ID"
+          example: 10
         - in: path
           name: comment_id
           required: true
           schema:
             type: integer
-          description: "API 경로 구분을 위한 댓글 ID"
+          description: "삭제할 댓글의 ID"
           example: 25
-      requestBody:
-        description: 삭제할 댓글을 식별하기 위한 ID 정보
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CommentDeleteRequest'
       responses:
         '200':
           description: 댓글 삭제 성공. 별도의 데이터 없이 성공 메시지만 반환합니다.
@@ -528,90 +1217,172 @@ paths:
                 properties:
                   code: { type: integer, example: 200 }
                   msg: { type: string, example: "Ok" }
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
 
-  # -------------------- Friend APIs --------------------
-  /friend/request:
-    post:
-      tags:
-        - Friend
-      summary: 친구 요청 보내기
-      description: 다른 사용자에게 친구 관계를 요청합니다.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FriendRequest'
-      responses:
-        '200':
-          description: 친구 요청 성공
-        '400':
-          description: 자기 자신에게 요청, 이미 친구이거나 요청 대기중인 경우
-        '404':
-          description: 요청을 보내거나 받는 사용자를 찾을 수 없는 경우
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /friend/accept:
-    post:
-      tags:
-        - Friend
-      summary: 친구 요청 수락
-      description: 받은 친구 요청을 수락하여 친구 관계를 맺습니다.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FriendRequest' # FriendRequest 스키마 재사용
-      responses:
-        '200':
-          description: 친구 요청 수락 성공
-        '400':
-          description: 해당 친구 요청이 존재하지 않는 경우
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /friend/{user_id}:
+  # ==================== Friend APIs ====================
+  /friends:
     get:
       tags:
         - Friend
       summary: 친구 목록 조회
-      description: 특정 사용자의 모든 친구 목록을 조회합니다.
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
+      description: |
+        인증된 사용자의 친구 목록을 조회합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: 친구 목록 조회 성공
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FriendInfo'
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FriendInfo'
+                  msg:
+                    type: string
+                    example: "Ok"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /friends/requests:
+    post:
+      tags:
+        - Friend
+      summary: 친구 요청 생성
+      description: |
+        새로운 친구 요청을 생성합니다.
+        요청을 보내는 사용자(from_user_id)는 Access Token에서 자동으로 추출됩니다.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to_user_id]
+              properties:
+                to_user_id:
+                  type: integer
+                  description: "친구 요청을 받을 사용자 ID"
+                  example: 2
+      responses:
+        '200':
+          description: 친구 요청 생성 성공
+        '400':
+          description: 자기 자신에게 요청, 이미 친구이거나 요청 대기중인 경우
+        '401':
+          description: 인증 실패
+        '404':
+          description: 요청을 받는 사용자를 찾을 수 없는 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /friends/requests/{request_id}:
+    put:
+      tags:
+        - Friend
+      summary: 친구 요청 수락
+      description: |
+        친구 요청을 수락합니다.
+        요청을 받는 사용자(to_user_id)는 Access Token에서 자동으로 추출됩니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: request_id
+          required: true
+          schema:
+            type: integer
+          description: "수락할 친구 요청의 ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from_user_id]
+              properties:
+                from_user_id:
+                  type: integer
+                  description: "친구 요청을 보낸 사용자 ID"
+                  example: 1
+      responses:
+        '200':
+          description: 친구 요청 수락 성공
+        '400':
+          description: 해당 친구 요청이 존재하지 않는 경우
+        '401':
+          description: 인증 실패
+        '404':
+          description: 사용자를 찾을 수 없는 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - Friend
+      summary: 친구 요청 거절
+      description: |
+        친구 요청을 거절합니다.
+        요청을 받는 사용자(to_user_id)는 Access Token에서 자동으로 추출됩니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: request_id
+          required: true
+          schema:
+            type: integer
+          description: "거절할 친구 요청의 ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from_user_id]
+              properties:
+                from_user_id:
+                  type: integer
+                  description: "친구 요청을 보낸 사용자 ID"
+                  example: 1
+      responses:
+        '200':
+          description: 친구 요청 거절 성공
+        '400':
+          description: 해당 친구 요청이 존재하지 않는 경우
+        '401':
+          description: 인증 실패
+        '404':
+          description: 사용자를 찾을 수 없는 경우
         '500':
           $ref: '#/components/responses/ServerError'
 
   # -------------------- Mission APIs --------------------
-  /mission/{user_id}:
+  /missions:
     get:
       tags:
         - Mission
       summary: 오늘의 미션 조회
-      description: 특정 사용자의 오늘 날짜 미션 내용과 완료 여부를 조회합니다.
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: integer
+      description: |
+        인증된 사용자의 오늘 날짜 미션 내용과 완료 여부를 조회합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: 미션 조회 성공
@@ -619,30 +1390,132 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MissionResponse'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /mission/complete:
+  /missions/completions:
     post:
       tags:
         - Mission
       summary: 미션 완료 처리
-      description: 사용자의 오늘의 미션을 완료 상태로 변경합니다.
+      description: |
+        사용자의 오늘의 미션을 완료 상태로 변경합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 미션 완료 처리 성공
+        '400':
+          description: 이미 완료된 미션인 경우
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /missions/water:
+    post:
+      tags:
+        - Mission
+      summary: 물 마시기 미션 완료
+      description: |
+        사용자의 물 마시기 미션을 완료 처리합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                missionImage:
+                  type: string
+                  format: binary
+                  description: "미션 인증 이미지"
+      responses:
+        '200':
+          description: 물 마시기 미션 완료
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /missions/smile:
+    post:
+      tags:
+        - Mission
+      summary: 미소 사진 미션 제출
+      description: |
+        사용자의 미소 사진을 제출하여 미션을 완료합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                smileImage:
+                  type: string
+                  format: binary
+                  description: "미소 사진"
+      responses:
+        '200':
+          description: 미소 사진 미션 완료
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /missions/chat:
+    post:
+      tags:
+        - Mission
+      summary: 식물과 대화 미션 완료
+      description: |
+        식물과의 대화 미션을 완료 처리합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [user_id]
+              required: [plant_id]
               properties:
-                user_id:
+                plant_id:
                   type: integer
       responses:
         '200':
-          description: 미션 완료 처리 성공
-        '400':
-          description: 이미 완료된 미션인 경우
+          description: 대화 미션 완료
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /missions/stretching:
+    post:
+      tags:
+        - Mission
+      summary: 스트레칭 미션 완료
+      description: |
+        사용자의 스트레칭 미션을 완료 처리합니다.
+        Access Token에서 user_id를 자동으로 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 스트레칭 미션 완료
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
