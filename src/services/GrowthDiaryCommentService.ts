@@ -71,21 +71,35 @@ export class GrowthDiaryCommentService {
     try {
       const date = new Date();
 
-      const updatedComment = await db.GrowthDiaryComment.update(
+      const [affectedRows] = await db.GrowthDiaryComment.update(
         { content: content, updated_at: date, edited: true },
         {
           where: {
             user_id,
             diary_id,
             comment_id,
+            is_deleted: false,
           },
         },
       );
 
+      if (affectedRows === 0) {
+        throw new Error('Comment not found');
+      }
+
+      // 업데이트된 댓글 정보 반환
+      const updatedComment = await db.GrowthDiaryComment.findOne({
+        where: {
+          comment_id,
+          user_id,
+          diary_id,
+        },
+      });
+
       return updatedComment;
     } catch (err) {
       console.error('Error updating comment:', err);
-      throw new Error('Failed to update comment');
+      throw err;
     }
   }
 
@@ -96,14 +110,14 @@ export class GrowthDiaryCommentService {
   ): Promise<any> {
     if (!user_id || !diary_id || !comment_id) {
       throw new Error(
-        'Missing required fields: content, user_id, diary_id, comment_id',
+        'Missing required fields: user_id, diary_id, comment_id',
       );
     }
 
     try {
       const date = new Date();
 
-      const result = await db.GrowthDiaryComment.update(
+      const [affectedRows] = await db.GrowthDiaryComment.update(
         { is_deleted: true, updated_at: date },
         {
           where: {
@@ -115,10 +129,14 @@ export class GrowthDiaryCommentService {
         },
       );
 
-      return result; // [affectedRowsCount]
+      if (affectedRows === 0) {
+        throw new Error('Comment not found');
+      }
+
+      return { success: true };
     } catch (err) {
       console.error('Error deleting comment:', err);
-      throw new Error('Failed to update comment');
+      throw err;
     }
   }
 }
