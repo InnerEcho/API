@@ -33,13 +33,17 @@ export class TokenService {
 
   constructor() {
     // 환경변수에서 시크릿 키 가져오기
-    this.accessTokenSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_AUTH_KEY || '';
-    this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_AUTH_KEY || '';
+    this.accessTokenSecret =
+      process.env.JWT_ACCESS_SECRET || process.env.JWT_AUTH_KEY || '';
+    this.refreshTokenSecret =
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_AUTH_KEY || '';
     this.accessTokenExpiry = process.env.JWT_ACCESS_EXPIRY || '15m';
     this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '7d';
 
     if (!this.accessTokenSecret || !this.refreshTokenSecret) {
-      throw new Error('JWT secret keys are not configured in environment variables');
+      throw new Error(
+        'JWT secret keys are not configured in environment variables',
+      );
     }
   }
 
@@ -48,9 +52,9 @@ export class TokenService {
    */
   public generateAccessToken(payload: AccessTokenPayload): string {
     return jwt.sign(payload, this.accessTokenSecret, {
-      expiresIn: this.accessTokenExpiry,
+      expiresIn: this.accessTokenExpiry as string | number,
       issuer: 'InnerEcho',
-    });
+    } as jwt.SignOptions);
   }
 
   /**
@@ -58,7 +62,7 @@ export class TokenService {
    */
   public async generateRefreshToken(
     userId: number,
-    req: Request
+    req: Request,
   ): Promise<string> {
     const ipAddress = req.ip || req.connection.remoteAddress || null;
     const userAgent = req.headers['user-agent'] || null;
@@ -83,10 +87,14 @@ export class TokenService {
       token_id: tokenRecord.token_id,
     };
 
-    const refreshToken = jwt.sign(refreshTokenPayload, this.refreshTokenSecret, {
-      expiresIn: this.refreshTokenExpiry,
-      issuer: 'InnerEcho',
-    });
+    const refreshToken = jwt.sign(
+      refreshTokenPayload,
+      this.refreshTokenSecret,
+      {
+        expiresIn: this.refreshTokenExpiry as string | number,
+        issuer: 'InnerEcho',
+      } as jwt.SignOptions,
+    );
 
     // DB의 token 필드 업데이트
     await tokenRecord.update({ token: refreshToken });
@@ -109,7 +117,10 @@ export class TokenService {
       }
 
       // JWT 검증
-      const decoded = jwt.verify(token, this.accessTokenSecret) as VerifiedTokenPayload;
+      const decoded = jwt.verify(
+        token,
+        this.accessTokenSecret,
+      ) as VerifiedTokenPayload;
       return decoded;
     } catch (error: any) {
       if (error.name === 'TokenExpiredError') {
@@ -129,7 +140,10 @@ export class TokenService {
   public async verifyRefreshToken(token: string): Promise<RefreshTokenPayload> {
     try {
       // JWT 검증
-      const decoded = jwt.verify(token, this.refreshTokenSecret) as RefreshTokenPayload;
+      const decoded = jwt.verify(
+        token,
+        this.refreshTokenSecret,
+      ) as RefreshTokenPayload;
 
       // DB에서 토큰 확인
       const tokenRecord = await db.RefreshToken.findOne({
@@ -201,7 +215,10 @@ export class TokenService {
   /**
    * Access Token 블랙리스트 추가 (로그아웃)
    */
-  public async revokeAccessToken(token: string, reason: string = 'logout'): Promise<void> {
+  public async revokeAccessToken(
+    token: string,
+    reason: string = 'logout',
+  ): Promise<void> {
     try {
       const decoded = jwt.decode(token) as any;
       if (!decoded || !decoded.exp) {
@@ -252,7 +269,7 @@ export class TokenService {
     try {
       await db.RefreshToken.update(
         { is_revoked: true },
-        { where: { user_id: userId } }
+        { where: { user_id: userId } },
       );
     } catch (error) {
       console.error('Failed to revoke all user tokens:', error);
