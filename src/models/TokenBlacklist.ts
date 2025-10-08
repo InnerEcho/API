@@ -24,7 +24,6 @@ export default function (sequelize: Sequelize) {
       token: {
         type: DataTypes.STRING(500),
         allowNull: false,
-        unique: true,
         comment: '블랙리스트에 추가된 Access Token',
       },
       expires_at: {

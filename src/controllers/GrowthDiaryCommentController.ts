@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { ApiResult } from '@/interface/api.js';
+import type { ApiResult } from '@/interface/index.js';
 import { GrowthDiaryCommentService } from '@/services/GrowthDiaryCommentService.js';
 
 export class GrowthDiaryCommentController {
@@ -13,20 +13,13 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      // 토큰에서 user_id 추출
-      if (!req.user) {
-        result.code = 401;
-        result.msg = 'Authentication required';
-        res.status(401).json(result);
-        return;
-      }
-      const user_id = req.user.user_id;
+      const userId = req.user!.userId;
 
-      // URL에서 diary_id 추출 (REST 규격)
-      const { diary_id } = req.params;
+      // URL에서 diaryId 추출 (camelCase 사용)
+      const { diaryId } = req.params as unknown as { diaryId: string };
       const { content } = req.body;
 
-      if (!content || !diary_id) {
+      if (!content || !diaryId) {
         result.code = 400;
         result.msg = 'Missing required fields';
         res.status(400).json(result);
@@ -35,8 +28,8 @@ export class GrowthDiaryCommentController {
 
       const response = await this.growthDiaryCommentService.createComment(
         content,
-        user_id,
-        parseInt(diary_id),
+        userId,
+        parseInt(diaryId),
       );
 
       result.code = 200;
@@ -55,19 +48,12 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      // 토큰에서 user_id 추출
-      if (!req.user) {
-        result.code = 401;
-        result.msg = 'Authentication required';
-        res.status(401).json(result);
-        return;
-      }
-      const user_id = req.user.user_id;
+      const userId = req.user!.userId;
 
-      const { diary_id } = req.params;
+      const { diaryId } = req.params as unknown as { diaryId: string };
       const response = await this.growthDiaryCommentService.getComments(
-        user_id,
-        parseInt(diary_id),
+        userId,
+        parseInt(diaryId),
       );
 
       result.code = 200;
@@ -86,19 +72,15 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      // 토큰에서 user_id 추출
-      if (!req.user) {
-        result.code = 401;
-        result.msg = 'Authentication required';
-        res.status(401).json(result);
-        return;
-      }
-      const user_id = req.user.user_id;
+      const userId = req.user!.userId;
 
-      // URL에서 diary_id와 comment_id 추출 (REST 규격)
-      const { diary_id, comment_id } = req.params;
+      // URL에서 diaryId와 commentId 추출 (camelCase 사용)
+      const { diaryId, commentId } = req.params as unknown as {
+        diaryId: string;
+        commentId: string;
+      };
 
-      if (!diary_id || !comment_id) {
+      if (!diaryId || !commentId) {
         result.code = 400;
         result.msg = 'Missing required parameters';
         res.status(400).json(result);
@@ -106,9 +88,9 @@ export class GrowthDiaryCommentController {
       }
 
       await this.growthDiaryCommentService.deleteComment(
-        user_id,
-        parseInt(diary_id),
-        parseInt(comment_id),
+        userId,
+        parseInt(diaryId),
+        parseInt(commentId),
       );
 
       result.code = 200;
@@ -132,20 +114,13 @@ export class GrowthDiaryCommentController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      // 토큰에서 user_id 추출
-      if (!req.user) {
-        result.code = 401;
-        result.msg = 'Authentication required';
-        res.status(401).json(result);
-        return;
-      }
-      const user_id = req.user.user_id;
+      const userId = req.user!.userId;
 
       // URL에서 diary_id와 comment_id 추출 (REST 규격)
-      const { diary_id, comment_id } = req.params;
+      const { diaryId, commentId } = req.params;
       const { content } = req.body;
 
-      if (!diary_id || !comment_id || !content) {
+      if (!diaryId || !commentId || !content) {
         result.code = 400;
         result.msg = 'Missing required fields';
         res.status(400).json(result);
@@ -154,9 +129,9 @@ export class GrowthDiaryCommentController {
 
       const response = await this.growthDiaryCommentService.updateComment(
         content,
-        user_id,
-        parseInt(diary_id),
-        parseInt(comment_id),
+        userId,
+        parseInt(diaryId),
+        parseInt(commentId),
       );
 
       result.code = 200;

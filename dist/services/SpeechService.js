@@ -1,7 +1,7 @@
 import { SpeechClient } from '@google-cloud/speech';
 import { ZyphraClient } from '@zyphra/client';
 import fs from 'fs';
-import { UserType } from "../interface/chatbot.js";
+import { UserType } from "../interface/index.js";
 import { ZyphraError } from '@zyphra/client';
 export class SpeechService {
   constructor() {
@@ -15,7 +15,7 @@ export class SpeechService {
   /**
    * Google Cloud STT 처리
    */
-  async speechToText(filePath, user_id, plant_id) {
+  async speechToText(filePath, userId, plantId) {
     const client = new SpeechClient();
     const fileContent = fs.readFileSync(filePath);
     const request = {
@@ -31,11 +31,11 @@ export class SpeechService {
     const [response] = await client.recognize(request);
     const transcription = response.results?.map(result => result.alternatives?.[0].transcript).join('\n') || '';
     return {
-      user_id: user_id,
-      plant_id: plant_id,
+      userId: userId,
+      plantId: plantId,
       message: transcription,
-      user_type: UserType.BOT,
-      send_date: new Date()
+      userType: UserType.BOT,
+      sendDate: new Date()
     };
   }
   async textToSpeech(message) {

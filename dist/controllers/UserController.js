@@ -16,12 +16,12 @@ export class UserController {
     };
     try {
       const {
-        user_name,
-        user_email,
+        userName,
+        userEmail,
         password,
-        user_gender
+        userGender
       } = req.body;
-      const response = await this.userService.signUp(user_name, user_email, password, user_gender);
+      const response = await this.userService.signUp(userName, userEmail, password, userGender);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -45,10 +45,10 @@ export class UserController {
     };
     try {
       const {
-        user_email,
+        userEmail,
         password
       } = req.body;
-      const response = await this.userService.signIn(user_email, password);
+      const response = await this.userService.signIn(userEmail, password);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -114,9 +114,9 @@ export class UserController {
     };
     try {
       const {
-        user_id
+        user_id: userId
       } = req.params;
-      const response = await this.userService.getUserInfo(parseInt(user_id));
+      const response = await this.userService.getUserInfo(parseInt(userId));
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -136,13 +136,13 @@ export class UserController {
     };
     try {
       const {
-        user_id
+        user_id: userId
       } = req.params;
       const {
-        user_name,
+        user_name: userName,
         email
       } = req.body;
-      const response = await this.userService.updateUserInfo(parseInt(user_id), user_name, email);
+      const response = await this.userService.updateUserInfo(parseInt(userId), userName, email);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -162,9 +162,9 @@ export class UserController {
     };
     try {
       const {
-        user_id
+        user_id: userId
       } = req.params;
-      await this.userService.deleteUser(parseInt(user_id));
+      await this.userService.deleteUser(parseInt(userId));
       result.code = 200;
       result.msg = 'Ok';
       res.status(200).json(result);

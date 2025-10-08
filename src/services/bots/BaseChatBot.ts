@@ -34,7 +34,7 @@ export abstract class BaseChatBot {
     // 1. 사용자 & 식물 정보 조회
     const plantDbInfoResult = await db.sequelize.query(
       `
-        SELECT u.user_name, p.nickname
+        SELECT u.user_name AS userName, p.nickname
         FROM user u, plant p
         WHERE u.user_id = ${userId} AND p.plant_id = ${plantId};
       `,
@@ -43,7 +43,7 @@ export abstract class BaseChatBot {
 
     if (!plantDbInfoResult || plantDbInfoResult.length === 0) {
       throw new Error(
-        `Plant data not found for user_id: ${userId}, plant_id: ${plantId}`,
+        `Plant data not found for userId: ${userId}, plantId: ${plantId}`,
       );
     }
 

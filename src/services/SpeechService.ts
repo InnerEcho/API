@@ -1,9 +1,8 @@
 import { SpeechClient } from '@google-cloud/speech';
 import { ZyphraClient } from '@zyphra/client';
 import fs from 'fs';
-import { PassThrough } from 'stream';
-import type { IMessage } from '../interface/chatbot.js';
-import { UserType } from '../interface/chatbot.js';
+import type { IMessage } from '@/interface/index.js';
+import { UserType } from '@/interface/index.js';
 import { ZyphraError } from '@zyphra/client';
 
 export class SpeechService {
@@ -20,8 +19,8 @@ export class SpeechService {
    */
   async speechToText(
     filePath: string,
-    user_id: number,
-    plant_id: number,
+    userId: number,
+    plantId: number,
   ): Promise<IMessage> {
     const client = new SpeechClient();
     const fileContent = fs.readFileSync(filePath);
@@ -42,18 +41,18 @@ export class SpeechService {
         .join('\n') || '';
 
     return {
-      user_id: user_id,
-      plant_id: plant_id,
+      userId: userId,
+      plantId: plantId,
       message: transcription,
-      user_type: UserType.BOT,
-      send_date: new Date(),
+      userType: UserType.BOT,
+      sendDate: new Date(),
     };
   }
 
   async textToSpeech(message: string) {
     console.log('🔔 textToSpeech 호출 시작');
     console.log(`📤 입력 메시지: ${message}`);
-  
+
     try {
       console.log('🚀 Zyphra create 요청 시작...');
       const audioBlob = await this.client.audio.speech.create({
@@ -75,7 +74,7 @@ export class SpeechService {
         },
       });
       console.log('✅ Zyphra create 요청 성공');
-  
+
       return { audioBlob, mimeType: 'audio/ogg' };
     } catch (error: unknown) {
       const zyphraError = error as ZyphraError;

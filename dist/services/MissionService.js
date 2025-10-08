@@ -13,13 +13,13 @@ export class MissionService {
   /**
    * 특정 사용자의 미션 목록을 조회합니다.
    * (현재 코드에서는 Mission 모델을 사용하고 있으나, 전체적인 흐름에 맞춰 User_Event를 조회하도록 수정하는 것을 고려해볼 수 있습니다.)
-   * @param user_id - 사용자 ID
+   * @param userId - 사용자 ID
    */
-  async getMissions(user_id) {
+  async getMissions(userId) {
     // 참고: 현재 코드는 Mission 테이블을 직접 조회하고 있습니다.
     // 사용자별로 할당된 미션을 보려면 'User_Event' 테이블을 조회하는 것이 더 정확할 수 있습니다.
     const missions = await db.Mission.findAll({
-      // where: { user_id: user_id }, // Mission 테이블에 user_id가 있다는 가정
+      // where: { user_id: userId }, // Mission 테이블에 user_id가 있다는 가정
       order: [['created_at', 'DESC']]
     });
     return missions;

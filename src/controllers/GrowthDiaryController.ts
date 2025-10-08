@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
-import type { ApiResult } from '@/interface/api.js';
+import type { ApiResult } from '@/interface/index.js';
 import { GrowthDiaryService } from '@/services/GrowthDiaryService.js';
-import { GrowthDiaryBot } from '@/services/bots/GrowthDiaryBot.js';
 
 export class GrowthDiaryController {
   private growthDiaryService: GrowthDiaryService;
@@ -10,21 +9,26 @@ export class GrowthDiaryController {
     this.growthDiaryService = growthDiaryService;
   }
 
-public async getDiaryDatesForMonth(req: Request, res: Response): Promise<void> {
-    const result:ApiResult = { code: 400, data: null, msg: 'Failed' };
+  public async getDiaryDatesForMonth(
+    req: Request,
+    res: Response,
+  ): Promise<void> {
+    const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
     try {
-      const { user_id, year_month } = req.params;
+      const userId = req.user!.userId;
+      const { yearMonth } = req.params;
 
-      if (!user_id || !year_month || !/^\d{4}-\d{2}$/.test(year_month)) {
+      if (!yearMonth || !/^\d{4}-\d{2}$/.test(yearMonth)) {
         result.code = 400;
         result.msg = 'Invalid or missing parameters';
         res.status(400).json(result);
         return;
       }
- 
-      const numericUserId = parseInt(user_id, 10); 
-      
-      const dates = await this.growthDiaryService.getDiaryDatesForMonth(numericUserId, year_month);
+
+      const dates = await this.growthDiaryService.getDiaryDatesForMonth(
+        userId,
+        yearMonth,
+      );
       result.code = 200;
       result.msg = 'Ok';
       result.data = { dates }; // 날짜 리스트 반환
@@ -36,15 +40,15 @@ public async getDiaryDatesForMonth(req: Request, res: Response): Promise<void> {
       res.status(500).json(result);
     }
   }
-  
 
   public async getDiaryByDate(req: Request, res: Response): Promise<void> {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, date } = req.params;
+      const userId = req.user!.userId;
+      const { date } = req.params;
       const response = await this.growthDiaryService.getDiaryByDate(
-        parseInt(user_id),
+        userId,
         date,
       );
 
@@ -68,10 +72,11 @@ public async getDiaryDatesForMonth(req: Request, res: Response): Promise<void> {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { message, user_id, plant_id } = req.body;
+      const userId = req.user!.userId;
+      const { message, plantId } = req.body;
       const response = await this.growthDiaryService.create(
-        user_id,
-        plant_id,
+        userId,
+        plantId,
         message,
       );
 

@@ -1,14 +1,10 @@
 import express from 'express';
 import { PlantChatBotController } from '@/controllers/ChatBotController.js';
-import multer from 'multer';
-import { PlantSpeechController } from '@/controllers/SpeechController.js';
 import { ChatHistoryController } from '@/controllers/ChatHistoryController.js';
 import { ChatService } from '@/services/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
 import { ChatHistoryService } from '@/services/ChatHistoryService.js';
-import { SpeechService } from '@/services/SpeechService.js';
-
-
+import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();
 
@@ -108,11 +104,16 @@ const chatHistoryController = new ChatHistoryController(chatHistoryService);
  *                   type: string
  *                   example: "ServerError"
  */
-router.post('/plant', plantChatBotController.chat.bind(plantChatBotController));
+router.post(
+  '/plant',
+  verifyTokenV2,
+  plantChatBotController.chat.bind(plantChatBotController)
+);
 
 // PlantChatBotController.getChatHistory 호출
 router.get(
-  '/history/:user_id/:plant_id',
+  '/history/:plantId',
+  verifyTokenV2,
   chatHistoryController.getChatHistory.bind(chatHistoryController),
 );
 
@@ -192,6 +193,10 @@ router.get(
 // );
 
 
-router.post('/chat', plantChatBotController.chat.bind(plantChatBotController));
+router.post(
+  '/chat',
+  verifyTokenV2,
+  plantChatBotController.chat.bind(plantChatBotController)
+);
 
 export default router;

@@ -10,6 +10,76 @@ const authController = new AuthController();
 
 /**
  * @swagger
+ * /auth/v2/register:
+ *   post:
+ *     summary: 사용자 회원가입 (V2 - Access Token + Refresh Token 발급)
+ *     tags: [Auth V2]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 example: password123
+ *               userName:
+ *                 type: string
+ *                 example: 홍길동
+ *               userGender:
+ *                 type: string
+ *                 example: male
+ *     responses:
+ *       201:
+ *         description: 회원가입 성공, Access Token 및 Refresh Token 발급
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: number
+ *                   example: 201
+ *                 message:
+ *                   type: string
+ *                   example: Registration successful
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                     refreshToken:
+ *                       type: string
+ *                     tokenType:
+ *                       type: string
+ *                       example: Bearer
+ *                     expiresIn:
+ *                       type: string
+ *                       example: 15m
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         userId:
+ *                           type: number
+ *                         userEmail:
+ *                           type: string
+ *                         userName:
+ *                           type: string
+ *       400:
+ *         description: 이메일이 이미 존재하거나 입력값이 유효하지 않음
+ *       429:
+ *         description: 회원가입 시도 횟수 초과 (Rate Limit)
+ *       500:
+ *         description: 서버 오류
+ */
+router.post('/register', apiRateLimiter, authController.register.bind(authController));
+
+/**
+ * @swagger
  * /auth/v2/login:
  *   post:
  *     summary: 사용자 로그인 (V2 - Access Token + Refresh Token)

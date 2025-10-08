@@ -1,5 +1,5 @@
 import db from '@/models/index.js';
-import type { IMessage } from '@/interface/chatbot.js';
+import type { IMessage } from '@/interface/index.js';
 
 const { ChatHistory } = db;
 
@@ -12,11 +12,11 @@ export class ChatHistoryService {
    * 특정 사용자와 식물 간의 대화 이력 조회
    */
   public async getChatHistory(
-    user_id: number,
-    plant_id: number,
+    userId: number,
+    plantId: number,
   ): Promise<IMessage[]> {
     const chatHistory = await ChatHistory.findAll({
-      where: { user_id: user_id, plant_id: plant_id },
+      where: { user_id: userId, plant_id: plantId },
       order: [['send_date', 'ASC']],
     });
 
@@ -24,8 +24,8 @@ export class ChatHistoryService {
   }
 
   public async getTodayHistory(
-    user_id: number,
-    plant_id: number,
+    userId: number,
+    plantId: number,
   ): Promise<IMessage[]> {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -37,14 +37,18 @@ export class ChatHistoryService {
 
     const query = `
       SELECT * FROM plant_history
-      WHERE user_id = ${user_id}
-        AND plant_id = ${plant_id}
+      WHERE user_id = ${userId}
+        AND plant_id = ${plantId}
         AND send_date >= '${startDateStr}'
       ORDER BY send_date ASC
     `;
 
     const results = await db.sequelize.query(query, {
-      replacements: { user_id, plant_id, startDate: startDateStr },
+      replacements: {
+        user_id: userId,
+        plant_id: plantId,
+        startDate: startDateStr,
+      },
       type: db.Sequelize.QueryTypes.SELECT,
     });
 

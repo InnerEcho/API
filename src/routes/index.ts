@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import type { ApiResult } from '@/interface/api.js';
+import type { ApiResult } from '@/interface/index.js';
 const router = Router();
 
 /* GET home page. */

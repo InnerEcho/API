@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { PlantStateService } from '@/services/PlantStateService.js';
-import type { ApiResult } from '@/interface/api.js';
+import type { ApiResult } from '@/interface/index.js';
 
 export class PlantStateController {
   private plantStateService: PlantStateService;
@@ -16,34 +16,45 @@ export class PlantStateController {
   public getPlantState = async (req: Request, res: Response): Promise<void> => {
     // 응답 객체 초기화
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
-    
-    try {
-      const plant_id = parseInt(req.params.plant_id, 10);
 
-      if (isNaN(plant_id)) {
+    try {
+      const plantId = parseInt(req.params.plantId, 10);
+      const userId = req.user!.userId;
+
+      if (isNaN(plantId)) {
         result.code = 400;
         result.msg = 'Invalid plant ID';
         res.status(400).json(result);
         return;
       }
 
-      const plantData = await this.plantStateService.getPlantState(plant_id);
-      
+      const plantData = await this.plantStateService.getPlantState(
+        plantId,
+        userId,
+      );
+
       // 성공 시 응답 형식 통일
       result.code = 200;
       result.msg = 'Ok';
       result.data = plantData;
       res.status(200).json(result);
-
     } catch (error) {
       console.error('Error in getPlantState:', error);
-      // 'Plant not found'와 같이 서비스에서 발생한 특정 에러 처리
-      if (error instanceof Error && error.message === 'Plant not found') {
-        result.code = 404;
-        result.msg = error.message;
-        res.status(404).json(result);
+      if (error instanceof Error) {
+        if (error.message === 'Plant not found') {
+          result.code = 404;
+          result.msg = error.message;
+          res.status(404).json(result);
+        } else if (error.message === 'Forbidden') {
+          result.code = 403;
+          result.msg = 'Access denied';
+          res.status(403).json(result);
+        } else {
+          result.code = 500;
+          result.msg = 'ServerError';
+          res.status(500).json(result);
+        }
       } else {
-        // 그 외 서버 에러 처리
         result.code = 500;
         result.msg = 'ServerError';
         res.status(500).json(result);
@@ -55,32 +66,55 @@ export class PlantStateController {
    * POST /plant-state/:plant_id/experience
    * 식물에게 경험치를 부여합니다.
    */
-  public gainExperience = async (req: Request, res: Response): Promise<void> => {
+  public gainExperience = async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const plant_id = parseInt(req.params.plant_id, 10);
+      const plantId = parseInt(req.params.plantId, 10);
+      const userId = req.user!.userId;
       const { expGained } = req.body;
 
-      if (isNaN(plant_id) || typeof expGained !== 'number' || expGained <= 0) {
+      if (isNaN(plantId) || typeof expGained !== 'number' || expGained <= 0) {
         result.code = 400;
         result.msg = 'Invalid input data';
         res.status(400).json(result);
         return;
       }
 
-      const serviceResult = await this.plantStateService.gainExperience(plant_id, expGained);
-      
+      const serviceResult = await this.plantStateService.gainExperience(
+        plantId,
+        userId,
+        expGained,
+      );
+
       result.code = 200;
       result.msg = 'Ok';
       result.data = serviceResult;
       res.status(200).json(result);
-
     } catch (error) {
       console.error('Error in gainExperience:', error);
-      result.code = 500;
-      result.msg = 'ServerError';
-      res.status(500).json(result);
+      if (error instanceof Error) {
+        if (error.message === 'Plant not found') {
+          result.code = 404;
+          result.msg = error.message;
+          res.status(404).json(result);
+        } else if (error.message === 'Forbidden') {
+          result.code = 403;
+          result.msg = 'Access denied';
+          res.status(403).json(result);
+        } else {
+          result.code = 500;
+          result.msg = 'ServerError';
+          res.status(500).json(result);
+        }
+      } else {
+        result.code = 500;
+        result.msg = 'ServerError';
+        res.status(500).json(result);
+      }
     }
   };
 
@@ -88,32 +122,55 @@ export class PlantStateController {
    * POST /plant-state/:plant_id/likeability
    * 식물의 호감도를 증가시킵니다.
    */
-  public increaseLikeability = async (req: Request, res: Response): Promise<void> => {
+  public increaseLikeability = async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const plant_id = parseInt(req.params.plant_id, 10);
+      const plantId = parseInt(req.params.plantId, 10);
+      const userId = req.user!.userId;
       const { amount } = req.body;
 
-      if (isNaN(plant_id) || typeof amount !== 'number' || amount <= 0) {
+      if (isNaN(plantId) || typeof amount !== 'number' || amount <= 0) {
         result.code = 400;
         result.msg = 'Invalid input data';
         res.status(400).json(result);
         return;
       }
 
-      const serviceResult = await this.plantStateService.increaseLikeability(plant_id, amount);
+      const serviceResult = await this.plantStateService.increaseLikeability(
+        plantId,
+        userId,
+        amount,
+      );
 
       result.code = 200;
       result.msg = 'Ok';
       result.data = serviceResult;
       res.status(200).json(result);
-
     } catch (error) {
       console.error('Error in increaseLikeability:', error);
-      result.code = 500;
-      result.msg = 'ServerError';
-      res.status(500).json(result);
+      if (error instanceof Error) {
+        if (error.message === 'Plant not found') {
+          result.code = 404;
+          result.msg = error.message;
+          res.status(404).json(result);
+        } else if (error.message === 'Forbidden') {
+          result.code = 403;
+          result.msg = 'Access denied';
+          res.status(403).json(result);
+        } else {
+          result.code = 500;
+          result.msg = 'ServerError';
+          res.status(500).json(result);
+        }
+      } else {
+        result.code = 500;
+        result.msg = 'ServerError';
+        res.status(500).json(result);
+      }
     }
   };
 }

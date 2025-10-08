@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
-import type { ApiResult } from '@/interface/api.js';
+import type { ApiResult } from '@/interface/index.js';
 import { SpeechService } from '@/services/SpeechService.js';
-import { PassThrough } from 'stream';
 
 export class PlantSpeechController {
   private speechService: SpeechService;
@@ -23,11 +22,12 @@ export class PlantSpeechController {
         return;
       }
 
-      const { user_id, plant_id } = req.body;
+      const userId = req.user!.userId;
+      const { plant_id: plantId } = req.body;
       const response = await this.speechService.speechToText(
         req.file.path,
-        user_id,
-        plant_id,
+        userId,
+        plantId,
       );
       result.code = 200;
       result.data = response;
@@ -49,13 +49,15 @@ export class PlantSpeechController {
         res.status(400).json({ code: 400, msg: 'Missing or invalid message' });
         return;
       }
-  
-      const { audioBlob, mimeType } = await this.speechService.textToSpeech(message);
-  
+
+      const { audioBlob, mimeType } = await this.speechService.textToSpeech(
+        message,
+      );
+
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', 'inline; filename=speech.ogg');
-  
-      res.send(audioBlob);  // Blob 데이터를 직접 전송
+
+      res.send(audioBlob); // Blob 데이터를 직접 전송
       console.log('✅ Blob data sent to client.');
     } catch (err) {
       console.error('TTS Error:', err);

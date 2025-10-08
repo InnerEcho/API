@@ -5,17 +5,17 @@ export class GrowthDiaryService {
   constructor(growthDiaryBot) {
     this.growthDiaryBot = growthDiaryBot;
   }
-  async getDiaryDatesForMonth(user_id, year_month) {
-    if (!user_id || !year_month) {
-      throw new Error('Missing required fields: user_id or year_month');
+  async getDiaryDatesForMonth(userId, yearMonth) {
+    if (!userId || !yearMonth) {
+      throw new Error('Missing required fields: userId or yearMonth');
     }
-    const start = dayjs(`${year_month}-01`).startOf('month').format('YYYY-MM-DD HH:mm:ss');
-    const end = dayjs(`${year_month}-01`).endOf('month').format('YYYY-MM-DD HH:mm:ss');
+    const start = dayjs(`${yearMonth}-01`).startOf('month').format('YYYY-MM-DD HH:mm:ss');
+    const end = dayjs(`${yearMonth}-01`).endOf('month').format('YYYY-MM-DD HH:mm:ss');
     try {
       const diaries = await db.GrowthDiary.findAll({
         attributes: [[db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), 'date']],
         where: {
-          user_id,
+          user_id: userId,
           is_deleted: false,
           created_at: {
             [db.Sequelize.Op.between]: [start, end]
@@ -32,15 +32,14 @@ export class GrowthDiaryService {
       throw new Error('Failed to fetch diary dates');
     }
   }
-  async getDiaryByDate(user_id, date) {
-    if (!user_id || !date) {
-      throw new Error('Missing required fields: user_id, date');
+  async getDiaryByDate(userId, date) {
+    if (!userId || !date) {
+      throw new Error('Missing required fields: userId, date');
     }
-    const growthDiary = db.GrowthDiary;
     try {
       const diary = await db.GrowthDiary.findOne({
         where: {
-          user_id,
+          user_id: userId,
           is_deleted: false,
           [Op.and]: [db.Sequelize.where(db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), '=', date)]
         }
@@ -51,9 +50,9 @@ export class GrowthDiaryService {
       throw new Error('Failed to fetch diary');
     }
   }
-  async create(user_id, plant_id, message) {
+  async create(userId, plantId, message) {
     // 1. 챗봇 응답 생성
-    const reply = await this.growthDiaryBot.processChat(user_id, plant_id, message);
+    const reply = await this.growthDiaryBot.processChat(userId, plantId, message);
 
     // 2. DB 저장용 메시지 객체 생성
     const now = new Date();
@@ -66,7 +65,7 @@ export class GrowthDiaryService {
     // 3. 오늘 날짜의 일지가 있는지 확인
     const existingDiary = await db.GrowthDiary.findOne({
       where: {
-        user_id: user_id,
+        user_id: userId,
         is_deleted: false,
         [db.Sequelize.Op.and]: [db.Sequelize.where(db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), '=', today)]
       }
@@ -82,7 +81,7 @@ export class GrowthDiaryService {
     } else {
       // 새 일지 생성
       result = await db.GrowthDiary.create({
-        user_id: user_id,
+        user_id: userId,
         title,
         content,
         image_url: null,

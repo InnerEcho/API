@@ -18,16 +18,16 @@ export class PlantChatBotController {
       msg: 'Failed'
     };
     try {
+      const userId = req.user.userId;
       const {
         message,
-        user_id,
-        plant_id
+        plant_id: plantId
       } = req.body;
-      const response = await this.chatService.create(user_id, plant_id, message);
+      const response = await this.chatService.create(userId, plantId, message);
 
       // 1️⃣ 감정 분석 수행
       const emotion = await this.emotionService.analyze(message);
-      console.log(`사용자 ${user_id}의 감정 분석 결과: ${emotion}`);
+      console.log(`사용자 ${userId}의 감정 분석 결과: ${emotion}`);
 
       // 2️⃣ 감정 상태를 User 테이블에 업데이트
       if (emotion) {
@@ -35,12 +35,12 @@ export class PlantChatBotController {
           state: emotion
         }, {
           where: {
-            user_id
+            user_id: userId
           }
         });
-        console.log(`사용자 ${user_id}의 감정 상태가 '${emotion}'으로 DB에 저장됨`);
+        console.log(`사용자 ${userId}의 감정 상태가 '${emotion}'으로 DB에 저장됨`);
       } else {
-        console.warn(`사용자 ${user_id}의 감정 분석 결과가 없어 DB 업데이트를 건너뜀`);
+        console.warn(`사용자 ${userId}의 감정 분석 결과가 없어 DB 업데이트를 건너뜀`);
       }
       result.code = 200;
       result.data = response;

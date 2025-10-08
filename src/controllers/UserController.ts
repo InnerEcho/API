@@ -1,9 +1,6 @@
 import type { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import db from '@/models/index.js';
-import type { ApiResult } from '@/interface/api.js';
+import type { ApiResult } from '@/interface/index.js';
 import { UserService } from '@/services/UserService.js';
 
 export class UserController {
@@ -20,12 +17,12 @@ export class UserController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_name, user_email, password, user_gender } = req.body;
+      const { userName, userEmail, password, userGender } = req.body;
       const response = await this.userService.signUp(
-        user_name,
-        user_email,
+        userName,
+        userEmail,
         password,
-        user_gender,
+        userGender,
       );
 
       result.code = 200;
@@ -47,8 +44,8 @@ export class UserController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_email, password } = req.body;
-      const response = await this.userService.signIn(user_email, password);
+      const { userEmail, password } = req.body;
+      const response = await this.userService.signIn(userEmail, password);
 
       result.code = 200;
       result.data = response;
@@ -120,8 +117,8 @@ export class UserController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id } = req.params;
-      const response = await this.userService.getUserInfo(parseInt(user_id));
+      const { user_id: userId } = req.params;
+      const response = await this.userService.getUserInfo(parseInt(userId));
 
       result.code = 200;
       result.data = response;
@@ -139,11 +136,11 @@ export class UserController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id } = req.params;
-      const { user_name, email } = req.body;
+      const { user_id: userId } = req.params;
+      const { user_name: userName, email } = req.body;
       const response = await this.userService.updateUserInfo(
-        parseInt(user_id),
-        user_name,
+        parseInt(userId),
+        userName,
         email,
       );
 
@@ -163,8 +160,8 @@ export class UserController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id } = req.params;
-      await this.userService.deleteUser(parseInt(user_id));
+      const { user_id: userId } = req.params;
+      await this.userService.deleteUser(parseInt(userId));
 
       result.code = 200;
       result.msg = 'Ok';

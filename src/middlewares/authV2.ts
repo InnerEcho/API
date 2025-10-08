@@ -6,12 +6,10 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
-        user_id: number;
-        user_email: string;
-        user_name: string;
+        userId: number;
+        userEmail: string;
+        userName: string;
         state: string;
-        plant_id: number | null;
-        nickname: string | null;
       };
     }
   }
@@ -29,7 +27,7 @@ declare global {
 export const verifyTokenV2 = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
 
@@ -59,12 +57,10 @@ export const verifyTokenV2 = async (
 
     // req.user에 저장 (req.body가 아님)
     req.user = {
-      user_id: decoded.user_id,
-      user_email: decoded.user_email,
-      user_name: decoded.user_name,
+      userId: decoded.userId,
+      userEmail: decoded.userEmail,
+      userName: decoded.userName,
       state: decoded.state,
-      plant_id: decoded.plant_id,
-      nickname: decoded.nickname,
     };
 
     next();
@@ -114,8 +110,8 @@ export const verifyTokenV2 = async (
  */
 export const optionalAuth = async (
   req: Request,
-  res: Response,
-  next: NextFunction
+  _res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
 
@@ -132,16 +128,16 @@ export const optionalAuth = async (
     const decoded = await tokenService.verifyAccessToken(token);
 
     req.user = {
-      user_id: decoded.user_id,
-      user_email: decoded.user_email,
-      user_name: decoded.user_name,
+      userId: decoded.userId,
+      userEmail: decoded.userEmail,
+      userName: decoded.userName,
       state: decoded.state,
-      plant_id: decoded.plant_id,
-      nickname: decoded.nickname,
     };
   } catch (error) {
     // 토큰 검증 실패해도 통과 (req.user는 undefined)
-    console.log('Optional auth: Token verification failed, proceeding without user');
+    console.log(
+      'Optional auth: Token verification failed, proceeding without user',
+    );
   }
 
   next();

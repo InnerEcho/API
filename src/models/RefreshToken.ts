@@ -32,7 +32,6 @@ export default function (sequelize: Sequelize) {
       token: {
         type: DataTypes.STRING(500),
         allowNull: false,
-        unique: true,
         comment: 'Refresh Token 값',
       },
       expires_at: {

@@ -1,43 +1,27 @@
-import { UserType } from "../interface/chatbot.js";
+import { UserType } from "../interface/index.js";
 import db from "../models/index.js";
-const {
-  ChatHistory,
-  User
-} = db;
 export class ChatService {
   constructor(chatBot) {
     this.chatBot = chatBot;
   }
-  async create(user_id, plant_id, message, emotion) {
+  async create(userId, plantId, message) {
     try {
-      // 감정 상태가 전달된 경우 사용자 상태 업데이트
-      if (emotion) {
-        await User.update({
-          state: emotion
-        }, {
-          where: {
-            user_id: user_id
-          }
-        });
-        console.log(`사용자 ${user_id}의 현재 감정이 ${emotion}으로 업데이트되었습니다.`);
-      }
-
       // 기존 챗봇 응답 생성 로직
-      const reply = await this.chatBot.processChat(user_id, plant_id, message);
+      const reply = await this.chatBot.processChat(userId, plantId, message);
 
       // 7. 챗봇 응답 메시지 생성
       const botMessage = {
-        user_id: user_id,
-        plant_id: plant_id,
+        userId: userId,
+        plantId: plantId,
         message: reply.toString(),
-        user_type: UserType.BOT,
-        send_date: new Date()
+        userType: UserType.BOT,
+        sendDate: new Date()
       };
 
       // 8. 사용자 입력 메시지 기록
       const userMessageEntry = {
-        user_id: user_id,
-        plant_id: plant_id,
+        user_id: userId,
+        plant_id: plantId,
         message: message,
         user_type: UserType.USER,
         send_date: new Date()

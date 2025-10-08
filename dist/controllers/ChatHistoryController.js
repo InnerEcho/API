@@ -13,11 +13,11 @@ export class ChatHistoryController {
       msg: 'Failed'
     };
     try {
+      const userId = req.user.userId;
       const {
-        user_id,
-        plant_id
+        plantId
       } = req.params;
-      const response = await this.chatHistoryService.getChatHistory(parseInt(user_id), parseInt(plant_id));
+      const response = await this.chatHistoryService.getChatHistory(userId, parseInt(plantId));
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';

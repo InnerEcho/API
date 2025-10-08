@@ -1,5 +1,1 @@
-export interface ApiResult{
-    code:number;
-    data:any;
-    msg:string;
-}
+export type { ApiResult } from './common.js';

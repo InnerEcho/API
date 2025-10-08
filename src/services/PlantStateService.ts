@@ -1,4 +1,4 @@
-import db from "@/models/index.js";
+import db from '@/models/index.js';
 
 // 반환될 식물 데이터의 인터페이스
 interface PlantData {
@@ -16,7 +16,6 @@ const FACTOR_EXP = 1.2;
  * 식물의 상태(레벨, 경험치, 호감도)를 관리하는 서비스 클래스
  */
 export class PlantStateService {
-  
   /**
    * 특정 레벨에 도달하기 위해 필요한 총 경험치를 계산합니다.
    * @param level - 목표 레벨
@@ -28,19 +27,29 @@ export class PlantStateService {
 
   /**
    * 특정 식물의 현재 상태를 조회합니다.
-   * @param plant_id - 조회할 식물의 ID
+   * @param plantId - 조회할 식물의 ID
+   * @param userId - 식물 소유자의 ID (소유권 검증용)
    * @returns {Promise<PlantData>} - 식물의 상태 데이터
    */
-  public async getPlantState(plant_id: number): Promise<PlantData> {
-    const plantDb = await db.Plant.findOne({
-      where: {
-        plant_id: plant_id,
-      },
+  public async getPlantState(
+    plantId: number,
+    userId: number,
+  ): Promise<PlantData> {
+    // 먼저 식물이 존재하는지 확인
+    const plant = await db.Plant.findOne({
+      where: { plant_id: plantId },
     });
 
-    if (!plantDb) {
-      throw new Error("Plant not found");
+    if (!plant) {
+      throw new Error('Plant not found');
     }
+
+    // 소유권 확인
+    if (plant.user_id !== userId) {
+      throw new Error('Forbidden');
+    }
+
+    const plantDb = plant;
 
     const plantData: PlantData = {
       plant_name: plantDb.nickname,
@@ -54,18 +63,32 @@ export class PlantStateService {
 
   /**
    * 식물에게 경험치를 부여하고, 필요 시 레벨업을 처리합니다.
-   * @param plant_id - 경험치를 부여할 식물의 ID
+   * @param plantId - 경험치를 부여할 식물의 ID
+   * @param userId - 식물 소유자의 ID (소유권 검증용)
    * @param expGained - 획득한 경험치 양
    * @returns {Promise<object>} - 변경된 식물 상태 (레벨, 경험치, 레벨업 여부)
    */
-  public async gainExperience(plant_id: number, expGained: number): Promise<{ level: number, experience: number, leveledUp: boolean }> {
-    const plant = await db.Plant.findOne({ where: { plant_id } });
+  public async gainExperience(
+    plantId: number,
+    userId: number,
+    expGained: number,
+  ): Promise<{ level: number; experience: number; leveledUp: boolean }> {
+    // 먼저 식물이 존재하는지 확인
+    const plant = await db.Plant.findOne({
+      where: { plant_id: plantId },
+    });
+
     if (!plant) {
-      throw new Error("Plant not found");
+      throw new Error('Plant not found');
     }
-    
+
+    // 소유권 확인
+    if (plant.user_id !== userId) {
+      throw new Error('Forbidden');
+    }
+
     // 호감도에 따른 보너스 경험치 적용 (예: 호감도 100일 때 10% 추가)
-    const bonusExp = expGained * (plant.plant_hogamdo / 1000); 
+    const bonusExp = expGained * (plant.plant_hogamdo / 1000);
     let currentExperience = plant.plant_experience + expGained + bonusExp;
     let currentLevel = plant.plant_level;
     let leveledUp = false;
@@ -80,12 +103,15 @@ export class PlantStateService {
     }
 
     // DB 업데이트
-    await db.Plant.update({
-      plant_level: currentLevel,
-      plant_experience: Math.floor(currentExperience),
-    }, {
-      where: { plant_id },
-    });
+    await db.Plant.update(
+      {
+        plant_level: currentLevel,
+        plant_experience: Math.floor(currentExperience),
+      },
+      {
+        where: { plant_id: plantId },
+      },
+    );
 
     return {
       level: currentLevel,
@@ -96,25 +122,42 @@ export class PlantStateService {
 
   /**
    * 식물의 호감도를 증가시킵니다. (최대 100)
-   * @param plant_id - 호감도를 증가시킬 식물의 ID
+   * @param plantId - 호감도를 증가시킬 식물의 ID
+   * @param userId - 식물 소유자의 ID (소유권 검증용)
    * @param amount - 증가시킬 호감도 양
    * @returns {Promise<object>} - 변경된 호감도 값
    */
-  public async increaseLikeability(plant_id: number, amount: number): Promise<{ likeability: number }> {
-    const plant = await db.Plant.findOne({ where: { plant_id } });
+  public async increaseLikeability(
+    plantId: number,
+    userId: number,
+    amount: number,
+  ): Promise<{ likeability: number }> {
+    // 먼저 식물이 존재하는지 확인
+    const plant = await db.Plant.findOne({
+      where: { plant_id: plantId },
+    });
+
     if (!plant) {
-      throw new Error("Plant not found");
+      throw new Error('Plant not found');
+    }
+
+    // 소유권 확인
+    if (plant.user_id !== userId) {
+      throw new Error('Forbidden');
     }
 
     const newLikeability = Math.min(plant.plant_hogamdo + amount, 100);
 
     // DB 업데이트
-    await db.Plant.update({
-      plant_hogamdo: newLikeability,
-    }, {
-      where: { plant_id },
-    });
-    
+    await db.Plant.update(
+      {
+        plant_hogamdo: newLikeability,
+      },
+      {
+        where: { plant_id: plantId },
+      },
+    );
+
     return {
       likeability: newLikeability,
     };
@@ -123,13 +166,13 @@ export class PlantStateService {
 
 // import db from '@/models/index.js';
 // import { QueryTypes } from 'sequelize';
-// import type { PlantData } from '@/interface/plant.js';
+// import type { PlantData } from '@/interface/index.js';
 
 // export class PlantStateService {
 //   public async getPlantState(plant_id: number): Promise<PlantData> {
 //     const plantDb = await db.sequelize.query(
 //       `
-//         SELECT p.nickname, p.current_temp, p.current_light, p.current_moisture, 
+//         SELECT p.nickname, p.current_temp, p.current_light, p.current_moisture,
 //                p.temp_state, p.light_state, p.moisture_state
 //         FROM plant p
 //         WHERE p.plant_id = ${plant_id};

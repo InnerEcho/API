@@ -9,6 +9,8 @@ import chatHistoryDb from "./chatHistory.js";
 import GrowthDiary from "./GrowthDiary.js";
 import GrowthDiaryComment from "./GrowthDiaryComment.js";
 import userFriendsDb from "./userFriends.js";
+import RefreshTokenDb from "./RefreshToken.js";
+import TokenBlacklistDb from "./TokenBlacklist.js";
 
 // 현재 환경을 가져옴 (development, test, production)
 const env = process.env.NODE_ENV || 'development';
@@ -44,12 +46,23 @@ db.ChatHistory = chatHistoryDb(sequelize);
 db.GrowthDiary = GrowthDiary(sequelize);
 db.GrowthDiaryComment = GrowthDiaryComment(sequelize);
 db.UserFriends = userFriendsDb(sequelize);
+db.RefreshToken = RefreshTokenDb(sequelize);
+db.TokenBlacklist = TokenBlacklistDb(sequelize);
 
 // 모델 간의 관계 설정
 db.User.hasMany(db.Plant, {
   foreignKey: 'user_id'
 });
 db.Plant.belongsTo(db.User, {
+  foreignKey: 'user_id'
+});
+
+// RefreshToken - User 관계
+db.User.hasMany(db.RefreshToken, {
+  foreignKey: 'user_id',
+  onDelete: 'CASCADE'
+});
+db.RefreshToken.belongsTo(db.User, {
   foreignKey: 'user_id'
 });
 export default db;

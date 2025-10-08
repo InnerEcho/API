@@ -82,9 +82,9 @@ export class UserService {
     });
   }
 
-  public async getUserInfo(user_id: number): Promise<any> {
+  public async getUserInfo(userId: number): Promise<any> {
     const user = await db.User.findOne({
-      where: { user_id: user_id },
+      where: { user_id: userId },
       attributes: { exclude: ['password'] },
     });
 
@@ -96,32 +96,41 @@ export class UserService {
   }
 
   public async updateUserInfo(
-    user_id: number,
-    user_name: string,
-    user_email: string,
+    userId: number,
+    userName: string,
+    userEmail: string,
   ): Promise<any> {
-    const user = await db.User.findOne({ where: { user_id: user_id } });
+    const user = await db.User.findOne({ where: { user_id: userId } });
 
     if (!user) {
       throw new Error('UserNotFound');
     }
 
     const updatedUser = await user.update({
-      user_name: user_name,
-      user_email: user_email,
+      user_name: userName,
+      user_email: userEmail,
     });
 
     updatedUser.password = ''; // 비밀번호 숨김 처리
     return updatedUser;
   }
 
-  public async deleteUser(user_id: number): Promise<void> {
-    const user = await db.User.findOne({ where: { user_id: user_id } });
+  public async deleteUser(userId: number): Promise<void> {
+    const user = await db.User.findOne({ where: { user_id: userId } });
 
     if (!user) {
       throw new Error('UserNotFound');
     }
 
     await user.destroy();
+  }
+
+  public async getUserByEmail(userEmail: string): Promise<any> {
+    const user = await db.User.findOne({ where: { user_email: userEmail } });
+    return user;
+  }
+
+  public async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+    return await bcrypt.compare(password, hashedPassword);
   }
 }

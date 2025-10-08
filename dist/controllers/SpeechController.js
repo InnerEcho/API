@@ -18,11 +18,11 @@ export class PlantSpeechController {
         res.status(400).json(result);
         return;
       }
+      const userId = req.user.userId;
       const {
-        user_id,
-        plant_id
+        plant_id: plantId
       } = req.body;
-      const response = await this.speechService.speechToText(req.file.path, user_id, plant_id);
+      const response = await this.speechService.speechToText(req.file.path, userId, plantId);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';

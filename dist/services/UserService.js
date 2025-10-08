@@ -72,10 +72,10 @@ export class UserService {
       issuer: 'InnerEcho'
     });
   }
-  async getUserInfo(user_id) {
+  async getUserInfo(userId) {
     const user = await db.User.findOne({
       where: {
-        user_id: user_id
+        user_id: userId
       },
       attributes: {
         exclude: ['password']
@@ -86,31 +86,42 @@ export class UserService {
     }
     return user;
   }
-  async updateUserInfo(user_id, user_name, user_email) {
+  async updateUserInfo(userId, userName, userEmail) {
     const user = await db.User.findOne({
       where: {
-        user_id: user_id
+        user_id: userId
       }
     });
     if (!user) {
       throw new Error('UserNotFound');
     }
     const updatedUser = await user.update({
-      user_name: user_name,
-      user_email: user_email
+      user_name: userName,
+      user_email: userEmail
     });
     updatedUser.password = ''; // 비밀번호 숨김 처리
     return updatedUser;
   }
-  async deleteUser(user_id) {
+  async deleteUser(userId) {
     const user = await db.User.findOne({
       where: {
-        user_id: user_id
+        user_id: userId
       }
     });
     if (!user) {
       throw new Error('UserNotFound');
     }
     await user.destroy();
+  }
+  async getUserByEmail(userEmail) {
+    const user = await db.User.findOne({
+      where: {
+        user_email: userEmail
+      }
+    });
+    return user;
+  }
+  async verifyPassword(password, hashedPassword) {
+    return await bcrypt.compare(password, hashedPassword);
   }
 }

@@ -5,7 +5,6 @@ import db from "../models/index.js";
 const {
   User
 } = db;
-const MISSION_XP = 10;
 export class MissionController {
   constructor(missionService) {
     this.missionService = missionService;
@@ -18,10 +17,8 @@ export class MissionController {
       msg: 'Failed'
     };
     try {
-      const {
-        user_id
-      } = req.body;
-      const response = await this.missionService.getMissions(parseInt(user_id));
+      const userId = req.user.userId;
+      const response = await this.missionService.getMissions(userId);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -40,11 +37,11 @@ export class MissionController {
       msg: 'Failed'
     };
     try {
+      const userId = req.user.userId;
       const {
-        user_id,
-        mission_id
+        missionId
       } = req.body;
-      const response = await this.missionService.completeMission(user_id, mission_id);
+      const response = await this.missionService.completeMission(userId, missionId);
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';
@@ -63,13 +60,13 @@ export class MissionController {
       msg: ''
     };
     try {
+      const userId = req.user.userId;
       const {
-        user_id,
-        mission_id
+        missionId
       } = req.body;
-      // 사용자 id, 미션 id 중 하나라도 없을 때
-      if (!user_id || !mission_id) {
-        apiResult.msg = 'Missing required fields: user_id, mission_id';
+      // 미션 id가 없을 때
+      if (!missionId) {
+        apiResult.msg = 'Missing required fields: missionId';
         res.status(400).json(apiResult);
         return;
       }
@@ -79,23 +76,22 @@ export class MissionController {
         res.status(400).json(apiResult);
         return;
       }
-      const User_Id = parseInt(user_id);
-      const Mission_Id = parseInt(mission_id);
+      const missionIdNum = parseInt(missionId);
 
       // 변환된 값이 NaN인지 확인
-      if (isNaN(User_Id) || isNaN(Mission_Id)) {
-        apiResult.msg = '유효하지 않은 user_id 또는 mission_id 입니다.';
+      if (isNaN(missionIdNum)) {
+        apiResult.msg = '유효하지 않은 missionId 입니다.';
         res.status(400).json(apiResult);
         return;
       }
       // 이미지가 정상적으로 전송되었으면 미션 완료 처리
-      const response = await this.missionService.completeMission(User_Id, Mission_Id);
+      const response = await this.missionService.completeMission(userId, missionIdNum);
       apiResult.code = 200;
       apiResult.data = response;
       apiResult.msg = 'Mission completed successfully';
       res.status(200).json(apiResult);
     } catch (err) {
-      console.error("오류 발생:", err); // 에러 로그 추가
+      console.error('오류 발생:', err); // 에러 로그 추가
       apiResult.code = 500;
       apiResult.msg = 'ServerError';
       res.status(500).json(apiResult);
@@ -108,28 +104,28 @@ export class MissionController {
       msg: ''
     };
     try {
+      const userId = req.user.userId;
       const {
-        user_id,
-        mission_id,
-        plant_id,
+        missionId,
+        plantId,
         message
       } = req.body;
 
       // 필수 필드 검증
-      if (!user_id || !mission_id || !plant_id || !message) {
-        apiResult.msg = 'Missing required fields: user_id, mission_id, plant_id, message';
+      if (!missionId || !plantId || !message) {
+        apiResult.msg = 'Missing required fields: missionId, plantId, message';
         res.status(400).json(apiResult);
         return;
       }
 
       // 챗봇과 대화 처리
       const chatService = new ChatService(new ChatBot());
-      const chatResponse = await chatService.create(user_id, plant_id, message); // 미션 수락 후 한번 대화하도록
+      const chatResponse = await chatService.create(userId, plantId, message); // 미션 수락 후 한번 대화하도록
 
       // 대화가 성공적으로 이루어졌으면 미션 완료 처리
       if (chatResponse) {
         // 사용자가 미션완료 클릭 시 미션완료 되도록 바꿔야 함
-        const response = await this.missionService.completeMission(user_id, mission_id);
+        const response = await this.missionService.completeMission(userId, missionId);
         apiResult.code = 200;
         apiResult.data = {
           chat_response: chatResponse,
@@ -139,7 +135,7 @@ export class MissionController {
         res.status(200).json(apiResult);
       }
     } catch (err) {
-      console.error("오류 발생:", err);
+      console.error('오류 발생:', err);
       apiResult.code = 500;
       apiResult.msg = 'ServerError';
       res.status(500).json(apiResult);
@@ -152,20 +148,20 @@ export class MissionController {
       msg: ''
     };
     try {
+      const userId = req.user.userId;
       const {
-        user_id,
-        mission_id
+        missionId
       } = req.body;
 
       // 필수 필드 검증
-      if (!user_id || !mission_id) {
-        apiResult.msg = 'Missing required fields: user_id, mission_id';
+      if (!missionId) {
+        apiResult.msg = 'Missing required fields: missionId';
         res.status(400).json(apiResult);
         return;
       }
 
       // MissionService를 통해 미션을 완료 처리합니다.
-      const response = await this.missionService.completeMission(user_id, mission_id);
+      const response = await this.missionService.completeMission(userId, missionId);
       apiResult.code = 200;
       apiResult.data = response;
       apiResult.msg = '스트레칭 미션 성공';
@@ -184,12 +180,12 @@ export class MissionController {
       msg: ''
     };
     try {
+      const userId = req.user.userId;
       const {
-        user_id,
-        mission_id
+        missionId
       } = req.body;
-      if (!user_id || !mission_id) {
-        apiResult.msg = 'Missing required fields: user_id, mission_id';
+      if (!missionId) {
+        apiResult.msg = 'Missing required fields: missionId';
         res.status(400).json(apiResult);
         return;
       }
@@ -200,17 +196,16 @@ export class MissionController {
         res.status(400).json(apiResult);
         return;
       }
-      const User_Id = parseInt(user_id);
-      const Mission_Id = parseInt(mission_id);
+      const missionIdNum = parseInt(missionId);
 
       // 변환된 값이 NaN인지 확인
-      if (isNaN(User_Id) || isNaN(Mission_Id)) {
-        apiResult.msg = '유효하지 않은 user_id 또는 mission_id 입니다.';
+      if (isNaN(missionIdNum)) {
+        apiResult.msg = '유효하지 않은 missionId 입니다.';
         res.status(400).json(apiResult);
         return;
       }
       // 이미지가 정상적으로 전송되었으면 미션 완료 처리
-      const response = await this.missionService.completeMission(User_Id, Mission_Id);
+      await this.missionService.completeMission(userId, missionIdNum);
       apiResult.code = 200;
       apiResult.data = {
         message: 'Smile image received and mission completed'
@@ -231,23 +226,23 @@ export class MissionController {
       msg: ''
     };
     try {
+      const userId = req.user.userId;
       const {
-        user_id,
-        mission_id,
-        plant_id,
+        missionId,
+        plantId,
         message
       } = req.body;
 
       // 1. 필수 값 검증
-      if (!user_id || !mission_id || !plant_id || !message) {
-        apiResult.msg = 'Missing required fields: user_id, mission_id, plant_id, message';
+      if (!missionId || !plantId || !message) {
+        apiResult.msg = 'Missing required fields: missionId, plantId, message';
         res.status(400).json(apiResult);
         return;
       }
 
       // 2. 챗봇 응답 생성
       const chatService = new ChatService(new ChatBot());
-      const chatResponse = await chatService.create(user_id, plant_id, message);
+      const chatResponse = await chatService.create(userId, plantId, message);
 
       // 3. 감정 분석 수행
       const emotionResult = await this.emotionService.analyze(message);
@@ -258,18 +253,18 @@ export class MissionController {
           state: emotionResult
         }, {
           where: {
-            user_id
+            user_id: userId
           }
         });
-        console.log(`사용자 ${user_id}의 감정 상태가 '${emotionResult}'으로 업데이트됨`);
+        console.log(`사용자 ${userId}의 감정 상태가 '${emotionResult}'으로 업데이트됨`);
       } else {
-        console.log(`❌ 감정 분석 실패 → 기존 감정 상태 유지 (user_id=${user_id})`);
+        console.log(`❌ 감정 분석 실패 → 기존 감정 상태 유지 (userId=${userId})`);
       }
 
       // 5. 긍정적 말하기 미션 처리 (행복일 때만 완료)
       let missionCompleted = null;
       if (emotionResult === '행복') {
-        missionCompleted = await this.missionService.completeMission(user_id, mission_id);
+        missionCompleted = await this.missionService.completeMission(userId, missionId);
       }
 
       // 6. 최종 응답

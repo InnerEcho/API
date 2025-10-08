@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import { TokenService, type AccessTokenPayload } from '@/services/TokenService.js';
+import {
+  TokenService,
+  type AccessTokenPayload,
+} from '@/services/TokenService.js';
 import { UserService } from '@/services/UserService.js';
 
 /**
@@ -36,14 +38,48 @@ export class AuthController {
         return;
       }
 
-      // UserService의 기존 로그인 로직 활용
-      // 기존 signIn은 JWT를 직접 생성하므로, 여기서는 검증만 수행
-      const accessToken = await this.userService.signIn(email, password);
+      // 사용자 인증 (UserService 사용하지 않고 직접 구현)
+      const user = await this.userService.getUserByEmail(email);
+
+      if (!user) {
+        res.status(400).json({
+          code: 400,
+          message: 'Email does not exist',
+          error: 'NOT_EXIST_EMAIL',
+        });
+        return;
+      }
+
+      const isPasswordValid = await this.userService.verifyPassword(
+        password,
+        user.password,
+      );
+
+      if (!isPasswordValid) {
+        res.status(400).json({
+          code: 400,
+          message: 'Incorrect password',
+          error: 'INCORRECT_PASSWORD',
+        });
+        return;
+      }
+
+      // Access Token 생성 (plantId 없이)
+      const accessTokenPayload: AccessTokenPayload = {
+        userId: user.user_id,
+        userEmail: user.user_email,
+        userName: user.user_name,
+        state: user.state,
+      };
+
+      const accessToken =
+        this.tokenService.generateAccessToken(accessTokenPayload);
 
       // Refresh Token 생성
-      // signIn에서 반환된 토큰을 디코딩하여 user_id 추출
-      const decoded = jwt.decode(accessToken) as AccessTokenPayload;
-      const refreshToken = await this.tokenService.generateRefreshToken(decoded.user_id, req);
+      const refreshToken = await this.tokenService.generateRefreshToken(
+        user.user_id,
+        req,
+      );
 
       res.status(200).json({
         code: 200,
@@ -58,25 +94,11 @@ export class AuthController {
     } catch (error: any) {
       console.error('Login error:', error);
 
-      if (error.message === 'NotExistEmail') {
-        res.status(400).json({
-          code: 400,
-          message: 'Email does not exist',
-          error: 'NOT_EXIST_EMAIL',
-        });
-      } else if (error.message === 'IncorrectPassword') {
-        res.status(400).json({
-          code: 400,
-          message: 'Incorrect password',
-          error: 'INCORRECT_PASSWORD',
-        });
-      } else {
-        res.status(500).json({
-          code: 500,
-          message: 'Login failed',
-          error: error.message,
-        });
-      }
+      res.status(500).json({
+        code: 500,
+        message: 'Login failed',
+        error: error.message,
+      });
     }
   }
 
@@ -99,7 +121,9 @@ export class AuthController {
       }
 
       // 새로운 Access Token 발급
-      const newAccessToken = await this.tokenService.refreshAccessToken(refreshToken);
+      const newAccessToken = await this.tokenService.refreshAccessToken(
+        refreshToken,
+      );
 
       res.status(200).json({
         code: 200,
@@ -114,14 +138,29 @@ export class AuthController {
       console.error('Token refresh error:', error);
 
       const errorMap: { [key: string]: { code: number; message: string } } = {
-        REFRESH_TOKEN_EXPIRED: { code: 401, message: 'Refresh token has expired' },
-        REFRESH_TOKEN_REVOKED: { code: 401, message: 'Refresh token has been revoked' },
-        REFRESH_TOKEN_NOT_FOUND: { code: 401, message: 'Invalid refresh token' },
-        INVALID_REFRESH_TOKEN: { code: 401, message: 'Invalid refresh token format' },
+        REFRESH_TOKEN_EXPIRED: {
+          code: 401,
+          message: 'Refresh token has expired',
+        },
+        REFRESH_TOKEN_REVOKED: {
+          code: 401,
+          message: 'Refresh token has been revoked',
+        },
+        REFRESH_TOKEN_NOT_FOUND: {
+          code: 401,
+          message: 'Invalid refresh token',
+        },
+        INVALID_REFRESH_TOKEN: {
+          code: 401,
+          message: 'Invalid refresh token format',
+        },
         USER_NOT_FOUND: { code: 404, message: 'User not found' },
       };
 
-      const errorInfo = errorMap[error.message] || { code: 500, message: 'Token refresh failed' };
+      const errorInfo = errorMap[error.message] || {
+        code: 500,
+        message: 'Token refresh failed',
+      };
 
       res.status(errorInfo.code).json({
         code: errorInfo.code,
@@ -194,7 +233,7 @@ export class AuthController {
         return;
       }
 
-      const userId = req.user.user_id;
+      const userId = req.user.userId;
 
       // 사용자의 모든 Refresh Token 무효화
       await this.tokenService.revokeAllUserTokens(userId);
@@ -249,6 +288,91 @@ export class AuthController {
       res.status(401).json({
         code: 401,
         message: 'Token verification failed',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * 회원가입 (Access Token + Refresh Token 발급)
+   *
+   * POST /auth/v2/register
+   * Body: { email: string, password: string, userName: string, userGender: string }
+   */
+  public async register(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, password, userName, userGender } = req.body;
+
+      // Validation
+      if (!email || !password || !userName || !userGender) {
+        res.status(400).json({
+          code: 400,
+          message: 'All fields are required',
+          error: 'MISSING_FIELDS',
+        });
+        return;
+      }
+
+      // Use UserService to create user and plant
+      const registeredUser = await this.userService.signUp(
+        userName,
+        email,
+        password,
+        userGender,
+      );
+
+      // Generate tokens immediately
+      const accessTokenPayload: AccessTokenPayload = {
+        userId: registeredUser.user_id,
+        userEmail: registeredUser.user_email,
+        userName: registeredUser.user_name,
+        state: registeredUser.state || '중립',
+      };
+
+      const accessToken = this.tokenService.generateAccessToken(accessTokenPayload);
+      const refreshToken = await this.tokenService.generateRefreshToken(
+        registeredUser.user_id,
+        req,
+      );
+
+      res.status(201).json({
+        code: 201,
+        message: 'Registration successful',
+        data: {
+          accessToken,
+          refreshToken,
+          tokenType: 'Bearer',
+          expiresIn: '15m',
+          user: {
+            userId: registeredUser.user_id,
+            userEmail: registeredUser.user_email,
+            userName: registeredUser.user_name,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Registration error:', error);
+
+      // Handle specific errors
+      const errorMap: Record<string, { code: number; message: string }> = {
+        ExistEmail: {
+          code: 400,
+          message: 'Email already exists',
+        },
+        ExistNickName: {
+          code: 400,
+          message: 'Nickname already exists',
+        },
+      };
+
+      const errorInfo = errorMap[error.message] || {
+        code: 500,
+        message: 'Registration failed',
+      };
+
+      res.status(errorInfo.code).json({
+        code: errorInfo.code,
+        message: errorInfo.message,
         error: error.message,
       });
     }

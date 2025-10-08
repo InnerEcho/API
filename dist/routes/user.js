@@ -88,7 +88,7 @@ router.post('/login', userController.signIn.bind(userController));
  *         description: 서버 오류
  */
 router.post('/email', userController.sendEmailVerification.bind(userController));
-router.get('/emotion/:user_id', emotionController.getEmotion.bind(emotionController)); // POST -> GET
+router.get('/emotion/:userId', emotionController.getEmotion.bind(emotionController)); // POST -> GET
 // 토큰 검증
 router.get('/token', verifyToken, (req, res) => {
   res.json({
@@ -97,7 +97,7 @@ router.get('/token', verifyToken, (req, res) => {
     msg: 'Ok'
   });
 });
-router.get('/:user_id', userController.getUserInfo.bind(userController));
-router.put('/:user_id', userController.updateUserInfo.bind(userController));
-router.delete('/:user_id', userController.deleteUser.bind(userController));
+router.get('/:userId', userController.getUserInfo.bind(userController));
+router.put('/:userId', userController.updateUserInfo.bind(userController));
+router.delete('/:userId', userController.deleteUser.bind(userController));
 export default router;

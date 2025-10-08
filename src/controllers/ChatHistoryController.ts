@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { ApiResult } from '@/interface/api.js';
+import type { ApiResult } from '@/interface/index.js';
 import { ChatHistoryService } from '@/services/ChatHistoryService.js';
 
 export class ChatHistoryController {
@@ -16,10 +16,11 @@ export class ChatHistoryController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id, plant_id } = req.params;
+      const userId = req.user!.userId;
+      const { plantId } = req.params;
       const response = await this.chatHistoryService.getChatHistory(
-        parseInt(user_id),
-        parseInt(plant_id),
+        userId,
+        parseInt(plantId),
       );
 
       result.code = 200;

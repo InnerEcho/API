@@ -2,19 +2,17 @@ import jwt from 'jsonwebtoken';
 import type { Request } from 'express';
 import db from '@/models/index.js';
 
-// Access Token Payload 타입
+// Access Token Payload 타입 (camelCase)
 export interface AccessTokenPayload {
-  user_id: number;
-  user_email: string;
-  user_name: string;
+  userId: number;
+  userEmail: string;
+  userName: string;
   state: string;
-  plant_id: number | null;
-  nickname: string | null;
 }
 
-// Refresh Token Payload 타입
+// Refresh Token Payload 타입 (혼합: DB 키 token_id 유지)
 interface RefreshTokenPayload {
-  user_id: number;
+  userId: number;
   token_id: number; // 데이터베이스의 refresh_token ID
 }
 
@@ -83,7 +81,7 @@ export class TokenService {
 
     // JWT 생성 (token_id 포함)
     const refreshTokenPayload: RefreshTokenPayload = {
-      user_id: userId,
+      userId: userId,
       token_id: tokenRecord.token_id,
     };
 
@@ -186,27 +184,19 @@ export class TokenService {
 
     // 사용자 정보 조회
     const user = await db.User.findOne({
-      where: { user_id: decoded.user_id },
+      where: { user_id: decoded.userId },
     });
 
     if (!user) {
       throw new Error('USER_NOT_FOUND');
     }
 
-    // 사용자의 식물 정보 조회
-    const plant = await db.Plant.findOne({
-      where: { user_id: user.user_id },
-      order: [['plant_id', 'DESC']], // 가장 최근 식물
-    });
-
     // 새로운 Access Token 생성
     const accessTokenPayload: AccessTokenPayload = {
-      user_id: user.user_id,
-      user_email: user.user_email,
-      user_name: user.user_name,
+      userId: user.user_id,
+      userEmail: user.user_email,
+      userName: user.user_name,
       state: user.state,
-      plant_id: plant?.plant_id || null,
-      nickname: plant?.nickname || null,
     };
 
     return this.generateAccessToken(accessTokenPayload);

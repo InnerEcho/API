@@ -1,5 +1,6 @@
 import { PlantStateController } from '@/controllers/PlantStateController.js';
 import { PlantStateService } from '@/services/PlantStateService.js';
+import { verifyTokenV2 } from '@/middlewares/authV2.js';
 import express from 'express';
 
 const router = express.Router();
@@ -100,9 +101,22 @@ const plantStateController = new PlantStateController(plantStateService);
  *                   example: "ServerError"
  */
 
-router.get( // POST -> GET
-  '/state/:plant_id', // URL 파라미터 사용
+router.get(
+  '/state/:plantId',
+  verifyTokenV2,
   plantStateController.getPlantState.bind(plantStateController),
+);
+
+router.post(
+  '/state/:plantId/experience',
+  verifyTokenV2,
+  plantStateController.gainExperience.bind(plantStateController),
+);
+
+router.post(
+  '/state/:plantId/likeability',
+  verifyTokenV2,
+  plantStateController.increaseLikeability.bind(plantStateController),
 );
 
 export default router;

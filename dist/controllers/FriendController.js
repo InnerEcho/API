@@ -1,5 +1,5 @@
 import db from "../models/index.js";
-import { Op } from "sequelize";
+import { Op } from 'sequelize';
 const {
   UserFriends
 } = db;
@@ -20,9 +20,9 @@ export class FriendController {
     };
     try {
       // 로그인한 사용자 이메일을 가져온다고 가정 (req.user.email)
-      const userId = req.body.userId; // 예: 회원 고유 ID
+      const userId = req.user.userId; // 예: 회원 고유 ID
       if (!userId) {
-        apiResult.msg = "Missing userId";
+        apiResult.msg = 'Missing userId';
         res.status(400).json(apiResult);
         return;
       }
@@ -34,7 +34,7 @@ export class FriendController {
         }
       });
       if (!user) {
-        apiResult.msg = "사용자 없음";
+        apiResult.msg = '사용자 없음';
         res.status(404).json(apiResult);
         return;
       }
@@ -64,15 +64,15 @@ export class FriendController {
     };
     try {
       const {
-        user_email,
-        friend_email
+        user_email: userEmail,
+        friend_email: friendEmail
       } = req.body;
-      if (!user_email || !friend_email) {
+      if (!userEmail || !friendEmail) {
         apiResult.msg = 'Missing required fields: user_email, friend_email';
         res.status(400).json(apiResult);
         return;
       }
-      if (user_email === friend_email) {
+      if (userEmail === friendEmail) {
         apiResult.msg = '자기 자신에게는 요청 불가';
         res.status(400).json(apiResult);
         return;
@@ -80,11 +80,11 @@ export class FriendController {
       const exists = await UserFriends.findOne({
         where: {
           [Op.or]: [{
-            user_email,
-            friend_email
+            user_email: userEmail,
+            friend_email: friendEmail
           }, {
-            user_email: friend_email,
-            friend_email: user_email
+            user_email: friendEmail,
+            friend_email: userEmail
           }]
         }
       });
@@ -93,7 +93,7 @@ export class FriendController {
         res.status(400).json(apiResult);
         return;
       }
-      const request = await this.friendService.create(user_email, friend_email);
+      const request = await this.friendService.create(userEmail, friendEmail);
       apiResult.code = 200;
       apiResult.msg = '친구 요청 전송 완료';
       apiResult.data = request;
@@ -115,15 +115,15 @@ export class FriendController {
     };
     try {
       const {
-        user_email,
-        friend_email
+        user_email: userEmail2,
+        friend_email: friendEmail2
       } = req.body;
-      if (!user_email || !friend_email) {
+      if (!userEmail2 || !friendEmail2) {
         apiResult.msg = 'Missing required fields: user_email, friend_email';
         res.status(400).json(apiResult);
         return;
       }
-      const request = await this.friendService.updateStatus(user_email, friend_email, "accepted");
+      const request = await this.friendService.updateStatus(userEmail2, friendEmail2, 'accepted');
       if (!request) {
         apiResult.msg = '친구 요청이 존재하지 않습니다';
         res.status(404).json(apiResult);
@@ -150,18 +150,18 @@ export class FriendController {
     };
     try {
       const {
-        user_email,
-        friend_email
+        user_email: userEmail3,
+        friend_email: friendEmail3
       } = req.body;
-      if (!user_email || !friend_email) {
+      if (!userEmail3 || !friendEmail3) {
         apiResult.msg = 'Missing required fields: user_email, friend_email';
         res.status(400).json(apiResult);
         return;
       }
       const request = await UserFriends.findOne({
         where: {
-          user_email,
-          friend_email,
+          user_email: userEmail3,
+          friend_email: friendEmail3,
           status: 'pending'
         }
       });

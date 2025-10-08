@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { ApiResult } from '@/interface/api.js';
+import type { ApiResult } from '@/interface/index.js';
 import { ChatHistoryService } from '@/services/ChatHistoryService.js';
 import db from '@/models/index.js';
 
@@ -11,18 +11,11 @@ export class EmotionController {
     const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
 
     try {
-      const { user_id } = req.body;
-
-      if (!user_id) {
-        result.code = 400;
-        result.msg = 'Missing user_id';
-        res.status(400).json(result);
-        return;
-      }
+      const userId = req.user!.userId;
 
       // 사용자 정보 조회 (state 필드 가져오기)
       const user = await db.User.findOne({
-        where: { user_id },
+        where: { user_id: userId },
         attributes: ['state'], // state 필드만 조회
       });
 
