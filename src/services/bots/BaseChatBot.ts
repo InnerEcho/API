@@ -4,7 +4,7 @@ import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { SequelizeChatMessageHistory } from './SequelizeChatMessageHistory.js';
+import { RedisChatMessageHistory } from './RedisChatMessageHistory.js';
 
 export abstract class BaseChatBot {
   protected emotionService: EmotionService;
@@ -70,7 +70,7 @@ export abstract class BaseChatBot {
           throw new Error(`잘못된 sessionId 형식입니다. "userId-plantId"가 필요합니다: "${sessionId}"`);
         }
         // 명확하게 분리된 인자를 생성자에 전달합니다.
-        return new SequelizeChatMessageHistory(uid, pid);
+        return new RedisChatMessageHistory(uid, pid);
       },
       inputMessagesKey: 'input',
       historyMessagesKey: 'history',
