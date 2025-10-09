@@ -8,6 +8,7 @@ export class UserService {
     user_email: string,
     password: string,
     user_gender: string,
+    plant_nickname: string = '금쪽이',
   ): Promise<any> {
     const existEmail = await db.User.findOne({ where: { user_email: user_email } });
     const existNickName = await db.User.findOne({
@@ -32,7 +33,7 @@ export class UserService {
     const entryPlant = {
       user_id: registedUser.user_id,
       species_id: 1,
-      nickname: '금쪽이',
+      nickname: plant_nickname,
       plant_level: 1,
       plant_experience: 0,
       plant_hogamdo: 0,

@@ -270,7 +270,7 @@ export class AuthController {
    * 회원가입 (Access Token + Refresh Token 발급)
    *
    * POST /auth/v2/register
-   * Body: { email: string, password: string, userName: string, userGender: string }
+   * Body: { email: string, password: string, userName: string, userGender: string, plantNickname: string }
    */
   async register(req, res) {
     try {
@@ -278,11 +278,12 @@ export class AuthController {
         email,
         password,
         userName,
-        userGender
+        userGender,
+        plantNickname
       } = req.body;
 
       // Validation
-      if (!email || !password || !userName || !userGender) {
+      if (!email || !password || !userName || !userGender || !plantNickname) {
         res.status(400).json({
           code: 400,
           message: 'All fields are required',
@@ -292,7 +293,7 @@ export class AuthController {
       }
 
       // Use UserService to create user and plant
-      const registeredUser = await this.userService.signUp(userName, email, password, userGender);
+      const registeredUser = await this.userService.signUp(userName, email, password, userGender, plantNickname);
 
       // Generate tokens immediately
       const accessTokenPayload = {

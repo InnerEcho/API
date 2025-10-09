@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from "../models/index.js";
 export class UserService {
-  async signUp(user_name, user_email, password, user_gender) {
+  async signUp(user_name, user_email, password, user_gender, plant_nickname = '금쪽이') {
     const existEmail = await db.User.findOne({
       where: {
         user_email: user_email
@@ -29,7 +29,7 @@ export class UserService {
     const entryPlant = {
       user_id: registedUser.user_id,
       species_id: 1,
-      nickname: '금쪽이',
+      nickname: plant_nickname,
       plant_level: 1,
       plant_experience: 0,
       plant_hogamdo: 0,

@@ -59,6 +59,14 @@ export interface IMessage {
   userType: UserType;
 }
 
+export interface IMessageDb {
+  user_id: number;
+  plant_id: number;
+  message: string;
+  send_date: Date;
+  user_type: UserType;
+}
+
 export enum UserType {
   USER = 'User',
   BOT = 'Bot',

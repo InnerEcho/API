@@ -32,6 +32,9 @@ const authController = new AuthController();
  *               userGender:
  *                 type: string
  *                 example: male
+ *               plantNickname:
+ *                 type: string
+ *                 example: 금쪽이
  *     responses:
  *       201:
  *         description: 회원가입 성공, Access Token 및 Refresh Token 발급

@@ -292,7 +292,7 @@ paths:
       description: |
         V2 인증 시스템을 사용한 회원가입입니다.
         회원가입과 동시에 Access Token과 Refresh Token을 발급하여 즉시 로그인 상태가 됩니다.
-        회원가입 시 기본 식물 '금쪽이'가 자동으로 생성됩니다.
+        회원가입 시 사용자가 지정한 이름의 식물이 자동으로 생성됩니다.
         - Access Token (15분 유효): API 요청에 사용
         - Refresh Token (7일 유효): Access Token 갱신에 사용
         - Rate Limiting: 1분에 10회로 제한
@@ -307,6 +307,7 @@ paths:
                 - password
                 - userName
                 - userGender
+                - plantNickname
               properties:
                 email:
                   type: string
@@ -322,6 +323,10 @@ paths:
                 userGender:
                   type: string
                   example: "male"
+                plantNickname:
+                  type: string
+                  description: "사용자가 키울 식물의 이름"
+                  example: "금쪽이"
       responses:
         '201':
           description: 회원가입 성공, Access Token 및 Refresh Token 발급
