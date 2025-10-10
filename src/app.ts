@@ -38,6 +38,17 @@ process.on('uncaughtException', err => {
 const app = express();
 const swaggerDocument = YAML.load('./src/docs/leafy.yaml');
 
+// .env의 PORT를 Swagger 문서에 동적으로 적용
+const PORT = process.env.PORT || 3000;
+if (swaggerDocument.servers) {
+  swaggerDocument.servers = swaggerDocument.servers.map((server: any) => {
+    if (server.url.includes('localhost')) {
+      return { ...server, url: `http://localhost:${PORT}` };
+    }
+    return server;
+  });
+}
+
 // db.sequelize
 //   .sync({ alter: true }) // 데이터베이스 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
 //   .catch((err: Error) => {
