@@ -9,6 +9,25 @@ export class PlantStateController {
     this.plantStateService = plantStateService;
   }
 
+  public getPlantsByUserId = async(req:Request, res:Response): Promise<void> => {
+    const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
+
+    try{
+      const userId = req.user!.userId;
+
+      const plantDataByUser = await this.plantStateService.getPlantsByUserId(
+        userId
+      );
+
+      result.code = 200;
+      result.msg = 'Ok';
+      result.data = plantDataByUser;
+      res.status(200).json(result);
+    }catch(err){
+      console.error(err);
+    }
+  }
+
   /**
    * GET /plant-state/:plant_id
    * 특정 식물의 현재 상태를 조회합니다.

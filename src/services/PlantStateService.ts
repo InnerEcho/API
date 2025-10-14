@@ -2,7 +2,15 @@ import db from '@/models/index.js';
 
 // 반환될 식물 데이터의 인터페이스
 interface PlantData {
-  plant_name: string;
+  plantName: string;
+  level: number;
+  experience: number;
+  likeability: number;
+}
+
+interface PlantDataByUser {
+  plantId:number;
+  plantName: string;
   level: number;
   experience: number;
   likeability: number;
@@ -16,6 +24,8 @@ const FACTOR_EXP = 1.2;
  * 식물의 상태(레벨, 경험치, 호감도)를 관리하는 서비스 클래스
  */
 export class PlantStateService {
+  
+  
   /**
    * 특정 레벨에 도달하기 위해 필요한 총 경험치를 계산합니다.
    * @param level - 목표 레벨
@@ -23,6 +33,30 @@ export class PlantStateService {
    */
   private calculateRequiredExp(level: number): number {
     return Math.floor(BASE_EXP * Math.pow(level, FACTOR_EXP));
+  }
+
+
+  public async getPlantsByUserId(userId:number):Promise<PlantDataByUser>{
+    const plant = await db.Plant.findOne({
+      where: {user_id:userId},
+    })
+
+
+    if(!plant){
+      throw new Error('Plant not found');
+    }
+
+    const plantDb = plant;
+
+    const plantDataByUser: PlantDataByUser = {
+      plantId: plantDb.plant_id,
+      plantName: plantDb.nickname,
+      level: plantDb.plant_level,
+      experience: plantDb.plant_experience,
+      likeability: plantDb.plant_hogamdo,
+    };
+
+    return plantDataByUser;
   }
 
   /**
@@ -52,7 +86,7 @@ export class PlantStateService {
     const plantDb = plant;
 
     const plantData: PlantData = {
-      plant_name: plantDb.nickname,
+      plantName: plantDb.nickname,
       level: plantDb.plant_level,
       experience: plantDb.plant_experience,
       likeability: plantDb.plant_hogamdo,
