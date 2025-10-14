@@ -1,87 +1,75 @@
-import { InMemoryChatMessageHistory } from '@langchain/core/chat_history';
+import db from "../../models/index.js";
+import { EmotionService } from "../EmotionService.js";
+import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { RunnableWithMessageHistory } from '@langchain/core/runnables';
-import db from "../../models/index.js";
-// Sequelize 모델에서 ChatHistory 추출
-const {
-  ChatHistory
-} = db;
-
-/**
- * 🌱 BaseChatBot (템플릿 메서드 패턴의 추상 클래스)
- * - 대화 처리의 공통 흐름을 고정
- * - 프롬프트 생성은 하위 클래스에 위임
- */
+import { RedisChatMessageHistory } from "./RedisChatMessageHistory.js";
 export class BaseChatBot {
-  // 사용자별 대화 이력을 메모리에 저장 (세션 기반)
-  messageHistories = {};
-
-  /**
-   * 🌱 대화 처리의 공통 템플릿 메서드
-   * 1. 식물 정보 조회
-   * 2. 프롬프트 생성 (하위 클래스에 위임)
-   * 3. LLM 호출
-   * 4. 대화 이력 관리
-   * 5. 대화 결과 저장 및 반환
-   */
+  constructor() {
+    this.emotionService = new EmotionService();
+  }
   async processChat(userId, plantId, userMessage) {
-    // 1. 사용자 & 식물 정보 조회
-    const plantDbInfoResult = await db.sequelize.query(`
-        SELECT u.user_name AS userName, p.nickname
-        FROM user u, plant p
-        WHERE u.user_id = ${userId} AND p.plant_id = ${plantId};
-      `, {
-      type: db.Sequelize.QueryTypes.SELECT
+    // Sequelize 모델을 사용하여 user, plant, species 정보를 JOIN
+    const plant = await db.Plant.findOne({
+      where: {
+        user_id: userId,
+        plant_id: plantId
+      },
+      include: [{
+        model: db.User,
+        as: 'user',
+        attributes: ['user_name']
+      }, {
+        model: db.Species,
+        as: 'species',
+        attributes: ['species_name']
+      }]
     });
-    if (!plantDbInfoResult || plantDbInfoResult.length === 0) {
-      throw new Error(`Plant data not found for userId: ${userId}, plantId: ${plantId}`);
+    if (!plant) {
+      throw new Error('식물 정보를 찾을 수 없습니다.');
     }
-    const plantDbInfo = plantDbInfoResult[0];
 
-    // 2. 프롬프트 생성 (하위 클래스에서 정의)
+    // PlantDbInfo 형식으로 변환
+    const plantDbInfo = {
+      userName: plant.get('user')?.user_name,
+      nickname: plant.get('nickname'),
+      speciesName: plant.get('species')?.species_name
+    };
     const prompt = await this.createPrompt(plantDbInfo, userId, plantId, userMessage);
-
-    // 3. LLM 인스턴스 생성
     const llm = new ChatOpenAI({
       model: 'gpt-4o',
       apiKey: process.env.OPENAI_API_KEY
     });
-
-    // 4. LLM 호출 체인 구성
     const userMessageTemplate = ChatPromptTemplate.fromMessages(prompt);
     const outputParser = new StringOutputParser();
     const llmChain = userMessageTemplate.pipe(llm).pipe(outputParser);
 
-    // 5. 대화 이력 관리 설정
+    // 2. RunnableWithMessageHistory 설정 변경
     const historyChain = new RunnableWithMessageHistory({
       runnable: llmChain,
-      getMessageHistory: async sessionId => {
-        if (!this.messageHistories[sessionId]) {
-          this.messageHistories[sessionId] = new InMemoryChatMessageHistory();
+      getMessageHistory: sessionId => {
+        // sessionId를 파싱하여 userId와 plantId를 추출합니다.
+        const [uid, pid] = sessionId.split('-').map(Number);
+        if (isNaN(uid) || isNaN(pid)) {
+          throw new Error(`잘못된 sessionId 형식입니다. "userId-plantId"가 필요합니다: "${sessionId}"`);
         }
-        return this.messageHistories[sessionId];
+        // 명확하게 분리된 인자를 생성자에 전달합니다.
+        return new RedisChatMessageHistory(uid, pid);
       },
       inputMessagesKey: 'input',
-      historyMessagesKey: 'chat_history'
+      historyMessagesKey: 'history'
     });
 
-    // 6. LLM 호출 실행
-    const config = {
-      configurable: {
-        sessionId: userId
-      }
-    };
-    const botReply = await historyChain.invoke({
+    // 3. sessionId를 "userId-plantId" 조합으로 생성
+    const sessionId = `${userId}-${plantId}`;
+    const result = await historyChain.invoke({
       input: userMessage
-    }, config);
-    return botReply;
+    }, {
+      configurable: {
+        sessionId: sessionId
+      }
+    });
+    return result;
   }
-
-  /**
-   * 🌱 프롬프트 생성 메서드 (하위 클래스에서 반드시 구현)
-   * @param plantDbInfo - 사용자와 식물 정보
-   * @param userMessage - 사용자 입력 메시지
-   */
 }

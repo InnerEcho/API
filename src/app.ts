@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import http from 'http';
 import debugModule from 'debug';
+import { setupRealtimeSpeechWebSocketOld } from '@/websocket/realtimeSpeechOld.js';
 
 //Swagger 설정 가져오기
 import { swaggerUi, specs } from '@/config/swagger.config.js';
@@ -176,6 +177,11 @@ const port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
 const server = http.createServer(app);
+
+// WebSocket 서버 설정 (Old - G.711 방식, 호환성용)
+// 새로운 WebRTC 방식은 WebSocket 불필요 (클라이언트가 직접 OpenAI에 연결)
+setupRealtimeSpeechWebSocketOld(server);
+console.log('📡 새로운 WebRTC API는 /chat/realtime/session 엔드포인트 사용 (권장)');
 
 server.listen(port);
 server.on('error', onError);

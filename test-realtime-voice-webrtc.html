@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leafy Realtime Voice Chat (WebRTC + Opus)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .badge-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .config-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .status-value.connected {
+            color: #4caf50;
+        }
+
+        .status-value.disconnected {
+            color: #f44336;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-connect {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-connect:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-disconnect {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-disconnect:hover:not(:disabled) {
+            background: #da190b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .transcript-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .transcript-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .message.assistant {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .message.system {
+            background: #fff3e0;
+            color: #f57c00;
+            font-size: 13px;
+        }
+
+        .logs {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-entry.error {
+            color: #ff5252;
+        }
+
+        .log-entry.success {
+            color: #69f0ae;
+        }
+
+        .log-entry.info {
+            color: #64b5f6;
+        }
+
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .info-box strong {
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 Leafy Realtime Voice Chat</h1>
+        <p class="subtitle">OpenAI Realtime API - WebRTC 테스트</p>
+        <div class="badge-container">
+            <span class="badge">✨ WebRTC + Opus (고품질)</span>
+        </div>
+
+        <div class="info-box">
+            <strong>🎯 WebRTC 방식의 장점:</strong><br>
+            • Opus 코덱 자동 사용 (최대 48kHz)<br>
+            • 서버 부하 없음 (직접 OpenAI 연결)<br>
+            • 자동 네트워크 적응 & 패킷 손실 복구
+        </div>
+
+        <!-- 설정 섹션 -->
+        <div class="config-section">
+            <div class="input-group">
+                <label for="serverUrl">서버 URL</label>
+                <input type="text" id="serverUrl" value="http://localhost:3002" placeholder="http://localhost:3002">
+            </div>
+            <div class="input-group">
+                <label for="accessToken">JWT Access Token</label>
+                <input type="text" id="accessToken" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            </div>
+            <div class="input-group">
+                <label for="plantId">Plant ID</label>
+                <input type="number" id="plantId" value="1">
+            </div>
+        </div>
+
+        <!-- 상태 섹션 -->
+        <div class="status-section">
+            <div class="status-item">
+                <div class="status-label">WebRTC 상태</div>
+                <div class="status-value disconnected" id="connectionStatus">미연결</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Data Channel</div>
+                <div class="status-value disconnected" id="dataChannelStatus">닫힘</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">마이크</div>
+                <div class="status-value disconnected" id="micStatus">대기</div>
+            </div>
+        </div>
+
+        <!-- 버튼 그룹 -->
+        <div class="button-group">
+            <button class="btn-connect" id="connectBtn">연결 (WebRTC)</button>
+            <button class="btn-disconnect" id="disconnectBtn" disabled>연결 해제</button>
+        </div>
+
+        <!-- 대화 내역 -->
+        <div class="transcript-section">
+            <div class="transcript-title">대화 내역</div>
+            <div id="transcript"></div>
+        </div>
+
+        <!-- 로그 -->
+        <div class="logs" id="logs"></div>
+    </div>
+
+    <script>
+        let peerConnection = null;
+        let dataChannel = null;
+        let audioElement = null;
+        let localStream = null;
+
+        const serverUrlInput = document.getElementById('serverUrl');
+        const accessTokenInput = document.getElementById('accessToken');
+        const plantIdInput = document.getElementById('plantId');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const dataChannelStatus = document.getElementById('dataChannelStatus');
+        const micStatus = document.getElementById('micStatus');
+        const transcript = document.getElementById('transcript');
+        const logs = document.getElementById('logs');
+
+        // 로그 출력
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        // 대화 내역 추가
+        function addMessage(role, text) {
+            const msg = document.createElement('div');
+            msg.className = `message ${role}`;
+            msg.textContent = `${role === 'user' ? '나' : '식물'}: ${text}`;
+            transcript.appendChild(msg);
+            transcript.scrollTop = transcript.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const msg = document.createElement('div');
+            msg.className = 'message system';
+            msg.textContent = `[시스템] ${text}`;
+            transcript.appendChild(msg);
+            transcript.scrollTop = transcript.scrollHeight;
+        }
+
+        // WebRTC 연결
+        async function connect() {
+            try {
+                const serverUrl = serverUrlInput.value.trim();
+                const token = accessTokenInput.value.trim();
+                const plantId = plantIdInput.value;
+
+                if (!serverUrl || !token || !plantId) {
+                    alert('모든 필드를 입력해주세요.');
+                    return;
+                }
+
+                log('Ephemeral token 발급 요청 중...', 'info');
+
+                // 1. 서버에서 ephemeral token 발급
+                const response = await fetch(`${serverUrl}/chat/realtime/session`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ plantId: parseInt(plantId) })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`세션 생성 실패 (HTTP ${response.status}): ${errorText}`, 'error');
+                    alert(`세션 생성 실패 (HTTP ${response.status}): ${errorText}`);
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.code !== 200) {
+                    log(`세션 생성 실패: ${data.message || JSON.stringify(data)}`, 'error');
+                    alert(`세션 생성 실패: ${data.message || JSON.stringify(data)}`);
+                    return;
+                }
+
+                const { ephemeralToken, sessionId, expiresIn } = data.data;
+                log(`✅ Ephemeral token 발급 성공 (유효: ${expiresIn}초)`, 'success');
+                log(`Session ID: ${sessionId}`, 'info');
+
+                // 2. 마이크 권한 요청 및 스트림 획득
+                log('마이크 권한 요청 중...', 'info');
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true
+                });
+                log('✅ 마이크 접근 허용됨', 'success');
+                micStatus.textContent = '활성';
+                micStatus.className = 'status-value connected';
+
+                // 3. PeerConnection 생성
+                log('WebRTC PeerConnection 생성 중...', 'info');
+                peerConnection = new RTCPeerConnection();
+
+                // 4. 로컬 오디오 트랙 추가 (Opus 자동 사용)
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                    log(`✅ 오디오 트랙 추가됨 (Opus 코덱 자동)`, 'success');
+                });
+
+                // 5. Data Channel 생성 (OpenAI 이벤트 수신용)
+                dataChannel = peerConnection.createDataChannel('oai-events');
+
+                dataChannel.onopen = () => {
+                    log('✅ Data Channel 열림', 'success');
+                    dataChannelStatus.textContent = '열림';
+                    dataChannelStatus.className = 'status-value connected';
+                    addSystemMessage('Data channel이 열렸습니다. 이제 대화를 시작할 수 있습니다!');
+                };
+
+                dataChannel.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    handleServerMessage(message);
+                };
+
+                dataChannel.onclose = () => {
+                    log('Data Channel 닫힘', 'info');
+                    dataChannelStatus.textContent = '닫힘';
+                    dataChannelStatus.className = 'status-value disconnected';
+                };
+
+                // 6. 원격 오디오 트랙 수신 (AI 음성 재생)
+                peerConnection.ontrack = (event) => {
+                    log('✅ 원격 오디오 트랙 수신됨', 'success');
+
+                    if (!audioElement) {
+                        audioElement = new Audio();
+                        audioElement.autoplay = true;
+                    }
+
+                    audioElement.srcObject = event.streams[0];
+                    addSystemMessage('AI 음성 스트림이 연결되었습니다.');
+                };
+
+                // 7. ICE 연결 상태 모니터링
+                peerConnection.oniceconnectionstatechange = () => {
+                    log(`ICE 연결 상태: ${peerConnection.iceConnectionState}`, 'info');
+
+                    if (peerConnection.iceConnectionState === 'connected') {
+                        connectionStatus.textContent = '연결됨';
+                        connectionStatus.className = 'status-value connected';
+                        addSystemMessage('WebRTC 연결이 완료되었습니다!');
+                    } else if (peerConnection.iceConnectionState === 'disconnected' ||
+                               peerConnection.iceConnectionState === 'failed') {
+                        connectionStatus.textContent = '연결 끊김';
+                        connectionStatus.className = 'status-value disconnected';
+                    }
+                };
+
+                // 8. SDP Offer 생성
+                log('SDP Offer 생성 중...', 'info');
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                log('✅ Local SDP 설정 완료', 'success');
+
+                // 9. OpenAI WebRTC endpoint에 SDP 전송
+                log('OpenAI에 SDP Offer 전송 중...', 'info');
+                const sdpResponse = await fetch('https://api.openai.com/v1/realtime', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${ephemeralToken}`,
+                        'Content-Type': 'application/sdp',
+                    },
+                    body: offer.sdp,
+                });
+
+                if (!sdpResponse.ok) {
+                    const errorText = await sdpResponse.text();
+                    throw new Error(`OpenAI SDP 응답 실패: ${sdpResponse.status} ${errorText}`);
+                }
+
+                // 10. SDP Answer 수신 및 설정
+                const answerSdp = await sdpResponse.text();
+                log('✅ OpenAI로부터 SDP Answer 수신', 'success');
+
+                await peerConnection.setRemoteDescription({
+                    type: 'answer',
+                    sdp: answerSdp,
+                });
+                log('✅ Remote SDP 설정 완료', 'success');
+
+                // UI 업데이트
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                addSystemMessage('WebRTC 연결 완료! 자유롭게 말씀하세요.');
+
+            } catch (error) {
+                log(`연결 실패: ${error.message}`, 'error');
+                alert(`연결 실패: ${error.message}`);
+                disconnect();
+            }
+        }
+
+        // 서버 메시지 처리 (Data Channel을 통해 수신)
+        function handleServerMessage(message) {
+            log(`📥 이벤트: ${message.type}`, 'info');
+
+            switch (message.type) {
+                case 'session.created':
+                    log('✅ OpenAI 세션 생성됨', 'success');
+                    addSystemMessage('AI 세션이 생성되었습니다.');
+                    break;
+
+                case 'session.updated':
+                    log('세션 설정 업데이트됨', 'info');
+                    break;
+
+                case 'conversation.item.input_audio_transcription.completed':
+                    const userText = message.transcript;
+                    addMessage('user', userText);
+                    log(`🎤 사용자: ${userText}`, 'success');
+                    break;
+
+                case 'response.audio_transcript.delta':
+                    // AI 응답 텍스트 스트리밍
+                    log(`💬 AI: ${message.delta}`, 'info');
+                    break;
+
+                case 'response.done':
+                    const output = message.response?.output;
+                    if (output && output.length > 0) {
+                        const assistantMessages = output
+                            .filter(item => item.type === 'message')
+                            .map(item => {
+                                const textContent = item.content?.find(c => c.type === 'text');
+                                return textContent?.text || '';
+                            })
+                            .join(' ')
+                            .trim();
+
+                        if (assistantMessages) {
+                            addMessage('assistant', assistantMessages);
+                            log('✅ AI 응답 완료', 'success');
+                        }
+                    }
+                    break;
+
+                case 'error':
+                    log(`❌ 에러: ${message.error.message}`, 'error');
+                    addSystemMessage(`에러: ${message.error.message}`);
+                    break;
+
+                default:
+                    // 기타 이벤트는 로그만
+                    break;
+            }
+        }
+
+        // 연결 해제
+        function disconnect() {
+            log('연결 해제 중...', 'info');
+
+            if (dataChannel) {
+                dataChannel.close();
+                dataChannel = null;
+            }
+
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.srcObject = null;
+                audioElement = null;
+            }
+
+            // UI 업데이트
+            connectionStatus.textContent = '미연결';
+            connectionStatus.className = 'status-value disconnected';
+            dataChannelStatus.textContent = '닫힘';
+            dataChannelStatus.className = 'status-value disconnected';
+            micStatus.textContent = '대기';
+            micStatus.className = 'status-value disconnected';
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+
+            addSystemMessage('연결이 종료되었습니다.');
+            log('✅ 연결 해제 완료', 'success');
+        }
+
+        // 이벤트 리스너
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+
+        // 초기 로그
+        log('Leafy Realtime Voice Chat (WebRTC) 준비 완료', 'success');
+        addSystemMessage('설정을 입력하고 "연결 (WebRTC)" 버튼을 클릭하세요.');
+        addSystemMessage('WebRTC는 Opus 코덱을 자동으로 사용하여 고품질 음성을 제공합니다.');
+    </script>
+</body>
+</html>

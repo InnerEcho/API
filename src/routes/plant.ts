@@ -102,6 +102,12 @@ const plantStateController = new PlantStateController(plantStateService);
  */
 
 router.get(
+  '',
+  verifyTokenV2,
+  plantStateController.getPlantsByUserId.bind(plantStateController),
+);
+
+router.get(
   '/state/:plantId',
   verifyTokenV2,
   plantStateController.getPlantState.bind(plantStateController),

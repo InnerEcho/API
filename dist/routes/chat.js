@@ -1,6 +1,8 @@
 import express from 'express';
 import { PlantChatBotController } from "../controllers/ChatBotController.js";
 import { ChatHistoryController } from "../controllers/ChatHistoryController.js";
+import { RealtimeTicketController } from "../controllers/RealtimeTicketController.js";
+import { RealtimeSpeechController } from "../controllers/RealtimeSpeechController.js";
 import { ChatService } from "../services/ChatService.js";
 import { ChatBot } from "../services/bots/ChatBot.js";
 import { ChatHistoryService } from "../services/ChatHistoryService.js";
@@ -13,6 +15,8 @@ const chatService = new ChatService(chatBot);
 const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);
+const realtimeTicketController = new RealtimeTicketController();
+const realtimeSpeechController = new RealtimeSpeechController();
 
 /**
  * @swagger
@@ -105,29 +109,39 @@ router.post('/plant', verifyTokenV2, plantChatBotController.chat.bind(plantChatB
 
 // PlantChatBotController.getChatHistory 호출
 router.get('/history/:plantId', verifyTokenV2, chatHistoryController.getChatHistory.bind(chatHistoryController));
+router.post('/chat', verifyTokenV2, plantChatBotController.chat.bind(plantChatBotController));
 
 /**
  * @swagger
- * /stt:
+ * /chat/realtime/session:
  *   post:
- *     summary: 음성 파일을 텍스트로 변환
- *     description: 사용자가 업로드한 음성 파일을 Google Cloud Speech-to-Text API를 사용하여 텍스트로 변환합니다.
+ *     summary: WebRTC 세션 생성 및 Ephemeral Token 발급 (권장)
+ *     description: |
+ *       OpenAI Realtime API WebRTC 방식으로 음성 대화 세션을 생성합니다.
+ *       - Opus 코덱 자동 사용 (고품질, 낮은 대역폭)
+ *       - 클라이언트가 직접 OpenAI WebRTC endpoint에 연결
+ *       - Ephemeral token은 60초 유효
+ *       - 서버 부하 감소, 낮은 지연시간
  *     tags:
- *       - 음성 인식
+ *       - Realtime Speech
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - plantId
  *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *                 description: 업로드할 음성 파일
+ *               plantId:
+ *                 type: integer
+ *                 description: 대화할 식물 ID
+ *                 example: 1
  *     responses:
  *       200:
- *         description: 음성 파일이 성공적으로 텍스트로 변환된 경우
+ *         description: 세션 생성 성공
  *         content:
  *           application/json:
  *             schema:
@@ -136,28 +150,167 @@ router.get('/history/:plantId', verifyTokenV2, chatHistoryController.getChatHist
  *                 code:
  *                   type: integer
  *                   example: 200
- *                 data:
+ *                 message:
  *                   type: string
- *                   description: 변환된 텍스트
- *                   example: "안녕하세요, 오늘의 날씨는 맑습니다."
- *                 msg:
+ *                   example: "WebRTC session created successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     ephemeralToken:
+ *                       type: string
+ *                       description: OpenAI ephemeral token (60초 유효)
+ *                       example: "eph_..."
+ *                     expiresAt:
+ *                       type: integer
+ *                       description: Unix timestamp (초)
+ *                       example: 1672531200
+ *                     sessionId:
+ *                       type: string
+ *                       description: 세션 ID
+ *                       example: "sess_..."
+ *                     expiresIn:
+ *                       type: integer
+ *                       description: 유효 시간 (초)
+ *                       example: 60
+ *       401:
+ *         description: 인증 실패
+ *       400:
+ *         description: plantId 누락
+ *       500:
+ *         description: 서버 오류
+ */
+router.post('/realtime/session', verifyTokenV2, realtimeSpeechController.createSession.bind(realtimeSpeechController));
+
+/**
+ * @swagger
+ * /chat/realtime/history:
+ *   post:
+ *     summary: 대화 히스토리 저장
+ *     description: |
+ *       WebRTC 세션의 대화 내용을 서버에 저장합니다.
+ *       클라이언트가 transcript를 받은 후 이 API를 호출하세요.
+ *     tags:
+ *       - Realtime Speech
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - plantId
+ *             properties:
+ *               plantId:
+ *                 type: integer
+ *                 description: 식물 ID
+ *                 example: 1
+ *               userMessage:
+ *                 type: string
+ *                 description: 사용자 메시지
+ *                 example: "안녕?"
+ *               assistantMessage:
+ *                 type: string
+ *                 description: AI 응답 메시지
+ *                 example: "안녕! 오늘 기분이 어때?"
+ *     responses:
+ *       200:
+ *         description: 저장 성공
+ *       401:
+ *         description: 인증 실패
+ *       400:
+ *         description: 필수 파라미터 누락
+ *       500:
+ *         description: 서버 오류
+ */
+router.post('/realtime/history', verifyTokenV2, realtimeSpeechController.saveChatHistory.bind(realtimeSpeechController));
+
+/**
+ * @swagger
+ * /chat/realtime/history/{plantId}:
+ *   get:
+ *     summary: 대화 히스토리 조회
+ *     description: 특정 식물과의 대화 히스토리를 조회합니다.
+ *     tags:
+ *       - Realtime Speech
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: plantId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 식물 ID
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
  *                   type: string
  *                   example: "Ok"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     history:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           role:
+ *                             type: string
+ *                             enum: [user, assistant]
+ *                           content:
+ *                             type: string
+ *       401:
+ *         description: 인증 실패
  *       400:
- *         description: 잘못된 요청 또는 음성 파일이 없는 경우
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 code:
- *                   type: integer
- *                   example: 400
- *                 msg:
- *                   type: string
- *                   example: "Not Exist Audio File"
+ *         description: 잘못된 plantId
  *       500:
- *         description: 서버 내부 오류가 발생한 경우
+ *         description: 서버 오류
+ */
+router.get('/realtime/history/:plantId', verifyTokenV2, realtimeSpeechController.getChatHistory.bind(realtimeSpeechController));
+
+/**
+ * @swagger
+ * /chat/realtime-old/ticket:
+ *   post:
+ *     summary: (구버전) Realtime WebSocket 연결용 일회용 티켓 발급
+ *     description: |
+ *       [DEPRECATED] WebSocket + G.711 방식입니다. 새로운 WebRTC 방식(/realtime/session)을 사용하세요.
+ *       보안을 위해 WebSocket 연결 전에 HTTP API로 먼저 티켓을 발급받습니다.
+ *       - JWT 토큰은 안전한 HTTPS로만 전송
+ *       - 티켓은 30초 유효, 일회용
+ *       - 발급받은 티켓으로 WebSocket 연결
+ *     tags:
+ *       - Realtime Speech (Old)
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - plantId
+ *             properties:
+ *               plantId:
+ *                 type: integer
+ *                 description: 대화할 식물 ID
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: 티켓 발급 성공
  *         content:
  *           application/json:
  *             schema:
@@ -165,21 +318,31 @@ router.get('/history/:plantId', verifyTokenV2, chatHistoryController.getChatHist
  *               properties:
  *                 code:
  *                   type: integer
- *                   example: 500
- *                 msg:
+ *                   example: 200
+ *                 message:
  *                   type: string
- *                   example: "Server Error"
+ *                   example: "Ticket created successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     ticket:
+ *                       type: string
+ *                       description: 일회용 티켓 (30초 유효)
+ *                       example: "abc123def456..."
+ *                     expiresIn:
+ *                       type: integer
+ *                       description: 티켓 유효 시간 (초)
+ *                       example: 30
+ *                     wsUrl:
+ *                       type: string
+ *                       description: WebSocket 연결 URL
+ *                       example: "wss://your-server.com/chat/realtime-old?ticket=abc123..."
+ *       401:
+ *         description: 인증 실패
+ *       400:
+ *         description: plantId 누락
+ *       500:
+ *         description: 서버 오류
  */
-// router.post(
-//   '/stt',
-//   upload.single('file'),
-//   plantSpeechController.speechToText.bind(plantSpeechController),
-// );
-
-// router.post(
-//   '/tts',
-//   plantSpeechController.textToSpeech.bind(plantSpeechController),
-// );
-
-router.post('/chat', verifyTokenV2, plantChatBotController.chat.bind(plantChatBotController));
+router.post('/realtime-old/ticket', verifyTokenV2, realtimeTicketController.createTicket.bind(realtimeTicketController));
 export default router;

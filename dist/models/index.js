@@ -51,10 +51,20 @@ db.TokenBlacklist = TokenBlacklistDb(sequelize);
 
 // 모델 간의 관계 설정
 db.User.hasMany(db.Plant, {
-  foreignKey: 'user_id'
+  foreignKey: 'user_id',
+  as: 'plants'
 });
 db.Plant.belongsTo(db.User, {
-  foreignKey: 'user_id'
+  foreignKey: 'user_id',
+  as: 'user'
+});
+db.Species.hasMany(db.Plant, {
+  foreignKey: 'species_id',
+  as: 'plants'
+});
+db.Plant.belongsTo(db.Species, {
+  foreignKey: 'species_id',
+  as: 'species'
 });
 
 // RefreshToken - User 관계

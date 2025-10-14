@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import http from 'http';
 import debugModule from 'debug';
+import { setupRealtimeSpeechWebSocketOld } from "./websocket/realtimeSpeechOld.js";
 
 //Swagger 설정 가져오기
 import { swaggerUi, specs } from "./config/swagger.config.js";
@@ -32,6 +33,20 @@ process.on('uncaughtException', err => {
 });
 const app = express();
 const swaggerDocument = YAML.load('./src/docs/leafy.yaml');
+
+// .env의 PORT를 Swagger 문서에 동적으로 적용
+const PORT = process.env.PORT || 3000;
+if (swaggerDocument.servers) {
+  swaggerDocument.servers = swaggerDocument.servers.map(server => {
+    if (server.url.includes('localhost')) {
+      return {
+        ...server,
+        url: `http://localhost:${PORT}`
+      };
+    }
+    return server;
+  });
+}
 
 // db.sequelize
 //   .sync({ alter: true }) // 데이터베이스 자동 생성 (force: true는 기존 테이블을 삭제하고 새로 만듦)
@@ -154,6 +169,11 @@ app.use((err, req, res, next) => {
 const port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 const server = http.createServer(app);
+
+// WebSocket 서버 설정 (Old - G.711 방식, 호환성용)
+// 새로운 WebRTC 방식은 WebSocket 불필요 (클라이언트가 직접 OpenAI에 연결)
+setupRealtimeSpeechWebSocketOld(server);
+console.log('📡 새로운 WebRTC API는 /chat/realtime/session 엔드포인트 사용 (권장)');
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
