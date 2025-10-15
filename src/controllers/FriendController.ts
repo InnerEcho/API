@@ -63,10 +63,12 @@ export class FriendController {
   ): Promise<void> {
     const apiResult: ApiResult = { code: 400, data: null, msg: '' };
     try {
-      const { toUserId: friendEmail } = req.body;
+      const { toUserId: friendId } = req.body;
       const userId = req.user!.userId; // 예: 회원 고유 ID
       const user = await User.findOne({ where: { user_id: userId } });
+      const friend = await User.findOne({ where: { user_id: friendId } });
       const userEmail = user.user_email;
+      const friendEmail = friend.user_email;
 
       if (!userEmail || !friendEmail) {
         apiResult.msg = 'Missing required fields: user_email, friend_email';
