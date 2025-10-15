@@ -18,6 +18,25 @@ export class PlantStateService {
   calculateRequiredExp(level) {
     return Math.floor(BASE_EXP * Math.pow(level, FACTOR_EXP));
   }
+  async getPlantsByUserId(userId) {
+    const plant = await db.Plant.findOne({
+      where: {
+        user_id: userId
+      }
+    });
+    if (!plant) {
+      throw new Error('Plant not found');
+    }
+    const plantDb = plant;
+    const plantDataByUser = {
+      plantId: plantDb.plant_id,
+      plantName: plantDb.nickname,
+      level: plantDb.plant_level,
+      experience: plantDb.plant_experience,
+      likeability: plantDb.plant_hogamdo
+    };
+    return plantDataByUser;
+  }
 
   /**
    * 특정 식물의 현재 상태를 조회합니다.
@@ -42,7 +61,7 @@ export class PlantStateService {
     }
     const plantDb = plant;
     const plantData = {
-      plant_name: plantDb.nickname,
+      plantName: plantDb.nickname,
       level: plantDb.plant_level,
       experience: plantDb.plant_experience,
       likeability: plantDb.plant_hogamdo

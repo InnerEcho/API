@@ -2,6 +2,44 @@ export class PlantStateController {
   constructor(plantStateService) {
     this.plantStateService = plantStateService;
   }
+  getPlantsByUserId = async (req, res) => {
+    const result = {
+      code: 400,
+      data: null,
+      msg: 'Failed'
+    };
+    try {
+      const userId = req.user.userId;
+      if (!userId) {
+        result.code = 401;
+        result.msg = 'Unauthorized';
+        res.status(401).json(result);
+        return;
+      }
+      const plantDataByUser = await this.plantStateService.getPlantsByUserId(userId);
+      result.code = 200;
+      result.msg = 'Ok';
+      result.data = plantDataByUser;
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getPlantsByUserId:', error);
+      if (error instanceof Error) {
+        if (error.message === 'Plant not found') {
+          result.code = 404;
+          result.msg = error.message;
+          res.status(404).json(result);
+        } else {
+          result.code = 500;
+          result.msg = 'ServerError';
+          res.status(500).json(result);
+        }
+      } else {
+        result.code = 500;
+        result.msg = 'ServerError';
+        res.status(500).json(result);
+      }
+    }
+  };
 
   /**
    * GET /plant-state/:plant_id

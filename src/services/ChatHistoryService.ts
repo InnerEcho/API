@@ -1,9 +1,8 @@
 import db from '@/models/index.js';
-import type { IMessage } from '@/interface/index.js';
+import type { IMessage, IMessageDb } from '@/interface/index.js';
 import redisClient from '@/config/redis.config.js';
 
 const { ChatHistory } = db;
-
 
 const CACHE_EXPIRATION_SECONDS = 3600;
 
@@ -13,6 +12,19 @@ const CACHE_EXPIRATION_SECONDS = 3600;
  */
 export class ChatHistoryService {
   /**
+   * DB 데이터를 API 응답 형식으로 변환
+   */
+  private convertDbToMessage(dbData: IMessageDb): IMessage {
+    return {
+      userId: dbData.user_id,
+      plantId: dbData.plant_id,
+      message: dbData.message,
+      sendDate: dbData.send_date,
+      userType: dbData.user_type,
+    };
+  }
+
+  /**
    * 특정 사용자와 식물 간의 대화 이력 조회
    */
   public async getChatHistory(
@@ -20,27 +32,34 @@ export class ChatHistoryService {
     plantId: number,
   ): Promise<IMessage[]> {
     const cacheKey = `chat-history:${userId}:${plantId}`;
+
+    // 1. Redis 캐시 조회
     try {
       const cachedHistory = await redisClient.get(cacheKey);
 
       if (cachedHistory) {
         console.log(`[Cache Hit] ${cacheKey}`);
-        return JSON.parse(cachedHistory); // 캐시된 데이터가 있으면 파싱하여 반환
+        return JSON.parse(cachedHistory);
       }
     } catch (error) {
       console.error('Redis GET Error:', error);
     }
-    // 4. Cache Miss: DB에서 데이터 조회
+
+    // 2. Cache Miss: DB에서 데이터 조회
     console.log(`[Cache Miss] ${cacheKey}`);
-    const chatHistory = await ChatHistory.findAll({
+    const chatHistoryDb = await ChatHistory.findAll({
       where: { user_id: userId, plant_id: plantId },
       order: [['send_date', 'ASC']],
-      raw: true, // lean object로 받기
+      raw: true,
     });
 
+    // 3. DB 데이터를 IMessage 형식으로 변환
+    const chatHistory = (chatHistoryDb as unknown as IMessageDb[]).map(
+      (item) => this.convertDbToMessage(item)
+    );
+
+    // 4. 변환된 데이터를 Redis에 캐싱
     try {
-      // 5. DB 조회 결과를 Redis에 저장 (JSON 문자열 형태로)
-      // SETEX: 키에 값을 저장하고 만료 시간을 설정
       await redisClient.setex(
         cacheKey,
         CACHE_EXPIRATION_SECONDS,
@@ -50,11 +69,14 @@ export class ChatHistoryService {
       console.error('Redis SETEX Error:', error);
     }
 
-    return chatHistory as IMessage[];
+    return chatHistory;
   }
 
 
-  
+
+  /**
+   * 오늘의 대화 이력 조회
+   */
   public async getTodayHistory(
     userId: number,
     plantId: number,
@@ -62,6 +84,7 @@ export class ChatHistoryService {
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const cacheKey = `chat-history:today:${userId}:${plantId}:${today}`;
 
+    // 1. Redis 캐시 조회
     try {
       const cachedTodayHistory = await redisClient.get(cacheKey);
       if (cachedTodayHistory) {
@@ -72,30 +95,36 @@ export class ChatHistoryService {
       console.error('Redis GET Error:', error);
     }
 
+    // 2. Cache Miss: DB에서 오늘 데이터 조회
     console.log(`[Cache Miss] ${cacheKey}`);
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const results = await ChatHistory.findAll({
-        where: {
-            user_id: userId,
-            plant_id: plantId,
-            send_date: {
-                [db.Sequelize.Op.gte]: todayStart
-            }
+    const resultsDb = await ChatHistory.findAll({
+      where: {
+        user_id: userId,
+        plant_id: plantId,
+        send_date: {
+          [db.Sequelize.Op.gte]: todayStart,
         },
-        order: [['send_date', 'ASC']],
-        raw: true
+      },
+      order: [['send_date', 'ASC']],
+      raw: true,
     });
 
+    // 3. DB 데이터를 IMessage 형식으로 변환
+    const results = (resultsDb as unknown as IMessageDb[]).map((item) =>
+      this.convertDbToMessage(item)
+    );
+
+    // 4. 오늘의 대화는 더 짧은 만료 시간 설정 (5분)
     try {
-      // 오늘의 대화는 더 짧은 만료시간 설정 가능 (예: 5분)
       await redisClient.setex(cacheKey, 300, JSON.stringify(results));
     } catch (error) {
       console.error('Redis SETEX Error:', error);
     }
 
-    return results as IMessage[];
+    return results;
   }
 }
 
