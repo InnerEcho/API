@@ -375,11 +375,11 @@ paths:
                             type: string
                             example: "홍길동"
         '400':
-          description: 입력값 오류 또는 이메일이 이미 존재함
+          description: 입력값 오류 또는 이메일/닉네임이 이미 존재함
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/AuthV2ErrorResponse'
               examples:
                 missingFields:
                   value:
@@ -390,7 +390,12 @@ paths:
                   value:
                     code: 400
                     message: "Email already exists"
-                    error: "EMAIL_EXISTS"
+                    error: "ExistEmail"
+                nicknameExists:
+                  value:
+                    code: 400
+                    message: "Nickname already exists"
+                    error: "ExistNickName"
         '429':
           description: 회원가입 시도 횟수 초과
           content:
@@ -474,7 +479,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/AuthV2ErrorResponse'
               examples:
                 emailNotExist:
                   value:
@@ -561,15 +566,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                    example: 401
-                  message:
-                    type: string
-                  error:
-                    type: string
+                $ref: '#/components/schemas/AuthV2ErrorResponse'
               examples:
                 expired:
                   value:
@@ -581,11 +578,21 @@ paths:
                     code: 401
                     message: "Refresh token has been revoked"
                     error: "REFRESH_TOKEN_REVOKED"
-                invalid:
+                notFound:
                   value:
                     code: 401
                     message: "Invalid refresh token"
+                    error: "REFRESH_TOKEN_NOT_FOUND"
+                invalid:
+                  value:
+                    code: 401
+                    message: "Invalid refresh token format"
                     error: "INVALID_REFRESH_TOKEN"
+                userNotFound:
+                  value:
+                    code: 404
+                    message: "User not found"
+                    error: "USER_NOT_FOUND"
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -629,14 +636,11 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                    example: 400
-                  message:
-                    type: string
-                    example: "Access token is required in Authorization header"
+                $ref: '#/components/schemas/AuthV2ErrorResponse'
+              example:
+                code: 400
+                message: "Access token is required in Authorization header"
+                error: "MISSING_TOKEN"
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -684,15 +688,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                    example: 401
-                  message:
-                    type: string
-                  error:
-                    type: string
+                $ref: '#/components/schemas/AuthV2ErrorResponse'
               examples:
                 expired:
                   value:
@@ -739,14 +735,11 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                    example: 401
-                  message:
-                    type: string
-                    example: "Authentication required"
+                $ref: '#/components/schemas/AuthV2ErrorResponse'
+              example:
+                code: 401
+                message: "Authentication required"
+                error: "AUTHENTICATION_REQUIRED"
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -1183,11 +1176,51 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ChatHistory'
+                    description: "대화 기록 배열 (시간 순 정렬)"
                   msg:
                     type: string
                     example: "Ok"
+              example:
+                code: 200
+                data:
+                  - userId: 1
+                    plantId: 1
+                    message: "오늘 하루 어땠어?"
+                    sendDate: "2025-10-15T09:00:00.000Z"
+                    userType: "User"
+                  - userId: 1
+                    plantId: 1
+                    message: "정말 즐거운 하루였어요!"
+                    sendDate: "2025-10-15T09:00:05.000Z"
+                    userType: "Bot"
+                msg: "Ok"
+        '400':
+          description: 잘못된 plantId (유효하지 않은 형식 또는 음수)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                msg: "Invalid plant ID"
         '401':
           description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 401
+                msg: "Unauthorized"
+        '404':
+          description: 식물을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 404
+                msg: "Plant not found"
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -2326,24 +2359,30 @@ components:
 
     ChatHistory:
       type: object
-      description: 채팅 기록 스키마 (DB 모델 기준)
+      description: 채팅 기록 스키마 (API 응답 형식)
       properties:
-        history_id:
+        userId:
           type: integer
-          readOnly: true
-        message:
-          type: string
-        user_id:
-          type: integer
+          description: "사용자 ID"
+          example: 1
         plantId:
           type: integer
-        send_date:
+          description: "식물 ID"
+          example: 1
+        message:
+          type: string
+          description: "메시지 내용"
+          example: "오늘 하루 어땠어?"
+        sendDate:
           type: string
           format: date-time
-        user_type:
+          description: "메시지 전송 시간"
+          example: "2025-10-15T12:34:56.789Z"
+        userType:
           type: string
           enum: [User, Bot]
-          description: "메시지 발신자 (사용자 또는 챗봇)"
+          description: "메시지 발신자 (User: 사용자, Bot: 챗봇)"
+          example: "User"
 
     ChatRequest:
       type: object
@@ -2584,6 +2623,20 @@ components:
           type: integer
         msg:
           type: string
+
+    AuthV2ErrorResponse:
+      type: object
+      description: Auth V2 API 실패 시 응답 형식
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Error message"
+        error:
+          type: string
+          example: "ERROR_CODE"
     FriendRequest:
       type: object
       required: [fromUserId, toUserId]
@@ -2629,14 +2682,6 @@ components:
         msg:
           type: string
           example: "Ok"
-
-    ErrorResponse:
-      type: object
-      properties:
-        code:
-          type: integer
-        msg:
-          type: string
 
 
   # -------------------- Responses (공통 응답) --------------------
