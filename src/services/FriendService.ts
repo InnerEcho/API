@@ -49,12 +49,14 @@ export class FriendService {
 
   // 친구 요청 상태 업데이트
   public async updateStatus(
+    request_Id: string,
     user_email: string,
     friend_email: string,
     status: "pending" | "accepted" | "rejected"
   ) {
     const request = await UserFriends.findOne({
-      where: { user_email, friend_email, status: "pending" }
+      where: { friend_id: request_Id, user_email: friend_email,
+        friend_email: user_email, status: "pending" }
     });
 
     if (!request) return null;

@@ -122,15 +122,29 @@ export class FriendController {
   ): Promise<void> {
     const apiResult: ApiResult = { code: 400, data: null, msg: '' };
     try {
-      const { user_email: userEmail2, friend_email: friendEmail2 } = req.body;
+      const { requestId: request_Id, fromUserId: friend_Id2 } = req.body;
 
-      if (!userEmail2 || !friendEmail2) {
-        apiResult.msg = 'Missing required fields: user_email, friend_email';
+      if (!request_Id || !friend_Id2) {
+        apiResult.msg = 'Missing required fields: requestId or fromUserId';
         res.status(400).json(apiResult);
         return;
       }
 
+      const userId = req.user!.userId; // 예: 회원 고유 ID
+      const user = await User.findOne({ where: { user_id: userId } });
+      const friend = await User.findOne({ where: { user_id: friend_Id2 } });
+
+      if (!user || !friend) {
+        apiResult.msg = '존재하지 않는 사용자입니다.';
+        res.status(404).json(apiResult);
+        return;
+      }
+
+      const userEmail2 = user.user_email;
+      const friendEmail2 = friend.user_email;
+
       const request = await this.friendService.updateStatus(
+        request_Id,
         userEmail2,
         friendEmail2,
         'accepted',
