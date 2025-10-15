@@ -35,6 +35,13 @@ router.get(
   friendController.getFriendList.bind(friendController)
 );
 
+// 친구 삭제
+router.post(
+  '/friendremove',
+  verifyTokenV2,
+  friendController.deleteFriend.bind(friendController)
+);
+
 // // 특정 사용자 친구 목록 조회
 // router.get(
 //   '/:user_email',

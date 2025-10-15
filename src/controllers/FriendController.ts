@@ -209,9 +209,6 @@ export class FriendController {
         return;
       }
 
-      request.status = 'rejected';
-      await request.save();
-
       apiResult.code = 200;
       apiResult.msg = '친구 요청 거절 완료';
       apiResult.data = request;
@@ -232,10 +229,10 @@ export class FriendController {
     const apiResult: ApiResult = { code: 400, data: null, msg: '' };
 
     try {
-      const userId = req.user?.userId || req.body.userId;
-      const { friendEmail } = req.body; // 또는 req.params.friendId 사용
+      const userId = req.user!.userId
+      const { friendId } = req.body; // 또는 req.params.friendId 사용
 
-      if (!userId || !friendEmail) {
+      if (!userId || !friendId) {
         apiResult.msg = '필요한 정보가 없습니다.';
         res.status(400).json(apiResult);
         return;
@@ -243,16 +240,19 @@ export class FriendController {
 
       // 사용자 이메일 조회
       const user = await User.findOne({ where: { user_id: userId } });
-      if (!user) {
-        apiResult.msg = '사용자 없음';
+      const friend = await User.findOne({ where: { user_id: friendId } });
+
+      if (!user || !friend) {
+        apiResult.msg = '존재하지 않는 사용자입니다.';
         res.status(404).json(apiResult);
         return;
       }
 
-      const myEmail = user.user_email;
+      const userEmail4 = user.user_email;
+      const friendEmail4 = friend.user_email;
 
       // 서비스 호출 - 친구 삭제
-      const deleted = await this.friendService.deleteFriend(myEmail, friendEmail);
+      const deleted = await this.friendService.deleteFriend(userEmail4, friendEmail4);
 
       if (deleted) {
         apiResult.code = 200;
