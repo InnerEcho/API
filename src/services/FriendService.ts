@@ -49,12 +49,14 @@ export class FriendService {
 
   // 친구 요청 상태 업데이트
   public async updateStatus(
+    request_Id: string,
     user_email: string,
     friend_email: string,
     status: "pending" | "accepted" | "rejected"
   ) {
     const request = await UserFriends.findOne({
-      where: { user_email, friend_email, status: "pending" }
+      where: { friend_id: request_Id, user_email: friend_email,
+        friend_email: user_email, status: "pending" }
     });
 
     if (!request) return null;
@@ -79,7 +81,21 @@ export class FriendService {
     return friends.map((f: InstanceType<typeof UserFriends>) =>
       f.user_email === myEmail ? f.friend_email : f.user_email
     );
-    
   }
+
+  public async deleteFriend(myEmail: string, friendEmail: string): Promise<boolean> {
+    // 예시: Friend 테이블은 (user_email, friend_email) 형태로 양방향 저장한다고 가정
+    const deletedCount = await UserFriends.destroy({
+      where: {
+        [Op.or]: [
+          { user_email: myEmail, friend_email: friendEmail },
+          { user_email: friendEmail, friend_email: myEmail }
+        ]
+      }
+    });
+
+    return deletedCount > 0;
+  }
+
   
 }
