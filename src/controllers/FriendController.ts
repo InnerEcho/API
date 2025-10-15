@@ -67,6 +67,10 @@ export class FriendController {
       const userId = req.user!.userId; // 예: 회원 고유 ID
       const user = await User.findOne({ where: { user_id: userId } });
       const friend = await User.findOne({ where: { user_id: friendId } });
+
+      console.log('user:', user);
+      console.log('friend:', friend);
+
       const userEmail = user.user_email;
       const friendEmail = friend.user_email;
 

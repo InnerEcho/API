@@ -81,7 +81,6 @@ export class FriendService {
     );
   }
 
-    // FriendService.ts
   public async deleteFriend(myEmail: string, friendEmail: string): Promise<boolean> {
     // 예시: Friend 테이블은 (user_email, friend_email) 형태로 양방향 저장한다고 가정
     const deletedCount = await UserFriends.destroy({

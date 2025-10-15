@@ -1,4 +1,5 @@
 import { WebSocketServer } from 'ws';
+import { RealtimeSpeechControllerOld } from "../controllers/RealtimeSpeechControllerOld.js";
 import { RealtimeTicketService } from "../services/RealtimeTicketService.js";
 
 /**

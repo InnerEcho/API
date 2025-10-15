@@ -100,6 +100,7 @@ const plantStateController = new PlantStateController(plantStateService);
  *                   example: "ServerError"
  */
 
+router.get('', verifyTokenV2, plantStateController.getPlantsByUserId.bind(plantStateController));
 router.get('/state/:plantId', verifyTokenV2, plantStateController.getPlantState.bind(plantStateController));
 router.post('/state/:plantId/experience', verifyTokenV2, plantStateController.gainExperience.bind(plantStateController));
 router.post('/state/:plantId/likeability', verifyTokenV2, plantStateController.increaseLikeability.bind(plantStateController));

@@ -43,7 +43,7 @@ export class PlantChatBotController {
   
           if (emotion) {
             await User.update({ state: emotion }, { where: { user_id: userId } });
-       z     console.log(`사용자 ${userId}의 감정 상태가 '${emotion}'으로 DB에 저장됨`);
+            console.log(`사용자 ${userId}의 감정 상태가 '${emotion}'으로 DB에 저장됨`);
           } else {
             console.warn(`사용자 ${userId}의 감정 분석 결과가 없어 DB 업데이트를 건너뜀`);
           }

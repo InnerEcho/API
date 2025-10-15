@@ -64,9 +64,23 @@ export class FriendController {
     };
     try {
       const {
-        user_email: userEmail,
-        friend_email: friendEmail
+        toUserId: friendId
       } = req.body;
+      const userId = req.user.userId; // 예: 회원 고유 ID
+      const user = await User.findOne({
+        where: {
+          user_id: userId
+        }
+      });
+      const friend = await User.findOne({
+        where: {
+          user_id: friendId
+        }
+      });
+      console.log('user:', user);
+      console.log('friend:', friend);
+      const userEmail = user.user_email;
+      const friendEmail = friend.user_email;
       if (!userEmail || !friendEmail) {
         apiResult.msg = 'Missing required fields: user_email, friend_email';
         res.status(400).json(apiResult);
@@ -176,6 +190,57 @@ export class FriendController {
       apiResult.msg = '친구 요청 거절 완료';
       apiResult.data = request;
       res.status(200).json(apiResult);
+    } catch (err) {
+      console.error(err);
+      apiResult.code = 500;
+      apiResult.msg = '서버 오류';
+      res.status(500).json(apiResult);
+    }
+  }
+
+  // 친구 삭제
+  async deleteFriend(req, res) {
+    const apiResult = {
+      code: 400,
+      data: null,
+      msg: ''
+    };
+    try {
+      const userId = req.user?.userId || req.body.userId;
+      const {
+        friendEmail
+      } = req.body; // 또는 req.params.friendId 사용
+
+      if (!userId || !friendEmail) {
+        apiResult.msg = '필요한 정보가 없습니다.';
+        res.status(400).json(apiResult);
+        return;
+      }
+
+      // 사용자 이메일 조회
+      const user = await User.findOne({
+        where: {
+          user_id: userId
+        }
+      });
+      if (!user) {
+        apiResult.msg = '사용자 없음';
+        res.status(404).json(apiResult);
+        return;
+      }
+      const myEmail = user.user_email;
+
+      // 서비스 호출 - 친구 삭제
+      const deleted = await this.friendService.deleteFriend(myEmail, friendEmail);
+      if (deleted) {
+        apiResult.code = 200;
+        apiResult.msg = '친구 삭제 완료';
+        res.status(200).json(apiResult);
+      } else {
+        apiResult.code = 404;
+        apiResult.msg = '친구 관계를 찾을 수 없습니다.';
+        res.status(404).json(apiResult);
+      }
     } catch (err) {
       console.error(err);
       apiResult.code = 500;

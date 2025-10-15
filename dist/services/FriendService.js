@@ -82,4 +82,19 @@ export class FriendService {
     // 친구 목록을 배열로 반환
     return friends.map(f => f.user_email === myEmail ? f.friend_email : f.user_email);
   }
+  async deleteFriend(myEmail, friendEmail) {
+    // 예시: Friend 테이블은 (user_email, friend_email) 형태로 양방향 저장한다고 가정
+    const deletedCount = await UserFriends.destroy({
+      where: {
+        [Op.or]: [{
+          user_email: myEmail,
+          friend_email: friendEmail
+        }, {
+          user_email: friendEmail,
+          friend_email: myEmail
+        }]
+      }
+    });
+    return deletedCount > 0;
+  }
 }
