@@ -106,3 +106,58 @@ export const optionalAuth = async (req, _res, next) => {
   }
   next();
 };
+
+/**
+ * WebSocket 인증 미들웨어
+ *
+ * WebSocket 연결 시 토큰을 검증합니다. 다음 두 가지 방법을 지원합니다:
+ * 1. Authorization 헤더 (Node.js, 네이티브 앱)
+ * 2. Sec-WebSocket-Protocol 서브프로토콜 (브라우저)
+ *
+ * 브라우저의 WebSocket API는 커스텀 헤더를 지원하지 않으므로,
+ * 서브프로토콜에 토큰을 포함하는 방식을 사용합니다.
+ *
+ * 클라이언트 예시:
+ * - Node.js: new WebSocket(url, { headers: { 'Authorization': 'Bearer token' } })
+ * - Browser: new WebSocket(url, ['access_token', token])
+ */
+export const verifyTokenV2WS = async req => {
+  let token;
+
+  // 방법 1: Authorization 헤더에서 토큰 추출 (Node.js, 네이티브 앱)
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split('Bearer ')[1];
+  }
+
+  // 방법 2: Sec-WebSocket-Protocol 헤더에서 토큰 추출 (브라우저)
+  // 브라우저에서는 new WebSocket(url, ['access_token', token]) 형태로 전달
+  if (!token) {
+    const protocols = req.headers['sec-websocket-protocol'];
+    if (protocols) {
+      const protocolArray = protocols.split(',').map(p => p.trim());
+      // 'access_token' 다음에 오는 값이 실제 토큰
+      const tokenIndex = protocolArray.indexOf('access_token');
+      if (tokenIndex !== -1 && protocolArray[tokenIndex + 1]) {
+        token = protocolArray[tokenIndex + 1];
+      }
+    }
+  }
+  if (!token) {
+    throw new Error('MISSING_TOKEN');
+  }
+  try {
+    const tokenService = new TokenService();
+    const decoded = await tokenService.verifyAccessToken(token);
+
+    // req.user에 저장
+    req.user = {
+      userId: decoded.userId,
+      userEmail: decoded.userEmail,
+      userName: decoded.userName,
+      state: decoded.state
+    };
+  } catch (error) {
+    throw new Error(error.message || 'VERIFICATION_FAILED');
+  }
+};

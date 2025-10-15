@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leafy Realtime Voice Chat Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .config-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-section {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .status-value.connected {
+            color: #4caf50;
+        }
+
+        .status-value.disconnected {
+            color: #f44336;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-connect {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-connect:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-disconnect {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-disconnect:hover:not(:disabled) {
+            background: #da190b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn-record {
+            background: #2196f3;
+            color: white;
+            font-size: 18px;
+        }
+
+        .btn-record:hover:not(:disabled) {
+            background: #0b7dda;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-record.recording {
+            background: #ff5722;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .transcript-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .transcript-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .message.assistant {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .message.system {
+            background: #fff3e0;
+            color: #f57c00;
+            font-size: 13px;
+        }
+
+        .logs {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-entry.error {
+            color: #ff5252;
+        }
+
+        .log-entry.success {
+            color: #69f0ae;
+        }
+
+        .log-entry.info {
+            color: #64b5f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 Leafy Realtime Voice Chat (Old)</h1>
+        <p class="subtitle">OpenAI Realtime API 테스트 - WebSocket + G.711</p>
+
+        <!-- 설정 섹션 -->
+        <div class="config-section">
+            <div class="input-group">
+                <label for="serverUrl">서버 URL (3002번 포트)</label>
+                <input type="text" id="serverUrl" value="http://localhost:3002" placeholder="http://localhost:3002">
+            </div>
+            <div class="input-group">
+                <label for="accessToken">JWT Access Token</label>
+                <input type="text" id="accessToken" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            </div>
+            <div class="input-group">
+                <label for="plantId">Plant ID</label>
+                <input type="number" id="plantId" value="1">
+            </div>
+        </div>
+
+        <!-- 상태 섹션 -->
+        <div class="status-section">
+            <div class="status-item">
+                <div class="status-label">연결 상태</div>
+                <div class="status-value disconnected" id="connectionStatus">미연결</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">인증 상태</div>
+                <div class="status-value disconnected" id="authStatus">미인증</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">녹음 상태</div>
+                <div class="status-value disconnected" id="recordStatus">대기</div>
+            </div>
+        </div>
+
+        <!-- 버튼 그룹 -->
+        <div class="button-group">
+            <button class="btn-connect" id="connectBtn">연결</button>
+            <button class="btn-disconnect" id="disconnectBtn" disabled>연결 해제</button>
+        </div>
+
+        <button class="btn-record" id="recordBtn" disabled>
+            🎤 말하기 (클릭하여 시작)
+        </button>
+
+        <!-- 대화 내역 -->
+        <div class="transcript-section">
+            <div class="transcript-title">대화 내역</div>
+            <div id="transcript"></div>
+        </div>
+
+        <!-- 로그 -->
+        <div class="logs" id="logs"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let mediaRecorder = null;
+        let audioContext = null;
+        let isRecording = false;
+        let audioChunks = [];
+
+        const serverUrlInput = document.getElementById('serverUrl');
+        const accessTokenInput = document.getElementById('accessToken');
+        const plantIdInput = document.getElementById('plantId');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const authStatus = document.getElementById('authStatus');
+        const recordStatus = document.getElementById('recordStatus');
+        const transcript = document.getElementById('transcript');
+        const logs = document.getElementById('logs');
+
+        // 로그 출력
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        // 대화 내역 추가
+        function addMessage(role, text) {
+            const msg = document.createElement('div');
+            msg.className = `message ${role}`;
+            msg.textContent = `${role === 'user' ? '나' : '식물'}: ${text}`;
+            transcript.appendChild(msg);
+            transcript.scrollTop = transcript.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const msg = document.createElement('div');
+            msg.className = 'message system';
+            msg.textContent = `[시스템] ${text}`;
+            transcript.appendChild(msg);
+            transcript.scrollTop = transcript.scrollHeight;
+        }
+
+        // WebSocket 연결
+        async function connect() {
+            try {
+                const serverUrl = serverUrlInput.value.trim();
+                const token = accessTokenInput.value.trim();
+                const plantId = plantIdInput.value;
+
+                if (!serverUrl || !token || !plantId) {
+                    alert('모든 필드를 입력해주세요.');
+                    return;
+                }
+
+                log('티켓 발급 요청 중...', 'info');
+
+                // 1. 티켓 발급 (Old WebSocket 엔드포인트)
+                const response = await fetch(`${serverUrl}/chat/realtime-old/ticket`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ plantId: parseInt(plantId) })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`티켓 발급 실패 (HTTP ${response.status}): ${errorText}`, 'error');
+                    alert(`티켓 발급 실패 (HTTP ${response.status}): ${errorText}`);
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.code !== 200) {
+                    log(`티켓 발급 실패: ${data.message || JSON.stringify(data)}`, 'error');
+                    alert(`티켓 발급 실패: ${data.message || JSON.stringify(data)}`);
+                    return;
+                }
+
+                const { ticket, wsUrl } = data.data;
+                log(`티켓 발급 성공: ${ticket}`, 'success');
+
+                // 2. WebSocket 연결
+                const wsUrlToConnect = wsUrl.replace('wss://', 'ws://'); // 로컬 테스트용
+                log(`WebSocket 연결 시도: ${wsUrlToConnect}`, 'info');
+
+                ws = new WebSocket(wsUrlToConnect);
+
+                ws.onopen = () => {
+                    log('WebSocket 연결 성공', 'success');
+                    connectionStatus.textContent = '연결됨';
+                    connectionStatus.className = 'status-value connected';
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    addSystemMessage('서버에 연결되었습니다.');
+                };
+
+                ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    handleServerMessage(message);
+                };
+
+                ws.onerror = (error) => {
+                    log('WebSocket 오류 발생', 'error');
+                    console.error('WebSocket error:', error);
+                };
+
+                ws.onclose = () => {
+                    log('WebSocket 연결 종료', 'info');
+                    connectionStatus.textContent = '미연결';
+                    connectionStatus.className = 'status-value disconnected';
+                    authStatus.textContent = '미인증';
+                    authStatus.className = 'status-value disconnected';
+                    connectBtn.disabled = false;
+                    disconnectBtn.disabled = true;
+                    recordBtn.disabled = true;
+                    addSystemMessage('서버 연결이 종료되었습니다.');
+                };
+
+            } catch (error) {
+                log(`연결 실패: ${error.message}`, 'error');
+                alert(`연결 실패: ${error.message}`);
+            }
+        }
+
+        // 서버 메시지 처리
+        function handleServerMessage(message) {
+            log(`수신: ${message.type}`, 'info');
+
+            switch (message.type) {
+                case 'authenticated':
+                    authStatus.textContent = '인증됨';
+                    authStatus.className = 'status-value connected';
+                    recordBtn.disabled = false;
+                    addSystemMessage('인증이 완료되었습니다. 이제 대화를 시작할 수 있습니다.');
+                    log('인증 완료', 'success');
+                    break;
+
+                case 'session.created':
+                    log('OpenAI 세션 생성 완료', 'success');
+                    addSystemMessage('AI 세션이 준비되었습니다.');
+                    break;
+
+                case 'session.updated':
+                    log('세션 업데이트됨', 'info');
+                    break;
+
+                case 'conversation.item.input_audio_transcription.completed':
+                    const userText = message.transcript;
+                    addMessage('user', userText);
+                    log(`사용자 음성 인식: ${userText}`, 'success');
+                    break;
+
+                case 'response.audio.delta':
+                    // 오디오 데이터 수신 (재생은 구현 필요)
+                    // Base64 디코딩하여 오디오 재생
+                    playAudioChunk(message.delta);
+                    break;
+
+                case 'response.audio_transcript.delta':
+                    log(`AI 응답 텍스트 (스트리밍): ${message.delta}`, 'info');
+                    break;
+
+                case 'response.done':
+                    const output = message.response?.output;
+                    if (output && output.length > 0) {
+                        const assistantMessages = output
+                            .filter(item => item.type === 'message')
+                            .map(item => {
+                                const textContent = item.content?.find(c => c.type === 'text');
+                                return textContent?.text || '';
+                            })
+                            .join(' ')
+                            .trim();
+
+                        if (assistantMessages) {
+                            addMessage('assistant', assistantMessages);
+                            log('AI 응답 완료', 'success');
+                        }
+                    }
+                    break;
+
+                case 'error':
+                    log(`에러: ${message.error.message}`, 'error');
+                    alert(`에러: ${message.error.message}`);
+                    break;
+
+                default:
+                    // 기타 이벤트는 로그만 출력
+                    break;
+            }
+        }
+
+        // 오디오 재생 (간단한 구현)
+        function playAudioChunk(base64Audio) {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // Base64 디코딩
+                const binaryString = atob(base64Audio);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // PCM16을 AudioBuffer로 변환 (16kHz, mono)
+                const int16Array = new Int16Array(bytes.buffer);
+                const float32Array = new Float32Array(int16Array.length);
+
+                // Int16를 Float32로 변환
+                for (let i = 0; i < int16Array.length; i++) {
+                    float32Array[i] = int16Array[i] / 32768.0;
+                }
+
+                // AudioBuffer 생성
+                const audioBuffer = audioContext.createBuffer(1, float32Array.length, 24000);
+                audioBuffer.getChannelData(0).set(float32Array);
+
+                // 재생
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                source.start();
+            } catch (error) {
+                console.error('오디오 재생 오류:', error);
+            }
+        }
+
+        // 연결 해제
+        function disconnect() {
+            if (isRecording) {
+                stopRecording();
+            }
+
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        // 녹음 시작/중지
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                await stopRecording();
+            }
+        }
+
+        // 녹음 시작 (PCM16 포맷 with 리샘플링)
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                    }
+                });
+
+                // Web Audio API 초기화 (시스템 기본 샘플레이트 사용)
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                log(`AudioContext 샘플레이트: ${audioContext.sampleRate}Hz`, 'info');
+
+                const source = audioContext.createMediaStreamSource(stream);
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                // 실시간으로 오디오 청크를 PCM16으로 변환하여 전송
+                processor.onaudioprocess = (e) => {
+                    if (!isRecording) return;
+
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    const sampleRate = audioContext.sampleRate;
+
+                    // 24kHz로 리샘플링 (간단한 데시메이션)
+                    let resampledData;
+                    if (sampleRate === 24000) {
+                        resampledData = inputData;
+                    } else {
+                        const ratio = sampleRate / 24000;
+                        const newLength = Math.floor(inputData.length / ratio);
+                        resampledData = new Float32Array(newLength);
+                        for (let i = 0; i < newLength; i++) {
+                            resampledData[i] = inputData[Math.floor(i * ratio)];
+                        }
+                    }
+
+                    // Float32 → Int16 변환 (PCM16)
+                    const pcm16 = new Int16Array(resampledData.length);
+                    for (let i = 0; i < resampledData.length; i++) {
+                        const s = Math.max(-1, Math.min(1, resampledData[i]));
+                        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+
+                    // Int16Array를 Base64로 변환
+                    const base64Audio = arrayBufferToBase64(pcm16.buffer);
+
+                    // 실시간으로 서버에 전송
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: 'input_audio_buffer.append',
+                            audio: base64Audio
+                        }));
+                    }
+                };
+
+                // 스트림과 프로세서 저장 (나중에 정리용)
+                window.audioStream = stream;
+                window.audioProcessor = processor;
+                window.audioSource = source;
+
+                isRecording = true;
+                recordStatus.textContent = '녹음 중';
+                recordStatus.className = 'status-value connected';
+                recordBtn.textContent = '🔴 녹음 중지';
+                recordBtn.classList.add('recording');
+                log('녹음 시작 (PCM16 24kHz 실시간 스트리밍)', 'success');
+                addSystemMessage('녹음을 시작했습니다. 말씀해주세요.');
+
+            } catch (error) {
+                log(`마이크 접근 실패: ${error.message}`, 'error');
+                alert('마이크 접근 권한이 필요합니다.');
+            }
+        }
+
+        // ArrayBuffer를 Base64로 변환
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        // 녹음 중지
+        async function stopRecording() {
+            isRecording = false;
+
+            // 오디오 스트림 및 프로세서 정리
+            if (window.audioSource) {
+                window.audioSource.disconnect();
+                window.audioSource = null;
+            }
+
+            if (window.audioProcessor) {
+                window.audioProcessor.disconnect();
+                window.audioProcessor = null;
+            }
+
+            if (window.audioStream) {
+                window.audioStream.getTracks().forEach(track => track.stop());
+                window.audioStream = null;
+            }
+
+            // OpenAI에 응답 생성 요청
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'response.create'
+                }));
+                log('응답 생성 요청 전송', 'info');
+            }
+
+            recordStatus.textContent = '대기';
+            recordStatus.className = 'status-value disconnected';
+            recordBtn.textContent = '🎤 말하기 (클릭하여 시작)';
+            recordBtn.classList.remove('recording');
+            log('녹음 중지', 'info');
+            addSystemMessage('녹음을 중지했습니다. AI 응답 대기 중...');
+        }
+
+        // sendAudio 함수는 더 이상 필요 없음 (실시간 스트리밍으로 대체)
+
+        // 이벤트 리스너
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        recordBtn.addEventListener('click', toggleRecording);
+
+        // 초기 로그
+        log('Leafy Realtime Voice Chat 테스트 준비 완료', 'success');
+        addSystemMessage('설정을 입력하고 "연결" 버튼을 클릭하세요.');
+    </script>
+</body>
+</html>

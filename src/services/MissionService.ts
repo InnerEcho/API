@@ -65,6 +65,7 @@ export class MissionService {
 
     // 4. PlantStateService를 호출하여 경험치 지급!
     const expResult = await this.plantStateService.gainExperience(
+      user_id,
       plant.plant_id,
       expToGain
     );

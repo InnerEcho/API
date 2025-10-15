@@ -1,5 +1,8 @@
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
+import dotenv from 'dotenv';
+dotenv.config();
+const PORT = process.env.PORT || 3000;
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -14,7 +17,7 @@ const options = {
       version: '1.0.0'
     },
     servers: [{
-      url: 'http://localhost:3001/',
+      url: `http://localhost:${PORT}/`,
       description: 'Local Development'
     }, {
       url: 'http://test.co.kr/',

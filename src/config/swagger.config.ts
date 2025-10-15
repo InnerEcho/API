@@ -1,5 +1,8 @@
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 interface SwaggerOptions {
   definition: {
@@ -21,6 +24,8 @@ interface SwaggerOptions {
   apis: string[];
 }
 
+const PORT = process.env.PORT || 3000;
+
 const options: SwaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -36,7 +41,7 @@ const options: SwaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:3001/',
+        url: `http://localhost:${PORT}/`,
         description: 'Local Development',
       },
       {

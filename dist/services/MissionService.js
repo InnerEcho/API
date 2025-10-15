@@ -70,7 +70,7 @@ export class MissionService {
     }
 
     // 4. PlantStateService를 호출하여 경험치 지급!
-    const expResult = await this.plantStateService.gainExperience(plant.plant_id, expToGain);
+    const expResult = await this.plantStateService.gainExperience(user_id, plant.plant_id, expToGain);
 
     // 5. 미션(이벤트) 상태를 '완료'로 업데이트
     await db.User_Event.update({
