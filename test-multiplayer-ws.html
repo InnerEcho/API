@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multiplayer WebSocket Test</title>
+</head>
+<body>
+    <h1>Multiplayer WebSocket Connection Test</h1>
+    <div id="status">Status: Not connected</div>
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <div id="logs" style="margin-top: 20px; font-family: monospace; white-space: pre-wrap;"></div>
+
+    <script>
+        let ws = null;
+        const statusDiv = document.getElementById('status');
+        const logsDiv = document.getElementById('logs');
+
+        function log(message) {
+            const timestamp = new Date().toISOString();
+            logsDiv.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+
+        async function getTicket() {
+            try {
+                // Replace with your actual auth token
+                const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsInVzZXJFbWFpbCI6ImlubmVyZWNob0BleGFtcGxlLmNvbSIsInVzZXJOYW1lIjoi6rmASW5uZXIiLCJzdGF0ZSI6IuykkeumvSIsImlhdCI6MTc2MTQxODkwNCwiZXhwIjoxNzYxNDE5ODA0LCJpc3MiOiJJbm5lckVjaG8ifQ.LRFnGmiECIDv9T34wDVGnIglgDNTG3cvCa6wfCQCAvI';
+
+                const response = await fetch('http://172.30.1.1:3003/ar-multiplayer/ticket', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ roomId: 'leafy-test-room' })
+                });
+
+                const data = await response.json();
+                log(`Ticket response: ${JSON.stringify(data)}`);
+
+                if (data.code === 200) {
+                    return data.data.wsUrl;
+                } else {
+                    throw new Error(data.msg);
+                }
+            } catch (error) {
+                log(`Error getting ticket: ${error.message}`);
+                return null;
+            }
+        }
+
+        async function connect() {
+            const wsUrl = await getTicket();
+            if (!wsUrl) {
+                statusDiv.textContent = 'Status: Failed to get ticket';
+                return;
+            }
+
+            log(`Connecting to: ${wsUrl}`);
+            statusDiv.textContent = 'Status: Connecting...';
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                log('WebSocket connected!');
+                statusDiv.textContent = 'Status: Connected';
+            };
+
+            ws.onmessage = (event) => {
+                log(`Message received: ${event.data}`);
+            };
+
+            ws.onerror = (error) => {
+                log(`WebSocket error: ${JSON.stringify(error)}`);
+                statusDiv.textContent = 'Status: Error';
+            };
+
+            ws.onclose = (event) => {
+                log(`WebSocket closed: code=${event.code}, reason=${event.reason}`);
+                statusDiv.textContent = 'Status: Disconnected';
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+    </script>
+</body>
+</html>
