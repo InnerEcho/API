@@ -25,19 +25,56 @@ export class GrowthDiaryController {
         return;
       }
 
-      const dates = await this.growthDiaryService.getDiaryDatesForMonth(
+      const diaries = await this.growthDiaryService.getDiaryDatesForMonth(
         userId,
         yearMonth,
       );
       result.code = 200;
       result.msg = 'Ok';
-      result.data = { dates }; // 날짜 리스트 반환
+      result.data = { diaries }; // 일기 정보 리스트 반환 (diaryId, date, title, contentPreview, edited, createdAt)
       res.status(200).json(result);
     } catch (err) {
       console.error('Error in getDiaryDatesForMonth:', err);
       result.code = 500;
       result.msg = 'ServerError';
       res.status(500).json(result);
+    }
+  }
+
+  public async getDiaryById(req: Request, res: Response): Promise<void> {
+    const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
+
+    try {
+      const userId = req.user!.userId;
+      const diaryId = parseInt(req.params.diaryId, 10);
+
+      if (isNaN(diaryId)) {
+        result.code = 400;
+        result.msg = 'Invalid diary ID';
+        res.status(400).json(result);
+        return;
+      }
+
+      const response = await this.growthDiaryService.getDiaryById(
+        userId,
+        diaryId,
+      );
+
+      result.code = 200;
+      result.data = response;
+      result.msg = 'Ok';
+      res.status(200).json(result);
+    } catch (err: any) {
+      console.error(err);
+      if (err.message === 'Diary not found') {
+        result.code = 404;
+        result.msg = 'Diary not found';
+        res.status(404).json(result);
+      } else {
+        result.code = 500;
+        result.msg = 'ServerError';
+        res.status(500).json(result);
+      }
     }
   }
 

@@ -38,6 +38,7 @@ router.post(
 );
 
 // Comment routes (댓글은 일기의 하위 리소스)
+// 주의: /:diaryId 라우트보다 먼저 배치해야 함
 router.get(
   '/:diaryId/comments',
   verifyTokenV2,
@@ -60,6 +61,13 @@ router.delete(
   '/:diaryId/comments/:commentId',
   verifyTokenV2,
   growthDiaryCommentController.delete.bind(growthDiaryCommentController)
+);
+
+// Diary 단일 조회 (댓글 라우트보다 나중에 배치)
+router.get(
+  '/:diaryId',
+  verifyTokenV2,
+  growthDiaryController.getDiaryById.bind(growthDiaryController)
 );
 
 export default router;

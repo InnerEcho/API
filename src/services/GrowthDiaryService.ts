@@ -9,7 +9,7 @@ export class GrowthDiaryService {
   public async getDiaryDatesForMonth(
     userId: number,
     yearMonth: string,
-  ): Promise<string[]> {
+  ): Promise<any[]> {
     if (!userId || !yearMonth) {
       throw new Error('Missing required fields: userId or yearMonth');
     }
@@ -24,6 +24,11 @@ export class GrowthDiaryService {
     try {
       const diaries = await db.GrowthDiary.findAll({
         attributes: [
+          'diary_id',
+          'title',
+          'content',
+          'edited',
+          'created_at',
           [db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), 'date'],
         ],
         where: {
@@ -33,15 +38,50 @@ export class GrowthDiaryService {
             [db.Sequelize.Op.between]: [start, end],
           },
         },
-        group: [db.Sequelize.fn('DATE', db.Sequelize.col('created_at'))],
+        order: [['created_at', 'ASC']],
         raw: true,
       });
 
-      // diaries는 [{ date: '2025-06-01' }, { date: '2025-06-05' }, ...]
-      return diaries.map((d: any) => d.date);
+      // 각 일기에 대해 날짜와 미리보기 정보 포함
+      return diaries.map((diary: any) => ({
+        diaryId: diary.diary_id,
+        date: diary.date,
+        title: diary.title,
+        contentPreview: diary.content
+          ? diary.content.substring(0, 100) +
+            (diary.content.length > 100 ? '...' : '')
+          : '',
+        edited: diary.edited,
+        createdAt: diary.created_at,
+      }));
     } catch (err) {
       console.error('Error fetching diary dates:', err);
       throw new Error('Failed to fetch diary dates');
+    }
+  }
+
+  public async getDiaryById(userId: number, diaryId: number): Promise<any> {
+    if (!userId || !diaryId) {
+      throw new Error('Missing required fields: userId, diaryId');
+    }
+
+    try {
+      const diary = await db.GrowthDiary.findOne({
+        where: {
+          diary_id: diaryId,
+          user_id: userId,
+          is_deleted: false,
+        },
+      });
+
+      if (!diary) {
+        throw new Error('Diary not found');
+      }
+
+      return diary;
+    } catch (err) {
+      console.error('Error fetching diary by id:', err);
+      throw err;
     }
   }
 
