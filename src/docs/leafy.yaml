@@ -33,6 +33,8 @@ tags:
     description: "🎤 음성 인식 및 합성 API (STT, TTS)"
   - name: Realtime Speech
     description: "🎙️ OpenAI Realtime API를 사용한 실시간 음성 대화 (WebSocket)"
+  - name: Multiplayer AR
+    description: "🌍 AR 멀티플레이어 WebSocket API (실시간 AR 캐릭터 동기화)"
 
 # ===============================================================
 # == Paths (Endpoints)
@@ -1267,9 +1269,10 @@ paths:
     get:
       tags:
         - Diary
-      summary: 월별 일기 날짜 목록 조회
+      summary: 월별 일기 목록 조회
       description: |
-        인증된 사용자가 특정 월에 작성한 일기의 날짜 목록을 조회합니다.
+        인증된 사용자가 특정 월에 작성한 일기 목록을 조회합니다.
+        각 일기의 ID, 날짜, 제목, 미리보기, 수정 여부, 생성 시간 등을 포함합니다.
         Access Token에서 userId를 자동으로 추출하여 사용합니다.
       security:
         - BearerAuth: []
@@ -1283,7 +1286,7 @@ paths:
           example: "2025-10"
       responses:
         '200':
-          description: 날짜 목록 조회 성공
+          description: 일기 목록 조회 성공
           content:
             application/json:
               schema:
@@ -1293,16 +1296,119 @@ paths:
                     type: integer
                     example: 200
                   data:
-                    type: array
-                    items:
-                      type: string
-                      format: date
-                      example: "2025-10-01"
+                    type: object
+                    properties:
+                      diaries:
+                        type: array
+                        description: "일기 목록 배열 (날짜 오름차순 정렬)"
+                        items:
+                          type: object
+                          properties:
+                            diaryId:
+                              type: integer
+                              description: "일기 고유 ID (댓글, 수정, 삭제 시 필요)"
+                              example: 10
+                            date:
+                              type: string
+                              format: date
+                              description: "일기 작성 날짜 (YYYY-MM-DD)"
+                              example: "2025-10-10"
+                            title:
+                              type: string
+                              description: "일기 제목"
+                              example: "2025-10-10 일지"
+                            contentPreview:
+                              type: string
+                              description: "일기 내용 미리보기 (최대 100자, 초과 시 '...' 추가)"
+                              example: "오늘은 조금 힘든 하루였지만, 금쪽이와 대화하면서 위로받았다..."
+                            edited:
+                              type: boolean
+                              description: "일기 수정 여부"
+                              example: true
+                            createdAt:
+                              type: string
+                              format: date-time
+                              description: "일기 생성 시간"
+                              example: "2025-10-10T20:15:00.000Z"
                   msg:
                     type: string
                     example: "Ok"
+              example:
+                code: 200
+                data:
+                  diaries:
+                    - diaryId: 10
+                      date: "2025-10-10"
+                      title: "2025-10-10 일지"
+                      contentPreview: "오늘은 조금 힘든 하루였지만, 금쪽이와 대화하면서 위로받았다..."
+                      edited: true
+                      createdAt: "2025-10-10T20:15:00.000Z"
+                    - diaryId: 15
+                      date: "2025-10-15"
+                      title: "2025-10-15 일지"
+                      contentPreview: "오늘은 정말 좋은 하루였다. 아침에 일어나서 식물이 자라는 모습을 보니 기분이 좋았다..."
+                      edited: false
+                      createdAt: "2025-10-15T09:30:00.000Z"
+                msg: "Ok"
+        '400':
+          description: 잘못된 yearMonth 형식
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                msg: "Invalid or missing parameters"
         '401':
           description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /diaries/{diaryId}:
+    get:
+      tags:
+        - Diary
+      summary: 일기 상세 조회
+      description: |
+        일기 ID로 특정 일기 리소스를 조회합니다.
+        Access Token에서 userId를 자동으로 추출하여 권한을 확인합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: diaryId
+          required: true
+          schema:
+            type: integer
+          description: "조회할 일기의 ID"
+          example: 15
+      responses:
+        '200':
+          description: 일기 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiaryResponse'
+        '400':
+          description: 잘못된 일기 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                msg: "Invalid diary ID"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '404':
+          description: 일기를 찾을 수 없거나 접근 권한이 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 404
+                msg: "Diary not found"
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -2147,6 +2253,387 @@ paths:
                       code:
                         type: string
                         example: "connection_error"
+
+  # ==================== Multiplayer AR APIs (WebSocket) ====================
+  /ar-multiplayer:
+    get:
+      tags:
+        - Multiplayer AR
+      summary: AR 멀티플레이어 WebSocket 연결 (티켓 필요)
+      description: |
+        ⚠️ **이 엔드포인트는 WebSocket 프로토콜을 사용합니다.**
+
+        Swagger UI에서 직접 테스트할 수 없으며, WebSocket 클라이언트를 사용해야 합니다.
+
+        ## 🔐 보안 인증 흐름 (HTTP 티켓 방식)
+
+        **중요**: 이 WebSocket에 연결하기 전에, 먼저 `POST /ar-multiplayer/ticket`으로 일회용 티켓을 발급받아야 합니다.
+
+        ### 1단계: HTTPS API로 티켓 발급
+        ```http
+        POST /ar-multiplayer/ticket
+        Authorization: Bearer {JWT_ACCESS_TOKEN}
+        Content-Type: application/json
+
+        {
+          "roomId": "room_123"
+        }
+        ```
+
+        **응답:**
+        ```json
+        {
+          "code": 200,
+          "data": {
+            "ticket": "안전한_일회용_티켓_문자열",
+            "expiresIn": 30,
+            "wsUrl": "wss://your-server.com/ar-multiplayer?ticket=..."
+          }
+        }
+        ```
+
+        ### 2단계: 티켓으로 WebSocket 연결
+        ```javascript
+        const ws = new WebSocket(wsUrl);
+        // wss://your-server.com/ar-multiplayer?ticket={TICKET}
+        ```
+
+        ## 🛡️ 보안 강화 포인트
+
+        ✅ **일회용 티켓**
+        - 티켓은 한 번 사용되면 즉시 삭제됩니다
+        - 재사용 불가능 (Replay Attack 방어)
+
+        ✅ **짧은 유효 시간**
+        - 티켓 유효 기간: 30초
+        - 타이밍 공격 방어
+
+        ✅ **Heartbeat 메커니즘**
+        - 30초마다 Ping-Pong 체크
+        - 좀비 연결 자동 감지 및 종료
+
+        ✅ **메시지 크기 제한**
+        - 최대 10KB로 제한
+        - DoS 공격 방어
+
+        ## 📡 연결 방법
+
+        ### WebSocket URL 형식
+        ```
+        wss://your-server.com/ar-multiplayer?ticket={TICKET}
+        ```
+
+        ### 쿼리 파라미터
+        - `ticket` (required): POST /ar-multiplayer/ticket에서 발급받은 일회용 티켓
+
+        ⚠️ **중요**: 티켓은 30초 내에 사용해야 하며, 한 번만 사용할 수 있습니다.
+
+        ## 🔄 이벤트 흐름
+
+        ### 연결 직후 (자동)
+        서버가 티켓을 검증하고 다음 메시지를 보냅니다:
+
+        **인증 성공**
+        ```json
+        {
+          "type": "authenticated",
+          "payload": {
+            "message": "Authentication successful!",
+            "userId": 1
+          }
+        }
+        ```
+
+        **현재 방의 사용자 목록**
+        ```json
+        {
+          "type": "room-state",
+          "payload": {
+            "users": [
+              {
+                "userId": 2,
+                "userName": "친구1",
+                "position": [0, 0, -2],
+                "rotation": [0, 0, 0],
+                "expression": "default",
+                "animation": "idle"
+              }
+            ]
+          }
+        }
+        ```
+
+        ### 클라이언트 → 서버 메시지
+
+        **AR 위치/회전 업데이트**
+        ```json
+        {
+          "type": "update",
+          "payload": {
+            "data": {
+              "position": [1.5, 0, -3],
+              "rotation": [0, 45, 0],
+              "expression": "smile"
+            }
+          }
+        }
+        ```
+
+        **애니메이션 실행**
+        ```json
+        {
+          "type": "animation",
+          "payload": {
+            "data": {
+              "animation": "wave"
+            }
+          }
+        }
+        ```
+
+        ### 서버 → 클라이언트 메시지
+
+        **새 사용자 입장**
+        ```json
+        {
+          "type": "user-joined",
+          "payload": {
+            "userId": 3,
+            "userName": "친구2",
+            "position": [0, 0, -2],
+            "rotation": [0, 0, 0],
+            "expression": "default",
+            "animation": "idle"
+          }
+        }
+        ```
+
+        **사용자 퇴장**
+        ```json
+        {
+          "type": "user-left",
+          "payload": {
+            "userId": 3
+          }
+        }
+        ```
+
+        **다른 사용자의 상태 업데이트**
+        ```json
+        {
+          "type": "update",
+          "payload": {
+            "userId": 2,
+            "data": {
+              "position": [2, 0, -2.5],
+              "rotation": [0, 90, 0],
+              "expression": "happy"
+            }
+          }
+        }
+        ```
+
+        ## ⚙️ AR 상태 관리
+
+        서버는 각 사용자의 다음 상태를 추적합니다:
+        - **position**: [x, y, z] - AR 공간에서의 위치
+        - **rotation**: [x, y, z] - AR 캐릭터 회전
+        - **expression**: 표정 (예: default, smile, happy, sad)
+        - **animation**: 현재 재생 중인 애니메이션 (예: idle, wave, dance)
+
+        ## 🚨 에러 처리
+
+        **티켓이 없는 경우 (1008)**
+        ```
+        WebSocket closed: Ticket required.
+        ```
+
+        **유효하지 않은 티켓 (1008)**
+        ```
+        WebSocket closed: Invalid ticket.
+        ```
+
+        **메시지 크기 초과 (1009)**
+        ```
+        WebSocket closed: Message too large
+        ```
+
+        **Heartbeat 타임아웃 (자동 종료)**
+        - 30초 동안 Pong 응답이 없으면 자동 연결 종료
+
+        ## 💡 사용 예시
+
+        ```javascript
+        // 1단계: 티켓 발급
+        const response = await fetch('https://your-server.com/ar-multiplayer/ticket', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ roomId: 'room_123' })
+        });
+        const { data } = await response.json();
+
+        // 2단계: WebSocket 연결
+        const ws = new WebSocket(data.wsUrl);
+
+        ws.onopen = () => {
+          console.log('Connected to AR multiplayer room');
+        };
+
+        ws.onmessage = (event) => {
+          const message = JSON.parse(event.data);
+
+          switch(message.type) {
+            case 'authenticated':
+              console.log('Authenticated:', message.payload);
+              break;
+            case 'room-state':
+              console.log('Room users:', message.payload.users);
+              break;
+            case 'user-joined':
+              console.log('User joined:', message.payload);
+              // AR 캐릭터 생성
+              break;
+            case 'user-left':
+              console.log('User left:', message.payload.userId);
+              // AR 캐릭터 제거
+              break;
+            case 'update':
+              console.log('User updated:', message.payload);
+              // AR 캐릭터 위치/회전 업데이트
+              break;
+            case 'animation':
+              console.log('Animation:', message.payload);
+              // 애니메이션 재생
+              break;
+          }
+        };
+
+        // AR 상태 전송
+        function updateARState(position, rotation, expression) {
+          ws.send(JSON.stringify({
+            type: 'update',
+            payload: {
+              data: { position, rotation, expression }
+            }
+          }));
+        }
+
+        // 애니메이션 전송
+        function playAnimation(animationName) {
+          ws.send(JSON.stringify({
+            type: 'animation',
+            payload: {
+              data: { animation: animationName }
+            }
+          }));
+        }
+        ```
+      parameters:
+        - in: query
+          name: ticket
+          required: true
+          schema:
+            type: string
+          description: "POST /ar-multiplayer/ticket에서 발급받은 일회용 티켓 (30초 유효)"
+      responses:
+        '101':
+          description: |
+            WebSocket 연결 업그레이드 성공 (프로토콜 전환)
+
+            이후 WebSocket 프로토콜로 통신합니다.
+        '400':
+          description: 티켓이 누락되었거나 유효하지 않음
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Ticket required."
+        '500':
+          description: 서버 오류
+
+  /ar-multiplayer/ticket:
+    post:
+      tags:
+        - Multiplayer AR
+      summary: AR 멀티플레이어 WebSocket 연결 티켓 발급
+      description: |
+        AR 멀티플레이어 WebSocket 연결을 위한 일회용 티켓을 발급합니다.
+
+        **티켓 특성:**
+        - 30초간 유효
+        - 한 번만 사용 가능 (일회용)
+        - Redis에 저장되며 사용 시 즉시 삭제
+
+        **발급된 티켓 사용법:**
+        ```javascript
+        const ws = new WebSocket(`wss://your-server.com/ar-multiplayer?ticket=${ticket}`);
+        ```
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roomId]
+              properties:
+                roomId:
+                  type: string
+                  description: "참가할 AR 멀티플레이어 방 ID"
+                  example: "room_123"
+      responses:
+        '200':
+          description: 티켓 발급 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      ticket:
+                        type: string
+                        description: "일회용 WebSocket 연결 티켓"
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      expiresIn:
+                        type: integer
+                        description: "티켓 유효 시간 (초)"
+                        example: 30
+                      wsUrl:
+                        type: string
+                        description: "티켓이 포함된 WebSocket URL (바로 사용 가능)"
+                        example: "wss://leafy.wolyong.cloud/ar-multiplayer?ticket=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  msg:
+                    type: string
+                    example: "Ok"
+        '400':
+          description: roomId가 누락됨
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 400
+                msg: "roomId is required"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          description: 티켓 생성 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: 500
+                msg: "Ticket creation failed"
 
   # -------------------- Speech APIs --------------------
   /speech/stt:
