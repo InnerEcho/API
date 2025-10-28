@@ -30,7 +30,7 @@ export class EmotionService {
       }
 
       // 3️⃣ 가장 높은 확률 감정 선택
-      const probs: number[] = data.predictions[0];
+      const probs: number[] = data.predictions;
       const maxIndex = probs.indexOf(Math.max(...probs));
       const dominantEmotion = EMOTION_LABELS[maxIndex];
 
