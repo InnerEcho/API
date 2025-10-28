@@ -24,9 +24,9 @@ export class EmotionService {
       const data = response.data;
 
       // 2️⃣ 응답 데이터 유효성 검사
-      if (!data || !data.predictions || !Array.isArray(data.predictions[0])) {
+      if (!data || !data.predictions || !Array.isArray(data.predictions)) { 
         console.warn('EmotionService: Flask 응답 형식이 올바르지 않음', data);
-        return undefined;  // 오류 시 undefined 반환;
+        return undefined;
       }
 
       // 3️⃣ 가장 높은 확률 감정 선택
