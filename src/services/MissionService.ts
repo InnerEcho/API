@@ -283,8 +283,8 @@ export class MissionService {
           userId,
           missionId: mission.mission_id,
           userMissionId: Number(created.get('id')),
-          assignedAt,
-          expiresAt,
+          assignedAt: assignedAt.toISOString(),
+          expiresAt: expiresAt.toISOString(),
         });
       }
       await transaction.commit();
