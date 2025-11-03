@@ -7,8 +7,10 @@ import {
 } from '@langchain/core/messages';
 import redisClient from '@/config/redis.config.js';
 import db from '@/models/index.js';
+import { AnalysisService } from '@/services/AnalysisService.js';
 
 const { ChatHistory } = db;
+const analysisService = new AnalysisService();
 
 export class RedisChatMessageHistory extends BaseChatMessageHistory {
   lc_namespace = ['langchain', 'stores', 'message', 'redis'];
@@ -140,16 +142,34 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
   private async saveToDatabase(messages: BaseMessage[]): Promise<void> {
     const storedMessages = mapChatMessagesToStoredMessages(messages);
 
-    const recordsToCreate = storedMessages.map((message: any) => ({
-      user_id: this.userId,
-      plant_id: this.plantId,
-      message: message.data.content,
-      user_type: message.type === 'human' ? 'User' : 'Bot',
-      send_date: new Date(),
-    }));
+    for (const message of storedMessages as any[]) {
+      const payload = {
+        user_id: this.userId,
+        plant_id: this.plantId,
+        message: message.data.content,
+        user_type: message.type === 'human' ? 'User' : 'Bot',
+        send_date: new Date(),
+      };
 
-    if (recordsToCreate.length > 0) {
-      await ChatHistory.bulkCreate(recordsToCreate);
+      const record = await ChatHistory.create(payload);
+
+      if (payload.user_type === 'User') {
+        const rawHistoryId = record.get('history_id') as number | string | bigint;
+        const historyIdNumber = Number(rawHistoryId);
+
+        if (!Number.isNaN(historyIdNumber)) {
+          try {
+            await analysisService.analyzeAndStore({
+              historyId: historyIdNumber,
+              userId: this.userId,
+              message: payload.message,
+              userType: 'User',
+            });
+          } catch (error) {
+            console.error('RedisChatMessageHistory: analysis store failed', error);
+          }
+        }
+      }
     }
   }
 

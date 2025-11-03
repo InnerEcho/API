@@ -3,18 +3,18 @@ import type { ApiResult } from '@/interface/index.js';
 import { MissionService } from '@/services/MissionService.js';
 import { ChatService } from '@/services/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
-import { EmotionService } from '@/services/EmotionService.js';
+import { AnalysisService } from '@/services/AnalysisService.js';
 import db from '@/models/index.js';
 
 const { User } = db;
 
 export class MissionController {
   private missionService: MissionService;
-  private emotionService: EmotionService;
+  private analysisService: AnalysisService;
 
   constructor(missionService: MissionService) {
     this.missionService = missionService;
-    this.emotionService = new EmotionService();
+    this.analysisService = new AnalysisService();
   }
 
   public async getMissions(req: Request, res: Response): Promise<void> {
@@ -263,7 +263,7 @@ export class MissionController {
       const chatResponse = await chatService.create(userId, plantId, message);
 
       // 3. 감정 분석 수행
-      const emotionResult = await this.emotionService.analyze(message);
+      const emotionResult = await this.analysisService.analyzeEmotion(message);
 
       // 4. 감정 결과 DB 반영
       if (emotionResult) {

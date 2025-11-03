@@ -13,4 +13,10 @@ router.get(
   emotionController.getEmotion.bind(emotionController)
 );
 
+router.get(
+  '/latest',
+  verifyTokenV2,
+  emotionController.getLatestAnalysis.bind(emotionController)
+);
+
 export default router;

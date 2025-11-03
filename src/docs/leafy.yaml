@@ -188,6 +188,78 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /emotions/latest:
+    get:
+      tags:
+        - Emotion
+      summary: 최신 감정 분석 결과 조회
+      description: |
+        최신 대화 분석 기록에서 감정, 원문 메시지, factor(주요 요인)을 조회합니다.
+        감정 분석 데이터가 없으면 `data`는 `null`이 됩니다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 최신 감정 분석 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    oneOf:
+                      - type: 'null'
+                      - type: object
+                        properties:
+                          analysisId:
+                            type: integer
+                            description: 분석 레코드 ID
+                            example: 42
+                          historyId:
+                            type: integer
+                            nullable: true
+                            description: 연결된 대화 히스토리 ID
+                            example: 105
+                          emotion:
+                            type: string
+                            nullable: true
+                            description: 감정 분석 결과
+                            example: "행복"
+                          message:
+                            type: string
+                            nullable: true
+                            description: 감정 분석이 수행된 사용자 메시지
+                            example: "오늘 하루가 너무 즐거웠어!"
+                          factor:
+                            type: string
+                            nullable: true
+                            description: 감정에 영향을 준 주요 요인
+                            example: "즐거운 경험"
+                          plantId:
+                            type: integer
+                            nullable: true
+                            description: 연관된 식물 ID
+                            example: 12
+                          analyzedAt:
+                            type: string
+                            format: date-time
+                            description: 분석이 저장된 시간
+                          sendDate:
+                            type: string
+                            format: date-time
+                            nullable: true
+                            description: 메시지가 전송된 시간
+                  msg:
+                    type: string
+                    example: "Ok"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   # ==================== Auth APIs ====================
   /auth/sessions:
     post:
@@ -1768,114 +1840,47 @@ paths:
           $ref: '#/components/responses/ServerError'
 
   # -------------------- Mission APIs --------------------
-  /missions:
+  /missions/recommend:
     get:
       tags:
         - Mission
-      summary: 오늘의 미션 조회
+      summary: 오늘 미션 추천 및 배정
       description: |
-        인증된 사용자의 오늘 날짜 미션 내용과 완료 여부를 조회합니다.
-        Access Token에서 userId를 자동으로 추출하여 사용합니다.
+        오늘 날짜에 미션이 없다면 기본 미션을 자동 배정하고, 존재한다면 현재 목록을 그대로 반환합니다.
+        추천 개수는 `n` 파라미터(최대 3개)로 조절할 수 있습니다.
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: n
+          required: false
+          description: 추천 미션 개수 (기본값 2, 최대 3)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3
       responses:
         '200':
-          description: 미션 조회 성공
+          description: 오늘 미션 목록
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MissionResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/MissionAssignment'
         '401':
           description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /missions/completions:
+  /missions/assign:
     post:
       tags:
         - Mission
-      summary: 미션 완료 처리
+      summary: 특정 코드 미션을 오늘자로 강제 배정
       description: |
-        사용자의 오늘의 미션을 완료 상태로 변경합니다.
-        Access Token에서 userId를 자동으로 추출하여 사용합니다.
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: 미션 완료 처리 성공
-        '400':
-          description: 이미 완료된 미션인 경우
-        '401':
-          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /missions/water:
-    post:
-      tags:
-        - Mission
-      summary: 물 마시기 미션 완료
-      description: |
-        사용자의 물 마시기 미션을 완료 처리합니다.
-        Access Token에서 userId를 자동으로 추출하여 사용합니다.
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                missionImage:
-                  type: string
-                  format: binary
-                  description: "미션 인증 이미지"
-      responses:
-        '200':
-          description: 물 마시기 미션 완료
-        '401':
-          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /missions/smile:
-    post:
-      tags:
-        - Mission
-      summary: 미소 사진 미션 제출
-      description: |
-        사용자의 미소 사진을 제출하여 미션을 완료합니다.
-        Access Token에서 userId를 자동으로 추출하여 사용합니다.
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                smileImage:
-                  type: string
-                  format: binary
-                  description: "미소 사진"
-      responses:
-        '200':
-          description: 미소 사진 미션 완료
-        '401':
-          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /missions/chat:
-    post:
-      tags:
-        - Mission
-      summary: 식물과 대화 미션 완료
-      description: |
-        식물과의 대화 미션을 완료 처리합니다.
-        Access Token에서 userId를 자동으로 추출하여 사용합니다.
+        프론트에서 지정한 미션 코드 목록을 오늘 날짜에 할당합니다.
+        이미 오늘 배정된 코드는 무시하고, 존재하지 않는 코드는 건너뜁니다.
       security:
         - BearerAuth: []
       requestBody:
@@ -1884,36 +1889,112 @@ paths:
           application/json:
             schema:
               type: object
-              required: [plantId]
               properties:
-                plantId:
-                  type: integer
+                codes:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - codes
       responses:
         '200':
-          description: 대화 미션 완료
+          description: 오늘 미션 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MissionAssignment'
         '401':
           description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /missions/stretching:
-    post:
+  /missions/today:
+    get:
       tags:
         - Mission
-      summary: 스트레칭 미션 완료
+      summary: 오늘의 미션 조회
       description: |
-        사용자의 스트레칭 미션을 완료 처리합니다.
-        Access Token에서 userId를 자동으로 추출하여 사용합니다.
+        인증된 사용자의 오늘 날짜에 할당된 미션 목록을 조회합니다.
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: 스트레칭 미션 완료
+          description: 미션 조회 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MissionAssignment'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - Mission
+      summary: 오늘 배정된 미션 초기화
+      description: |
+        현재 사용자에게 오늘 날짜로 배정된 미션을 모두 삭제합니다.
+        테스트나 재추천이 필요할 때 사용합니다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 초기화 후 오늘 미션 목록 (보통 빈 배열)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MissionAssignment'
         '401':
           description: 인증 실패 (토큰 없음 또는 유효하지 않음)
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /missions/{id}/complete:
+    post:
+      tags:
+        - Mission
+      summary: 미션 완료 처리
+      description: |
+        사용자의 오늘 날짜에 할당된 특정 미션을 완료 처리합니다.
+        이미 완료된 미션에 대해 호출할 경우 경험치는 지급되지 않고 상태만 반환됩니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: 완료할 미션 ID
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MissionCompletionRequest'
+      responses:
+        '200':
+          description: 미션 완료 처리 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MissionCompletionResponse'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '400':
+          description: 잘못된 요청 (미션 ID 또는 페이로드 오류)
+        '404':
+          description: 오늘 날짜에 해당 미션이 할당되지 않은 경우
+        '409':
+          description: 미션을 완료할 수 없는 상태인 경우
+        '500':
+          $ref: '#/components/responses/ServerError'
   # ==================== Realtime Speech API (WebSocket) ====================
   /chat/realtime:
     get:
@@ -3147,28 +3228,169 @@ components:
           type: string
           description: "친구의 현재 감정 상태"
 
-    Mission:
+    MissionDetails:
       type: object
+      description: "미션 기본 정보"
+      required:
+        - missionId
+        - code
+        - title
+        - type
+        - burden
+        - expReward
+        - arBonusExp
+        - cooldownSec
+        - isActive
       properties:
         missionId:
           type: integer
-        content:
+          description: "미션 ID"
+          example: 1
+        code:
           type: string
-          example: "식물에게 말 걸기"
-        isCompleted:
-          type: boolean
+          description: "미션 코드"
+          example: "APP_OPEN"
+        title:
+          type: string
+          description: "미션 제목"
+          example: "Open the app"
+        desc:
+          type: string
+          nullable: true
+          description: "미션 설명"
+        type:
+          type: string
+          description: "미션 타입"
+          enum: [instant, action, ar_optional, habit]
+        burden:
+          type: integer
+          description: "미션 난이도/부담도"
+          example: 1
+        expReward:
+          type: integer
+          description: "기본 경험치 보상"
+          example: 5
+        arBonusExp:
+          type: integer
+          description: "AR 조건 달성 시 추가 경험치"
+          example: 3
+        requiresArAction:
+          type: string
+          nullable: true
+          description: "요구되는 AR 동작"
+          enum: [PET, JUMP, WATER, SUNLIGHT, null]
+        cooldownSec:
+          type: integer
+          description: "쿨다운 시간(초)"
+          example: 0
+        isActive:
+          type: integer
+          description: "미션 활성화 여부 (1/0)"
+          example: 1
 
-    MissionResponse:
+    MissionAssignment:
+      type: object
+      description: "사용자에게 할당된 미션 정보"
+      required:
+        - userMissionId
+        - missionId
+        - status
+        - assignedAt
+      properties:
+        userMissionId:
+          type: integer
+          description: "user_missions 테이블 ID"
+          example: 12
+        missionId:
+          type: integer
+          description: "미션 ID"
+          example: 4
+        status:
+          type: string
+          description: "미션 상태"
+          enum: [assigned, complete, skipped, expired]
+          example: "assigned"
+        assignedAt:
+          type: string
+          format: date-time
+          description: "미션이 사용자에게 할당된 시각"
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "미션 만료 시각"
+
+    MissionCompletionRequest:
       type: object
       properties:
-        code:
+        plantId:
           type: integer
-          example: 200
-        data:
-          $ref: '#/components/schemas/Mission'
-        msg:
+          description: "경험치를 지급할 식물 ID (생략 시 기본 식물 자동 선택)"
+          example: 1
+        evidence:
+          description: "미션 완료를 증빙하는 데이터 (JSON 또는 문자열)"
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+          nullable: true
+
+    PlantStatus:
+      type: object
+      description: "미션 완료 후의 식물 상태 정보"
+      properties:
+        plantId:
+          type: integer
+          nullable: true
+          description: "식물 ID (선택적)"
+        plantName:
           type: string
-          example: "Ok"
+          nullable: true
+          description: "식물 이름 (선택적)"
+        level:
+          type: integer
+          description: "현재 레벨"
+          example: 3
+        experience:
+          type: integer
+          description: "현재 경험치"
+          example: 45
+        leveledUp:
+          type: boolean
+          nullable: true
+          description: "레벨업 여부 (경험치 지급 시 사용)"
+        likeability:
+          type: integer
+          nullable: true
+          description: "호감도 (이미 완료된 미션 조회 시 포함될 수 있음)"
+
+    MissionCompletionResponse:
+      type: object
+      required:
+        - message
+        - baseExp
+        - arBonus
+        - expGained
+        - plantStatus
+      properties:
+        message:
+          type: string
+          description: "처리 결과 메시지"
+          example: "Mission completed"
+        baseExp:
+          type: integer
+          description: "미션 기본 경험치"
+          example: 5
+        arBonus:
+          type: integer
+          description: "AR 추가 경험치 (조건 충족 시)"
+          example: 3
+        expGained:
+          type: integer
+          description: "총 획득 경험치"
+          example: 8
+        plantStatus:
+          $ref: '#/components/schemas/PlantStatus'
 
 
   # -------------------- Responses (공통 응답) --------------------

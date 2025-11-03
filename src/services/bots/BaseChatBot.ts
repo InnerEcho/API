@@ -1,5 +1,4 @@
 import db from '@/models/index.js';
-import { EmotionService } from '@/services/EmotionService.js';
 import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
@@ -7,12 +6,6 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RedisChatMessageHistory } from './RedisChatMessageHistory.js';
 
 export abstract class BaseChatBot {
-  protected emotionService: EmotionService;
-
-  constructor() {
-    this.emotionService = new EmotionService();
-  }
-
   public async processChat(
     userId: number,
     plantId: number,
