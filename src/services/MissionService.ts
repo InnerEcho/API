@@ -4,6 +4,10 @@ import { PlantStateService } from '@/services/PlantStateService.js';
 import { loadRecentHistoryMap, noveltyPenaltyById } from '@/services/mission/recentHistory.js';
 import logger from '@/utils/logger.js';
 
+const SM_TAU = Number(process.env.RECO_SOFTMAX_TAU ?? 0.7);
+const EPSILON = Number(process.env.RECO_EPSILON ?? 0.1);
+const TOPK = Number(process.env.RECO_TOPK ?? 6);
+
 // -------------------------
 // [1] Context Loader (추가)
 // -------------------------
@@ -35,6 +39,66 @@ async function loadUserContext(userId: number) {
     arousal: factor.arousal ?? null,
     tags: Array.isArray(factor.tags) ? factor.tags : [],
   };
+}
+
+function softmax(weights: number[], tau = 0.7): number[] {
+  const t = Math.max(0.05, Number.isFinite(tau) ? tau : 0.7);
+  const scaled = weights.map(w => w / t);
+  const max = Math.max(...scaled);
+  const exps = scaled.map(v => Math.exp(v - max));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map(e => e / (sum || 1));
+}
+
+function weightedSample<T>(items: T[], probs: number[], count: number): T[] {
+  const picked: T[] = [];
+  const used = new Set<number>();
+  const N = Math.min(count, items.length);
+  for (let c = 0; c < N; c++) {
+    let r = Math.random();
+    let acc = 0;
+    let idx = -1;
+    for (let i = 0; i < items.length; i++) {
+      if (used.has(i)) continue;
+      acc += probs[i];
+      if (r <= acc) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) {
+      idx = items.findIndex((_v, i) => !used.has(i));
+    }
+    if (idx >= 0) {
+      used.add(idx);
+      picked.push(items[idx]);
+    }
+  }
+  return picked;
+}
+
+function ensureDiversity(pick: Array<{ mission: MissionRow; score: number }>, want = 2) {
+  const codes = new Set<string>();
+  const types = new Map<string, number>();
+  const out: typeof pick = [];
+  for (const item of pick) {
+    const code = item.mission.code;
+    const type = item.mission.type;
+    const typeCount = types.get(type) ?? 0;
+    if (codes.has(code)) continue;
+    if (typeCount >= 2) continue;
+    out.push(item);
+    codes.add(code);
+    types.set(type, typeCount + 1);
+    if (out.length >= want) break;
+  }
+  for (const item of pick) {
+    if (out.length >= want) break;
+    if (!out.some(existing => existing.mission.mission_id === item.mission.mission_id)) {
+      out.push(item);
+    }
+  }
+  return out;
 }
 
 // ----------------------------------
@@ -202,15 +266,70 @@ export class MissionService {
     if (!Number.isInteger(userId) || userId <= 0) {
       throw new Error('Invalid user context');
     }
+    const startedAt = Date.now();
+
+    const logLatency = () =>
+      logger.info({
+        event: 'recommend_latency',
+        userId,
+        ms: Date.now() - startedAt,
+      });
+
     const today = await this.getToday(userId);
-    if (today.length > 0) return today;
+    if (today.length > 0) {
+      logLatency();
+      return today;
+    }
 
     const candidates = await db.sequelize.query<MissionRow>(
       `SELECT * FROM missions WHERE is_active = 1 AND burden <= 2`,
       { type: QueryTypes.SELECT },
     );
 
+    try {
+      const lastRows = await db.sequelize.query<{ mission_id: number; last_assigned_at: string }>(
+        `
+        SELECT um.mission_id, MAX(um.assigned_at) AS last_assigned_at
+        FROM user_missions um
+        WHERE um.user_id = :userId
+        GROUP BY um.mission_id
+        `,
+        { replacements: { userId }, type: QueryTypes.SELECT },
+      );
+      const lastMap = new Map<number, number>();
+      for (const row of lastRows) {
+        if (row.last_assigned_at) {
+          lastMap.set(row.mission_id, new Date(row.last_assigned_at).getTime());
+        }
+      }
+      let wouldSkip = 0;
+      const now = Date.now();
+      for (const mission of candidates) {
+        const cooldownSec = (mission as any).cooldown_sec ?? (mission as any).cooldownSec ?? 0;
+        if (!cooldownSec) continue;
+        const lastTs = lastMap.get(mission.mission_id) ?? 0;
+        if (now - lastTs < cooldownSec * 1000) {
+          wouldSkip++;
+        }
+      }
+      if (wouldSkip > 0) {
+        logger.info({
+          event: 'cooldown_filter_dryrun',
+          userId,
+          candidates: candidates.length,
+          wouldSkip,
+        });
+      }
+    } catch (error) {
+      logger.warn({
+        event: 'cooldown_filter_dryrun_error',
+        userId,
+        error: (error as Error).message,
+      });
+    }
+
     if (candidates.length === 0) {
+      logLatency();
       return today;
     }
 
@@ -219,36 +338,82 @@ export class MissionService {
 
     const recentHistory = await loadRecentHistoryMap(userId);
 
-    const scored = candidates
-      .map(mission => {
-        const missionId = mission.mission_id;
-        const baseScore = softScore(mission.code, mission.type, bucket);
-        const ctxScore = contextScore(mission, ctx);
-        const noveltyPenalty = noveltyPenaltyById(missionId, recentHistory);
-        const finalScore = baseScore + ctxScore + noveltyPenalty;
+    const scoredRaw = candidates.map(mission => {
+      const missionId = mission.mission_id;
+      const baseScore = softScore(mission.code, mission.type, bucket);
+      const ctxScore = contextScore(mission, ctx);
+      const noveltyPenalty = noveltyPenaltyById(missionId, recentHistory);
+      const finalScore = baseScore + ctxScore + noveltyPenalty;
 
-        logger.info({
-          event: 'recommend_scored',
-          userId,
-          missionId,
-          score: finalScore,
-          softScore: baseScore,
-          ctxAdj: ctxScore,
-          noveltyPenalty,
-          timeBucket: bucket,
-          emotion: ctx?.emotion ?? null,
-          arousal: ctx?.arousal ?? null,
-        });
+      logger.info({
+        event: 'recommend_scored',
+        userId,
+        missionId,
+        score: finalScore,
+        softScore: baseScore,
+        ctxAdj: ctxScore,
+        noveltyPenalty,
+        timeBucket: bucket,
+        emotion: ctx?.emotion ?? null,
+        arousal: ctx?.arousal ?? null,
+      });
 
-        recordScoreEvent(userId, missionId, finalScore);
-        return { mission, score: finalScore };
-      })
-      .sort((a, b) => b.score - a.score)
-      .slice(0, Math.min(n, 3));
+      recordScoreEvent(userId, missionId, finalScore);
+      return { mission, score: finalScore };
+    });
 
-    const pick = scored.map(({ mission }) => mission);
+    const sorted = scoredRaw.sort((a, b) => b.score - a.score);
+
+    const k = Math.max(1, Math.min(Number.isFinite(TOPK) ? TOPK : 6, sorted.length));
+    const topK = sorted.slice(0, k);
+
+    const want = Math.min(n, 3, topK.length);
+
+    const probs = want > 0 ? softmax(topK.map(entry => entry.score), SM_TAU) : [];
+
+    let picked = want > 0 ? weightedSample(topK, probs, want) : [];
+
+    if (
+      Math.random() < Math.max(0, Math.min(Number.isFinite(EPSILON) ? EPSILON : 0.1, 1)) &&
+      sorted.length > want
+    ) {
+      const rest = sorted
+        .slice(k)
+        .filter(item => !picked.some(existing => existing.mission.mission_id === item.mission.mission_id));
+      if (rest.length > 0) {
+        picked.push(rest[Math.floor(Math.random() * rest.length)]);
+        picked = picked.sort((a, b) => b.score - a.score).slice(0, want);
+      }
+    }
+
+    picked = ensureDiversity(picked, want);
+
+    if (picked.length > 0) {
+      const scores = picked.map(item => item.score);
+      const min = Math.min(...scores);
+      const max = Math.max(...scores);
+      const avg = scores.reduce((acc, value) => acc + value, 0) / scores.length;
+      logger.info({
+        event: 'recommend_summary',
+        userId,
+        timeBucket: bucket,
+        size: picked.length,
+        summary: {
+          min: Number(min.toFixed(4)),
+          max: Number(max.toFixed(4)),
+          avg: Number(avg.toFixed(4)),
+        },
+        picks: picked.map(item => ({
+          missionId: item.mission.mission_id,
+          score: Number(item.score.toFixed(4)),
+        })),
+      });
+    }
+
+    const pick = picked.map(({ mission }) => mission);
 
     if (pick.length === 0) {
+      logLatency();
       return today;
     }
 
@@ -290,10 +455,13 @@ export class MissionService {
       await transaction.commit();
     } catch (error) {
       await transaction.rollback();
+      logLatency();
       throw error;
     }
 
-    return this.getToday(userId);
+    const nextMissions = await this.getToday(userId);
+    logLatency();
+    return nextMissions;
   }
 
   // ----- 이하 기존 코드 그대로 (생략 없이 유지) -----
