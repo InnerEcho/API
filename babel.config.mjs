@@ -4,7 +4,7 @@ export default {
       targets: { node: 'current' },
       modules: false
     }],
-    '@babel/preset-typescript',
+    ['@babel/preset-typescript', { allowDeclareFields: true }],
   ],
   plugins: [
     ['module-resolver', {
