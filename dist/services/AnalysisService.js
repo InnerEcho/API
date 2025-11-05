@@ -1,5 +1,6 @@
 import axios from 'axios';
 import db from "../models/index.js";
+import { Op } from "sequelize";
 const EMOTION_LABELS = ['공포', '놀람', '분노', '슬픔', '중립', '행복', '혐오'];
 export class AnalysisService {
   emotionEndpoint;
@@ -154,5 +155,46 @@ export class AnalysisService {
       sendDate: history?.send_date ?? null,
       createdAt: record.get('created_at')
     };
+  }
+  async getUserAnalysesSince(userId, since) {
+    const records = await db.ChatAnalysis.findAll({
+      include: [{
+        model: db.ChatHistory,
+        as: 'history',
+        attributes: ['history_id', 'message', 'plant_id', 'send_date', 'user_type', 'user_id'],
+        where: {
+          user_id: userId,
+          user_type: 'User'
+        }
+      }],
+      where: {
+        created_at: {
+          [Op.gte]: since
+        }
+      },
+      order: [['created_at', 'DESC']]
+    });
+    return records.map(record => {
+      const history = record.get('history');
+      const analysisId = Number(record.get('analysis_id'));
+      const rawHistoryId = history?.history_id;
+      const historyId = rawHistoryId === undefined || rawHistoryId === null ? null : Number(rawHistoryId);
+      const safeHistoryId = Number.isNaN(historyId) ? null : historyId;
+      return {
+        analysisId,
+        historyId: safeHistoryId,
+        emotion: record.get('emotion') ?? null,
+        factor: record.get('factor') ?? null,
+        message: history?.message ?? null,
+        plantId: history ? Number(history.plant_id) : null,
+        sendDate: history?.send_date ?? null,
+        createdAt: record.get('created_at')
+      };
+    });
+  }
+  async getUserAnalysesForLastMonth(userId) {
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    return this.getUserAnalysesSince(userId, monthAgo);
   }
 }

@@ -260,6 +260,78 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /emotions/history/monthly:
+    get:
+      tags:
+        - Emotion
+      summary: 최근 한 달 감정 분석 기록 조회
+      description: |
+        사용자의 최근 한 달 동안 저장된 감정 분석 기록을 최신순으로 조회합니다.
+        각 항목은 최신 감정 조회 API(`GET /emotions/latest`)와 동일한 필드를 포함합니다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 감정 분석 기록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        analysisId:
+                          type: integer
+                          description: 분석 레코드 ID
+                          example: 108
+                        historyId:
+                          type: integer
+                          nullable: true
+                          description: 연결된 대화 히스토리 ID
+                          example: 205
+                        emotion:
+                          type: string
+                          nullable: true
+                          description: 감정 분석 결과
+                          example: "행복"
+                        message:
+                          type: string
+                          nullable: true
+                          description: 감정 분석이 수행된 사용자 메시지
+                          example: "오늘은 기분이 정말 좋아!"
+                        factor:
+                          type: string
+                          nullable: true
+                          description: 감정에 영향을 준 주요 요인
+                          example: "친구와의 만남"
+                        plantId:
+                          type: integer
+                          nullable: true
+                          description: 연관된 식물 ID
+                          example: 7
+                        analyzedAt:
+                          type: string
+                          format: date-time
+                          description: 분석이 저장된 시간
+                        sendDate:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: 메시지가 전송된 시간
+                  msg:
+                    type: string
+                    example: "Ok"
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   # ==================== Auth APIs ====================
   /auth/sessions:
     post:

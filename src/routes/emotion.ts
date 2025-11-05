@@ -19,4 +19,10 @@ router.get(
   emotionController.getLatestAnalysis.bind(emotionController)
 );
 
+router.get(
+  '/history/monthly',
+  verifyTokenV2,
+  emotionController.getMonthlyAnalyses.bind(emotionController)
+);
+
 export default router;

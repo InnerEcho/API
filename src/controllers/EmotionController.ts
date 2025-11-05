@@ -77,4 +77,40 @@ export class EmotionController {
       res.status(500).json(result);
     }
   }
+
+  /**
+   * 최근 한 달 감정 분석 기록 반환 (배열)
+   */
+  public async getMonthlyAnalyses(
+    req: Request,
+    res: Response,
+  ): Promise<void> {
+    const result: ApiResult = { code: 400, data: null, msg: 'Failed' };
+
+    try {
+      const userId = req.user!.userId;
+      const analyses =
+        await this.analysisService.getUserAnalysesForLastMonth(userId);
+
+      result.code = 200;
+      result.msg = analyses.length > 0 ? 'Ok' : 'No analysis';
+      result.data = analyses.map(analysis => ({
+        analysisId: analysis.analysisId,
+        historyId: analysis.historyId,
+        emotion: analysis.emotion,
+        message: analysis.message,
+        factor: analysis.factor,
+        plantId: analysis.plantId,
+        analyzedAt: analysis.createdAt,
+        sendDate: analysis.sendDate,
+      }));
+
+      res.status(200).json(result);
+    } catch (err) {
+      console.error(err);
+      result.code = 500;
+      result.msg = 'ServerError';
+      res.status(500).json(result);
+    }
+  }
 }
