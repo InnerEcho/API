@@ -18,8 +18,10 @@ export class AnalysisService {
 
   constructor() {
     const flaskBase = process.env.FLASK_URL || 'http://localhost:5000';
-    this.emotionEndpoint = `${flaskBase.replace(/\/+$/, '')}/predict`;
-    this.factorEndpoint = process.env.FACTOR_API_URL;
+    const normalizedBase = flaskBase.replace(/\/+$/, '');
+    this.emotionEndpoint = `${normalizedBase}/predict`;
+    this.factorEndpoint =
+      process.env.FACTOR_API_URL ?? `${normalizedBase}/predict/factor`;
   }
 
   async analyzeEmotion(message: string): Promise<string | undefined> {
@@ -45,20 +47,47 @@ export class AnalysisService {
     }
   }
 
-  async extractFactor(message: string): Promise<string | undefined> {
-    if (!message) {
+  async extractFactor({
+    message,
+    emotion,
+    context,
+  }: {
+    message: string;
+    emotion?: string;
+    context?: string;
+  }): Promise<string | undefined> {
+    const trimmedMessage = message?.trim();
+
+    if (!trimmedMessage) {
       return undefined;
     }
 
     if (!this.factorEndpoint) {
       // TODO: replace with external factor extraction API.
-      const trimmed = message.trim();
-      return trimmed.length > 80 ? `${trimmed.slice(0, 77)}...` : trimmed;
+      return trimmedMessage.length > 80
+        ? `${trimmedMessage.slice(0, 77)}...`
+        : trimmedMessage;
     }
 
     try {
-      const response = await axios.post(this.factorEndpoint, { text: message });
-      const { factor } = response.data ?? {};
+      const { data } = await axios.post(this.factorEndpoint, {
+        context: context ?? trimmedMessage,
+        emotion,
+        question: trimmedMessage,
+      });
+
+      if (data && data.success === false) {
+        console.warn('AnalysisService: factor API returned failure', data);
+        return undefined;
+      }
+
+      const factor =
+        typeof data?.factor === 'string'
+          ? data.factor
+          : typeof data?.result?.factor === 'string'
+            ? data.result.factor
+            : undefined;
+
       if (typeof factor === 'string' && factor.length > 0) {
         return factor;
       }
@@ -93,10 +122,8 @@ export class AnalysisService {
       };
     }
 
-    const [emotion, factor] = await Promise.all([
-      this.analyzeEmotion(message),
-      this.extractFactor(message),
-    ]);
+    const emotion = await this.analyzeEmotion(message);
+    const factor = await this.extractFactor({ message, emotion });
 
     try {
       await db.ChatAnalysis.create({
