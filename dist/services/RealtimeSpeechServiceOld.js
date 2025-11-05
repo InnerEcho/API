@@ -6,7 +6,7 @@ import db from "../models/index.js";
 
 export class RealtimeSpeechServiceOld {
   // Old WebSocket + G.711 μ-law 방식
-
+  apiKey;
   realtimeApiUrl = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17';
   constructor() {
     if (!process.env.OPENAI_API_KEY) {

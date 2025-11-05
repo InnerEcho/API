@@ -1,4 +1,5 @@
 export class GrowthDiaryCommentController {
+  growthDiaryCommentService;
   constructor(growthDiaryCommentService) {
     this.growthDiaryCommentService = growthDiaryCommentService;
   }

@@ -1,5 +1,4 @@
 import { WebSocketServer } from 'ws';
-import { RealtimeSpeechController } from "../controllers/RealtimeSpeechController.js";
 import { RealtimeTicketService } from "../services/RealtimeTicketService.js";
 
 /**
@@ -12,7 +11,6 @@ export function setupRealtimeSpeechWebSocket(server) {
     server,
     path: '/chat/realtime'
   });
-  const realtimeSpeechController = new RealtimeSpeechController();
   const ticketService = new RealtimeTicketService();
   console.log('🎙️ Realtime Speech WebSocket 서버 초기화 완료');
 
@@ -61,11 +59,34 @@ export function setupRealtimeSpeechWebSocket(server) {
       // 인증 성공 응답
       ws.send(JSON.stringify({
         type: 'authenticated',
-        message: '인증이 완료되었습니다.'
+        message: '인증이 완료되었습니다.',
+        userId: ticketInfo.userId,
+        plantId: ticketInfo.plantId
       }));
+      console.log(`🎙️ WebSocket 연결 완료: userId=${ticketInfo.userId}`);
 
-      // Realtime API 연결 시작
-      await realtimeSpeechController.handleRealtimeConnection(ws, req);
+      // WebSocket 메시지 핸들러 (필요시 클라이언트 상태 관리)
+      ws.on('message', message => {
+        try {
+          const data = JSON.parse(message.toString());
+          console.log(`📨 Message from user ${ticketInfo.userId}:`, data.type);
+
+          // 필요한 경우 여기서 메시지 처리
+          // 예: 상태 업데이트, 모니터링 등
+        } catch (error) {
+          console.error('❌ 메시지 파싱 실패:', error);
+        }
+      });
+
+      // 연결 종료 핸들러
+      ws.on('close', () => {
+        console.log(`🔌 WebSocket 연결 종료: userId=${ticketInfo.userId}`);
+      });
+
+      // 에러 핸들러
+      ws.on('error', error => {
+        console.error(`❌ WebSocket 에러 (userId=${ticketInfo.userId}):`, error);
+      });
     } catch (error) {
       console.error('❌ WebSocket 연결 실패:', error);
       ws.send(JSON.stringify({

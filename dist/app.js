@@ -22,11 +22,13 @@ import chatRouter from "./routes/chat.js";
 import plantRouter from "./routes/plant.js";
 import diaryRouter from "./routes/diary.js";
 import speechRouter from "./routes/speech.js";
-import missionRouter from "./routes/mission.js";
+import missionRouter from "./routes/mission.routes.js";
 import friendRouter from "./routes/friend.js";
 import emotionRouter from "./routes/emotion.js";
+import arMultiplayerRouter from "./routes/arMultiplayer.js";
 import db from "./models/index.js";
 import YAML from 'yamljs';
+import { setupMultiplayerARWebSocket } from "./websocket/multiplayer.js";
 dotenv.config();
 process.on('uncaughtException', err => {
   console.error('[UncaughtException]', err);
@@ -124,6 +126,7 @@ app.use('/diaries', diaryRouter); // 일기 리소스 (댓글 포함: /diaries/:
 app.use('/speech', speechRouter); // 음성 리소스
 app.use('/missions', missionRouter); // 미션 리소스
 app.use('/friends', friendRouter); // 친구 리소스
+app.use('/ar-multiplayer', arMultiplayerRouter); // AR 멀티플레이어 리소스 (티켓 발급)
 
 //swagger 모듈 호출하기
 app.use('/api-docs-old', swaggerUi.serve, swaggerUi.setup(specs));
@@ -173,8 +176,12 @@ const server = http.createServer(app);
 // WebSocket 서버 설정 (Old - G.711 방식, 호환성용)
 // 새로운 WebRTC 방식은 WebSocket 불필요 (클라이언트가 직접 OpenAI에 연결)
 setupRealtimeSpeechWebSocketOld(server);
+setupMultiplayerARWebSocket(server);
 console.log('📡 새로운 WebRTC API는 /chat/realtime/session 엔드포인트 사용 (권장)');
-server.listen(port);
+server.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Server is running on http://0.0.0.0:${port}`);
+  console.log(`📱 Android emulator can access via http://10.0.2.2:${port}`);
+});
 server.on('error', onError);
 server.on('listening', onListening);
 function normalizePort(val) {

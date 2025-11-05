@@ -1,93 +1,604 @@
 import db from "../models/index.js";
-// PlantStateService 임포트
+import { Op, QueryTypes } from 'sequelize';
+import { PlantStateService } from "./PlantStateService.js";
+import { loadRecentHistoryMap, noveltyPenaltyById } from "./mission/recentHistory.js";
+import logger from "../utils/logger.js";
+const SM_TAU = Number(process.env.RECO_SOFTMAX_TAU ?? 0.7);
+const EPSILON = Number(process.env.RECO_EPSILON ?? 0.1);
+const TOPK = Number(process.env.RECO_TOPK ?? 6);
 
+// -------------------------
+// [1] Context Loader (추가)
+// -------------------------
+async function loadUserContext(userId) {
+  const [row] = await db.sequelize.query(`
+    SELECT ca.emotion, ca.factor
+    FROM plant_history ch
+    JOIN chat_analysis ca ON ca.history_id = ch.history_id
+    WHERE ch.user_id = ?
+    ORDER BY ca.created_at DESC
+    LIMIT 1
+    `, {
+    replacements: [userId],
+    type: QueryTypes.SELECT
+  });
+  if (!row) return null;
+  let factor = {};
+  try {
+    factor = row.factor ? JSON.parse(row.factor) : {};
+  } catch {
+    factor = {};
+  }
+  return {
+    emotion: row.emotion ?? null,
+    valence: factor.valence ?? null,
+    arousal: factor.arousal ?? null,
+    tags: Array.isArray(factor.tags) ? factor.tags : []
+  };
+}
+function softmax(weights, tau = 0.7) {
+  const t = Math.max(0.05, Number.isFinite(tau) ? tau : 0.7);
+  const scaled = weights.map(w => w / t);
+  const max = Math.max(...scaled);
+  const exps = scaled.map(v => Math.exp(v - max));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map(e => e / (sum || 1));
+}
+function weightedSample(items, probs, count) {
+  const picked = [];
+  const used = new Set();
+  const N = Math.min(count, items.length);
+  for (let c = 0; c < N; c++) {
+    let r = Math.random();
+    let acc = 0;
+    let idx = -1;
+    for (let i = 0; i < items.length; i++) {
+      if (used.has(i)) continue;
+      acc += probs[i];
+      if (r <= acc) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) {
+      idx = items.findIndex((_v, i) => !used.has(i));
+    }
+    if (idx >= 0) {
+      used.add(idx);
+      picked.push(items[idx]);
+    }
+  }
+  return picked;
+}
+function ensureDiversity(pick, want = 2) {
+  const codes = new Set();
+  const types = new Map();
+  const out = [];
+  for (const item of pick) {
+    const code = item.mission.code;
+    const type = item.mission.type;
+    const typeCount = types.get(type) ?? 0;
+    if (codes.has(code)) continue;
+    if (typeCount >= 2) continue;
+    out.push(item);
+    codes.add(code);
+    types.set(type, typeCount + 1);
+    if (out.length >= want) break;
+  }
+  for (const item of pick) {
+    if (out.length >= want) break;
+    if (!out.some(existing => existing.mission.mission_id === item.mission.mission_id)) {
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+// ----------------------------------
+// [2] Context-based Score Adjustment
+// ----------------------------------
+function contextScore(mission, ctx) {
+  if (!ctx) return 0;
+  let s = 0;
+
+  // 1) 저각성(arousal <= 0.3) → 무거운 미션 감점
+  if (typeof ctx.arousal === 'number' && ctx.arousal <= 0.3) {
+    if (mission.burden >= 3) s -= 0.8;
+  }
+
+  // 2) emotionTag 매칭 가점 (간단 룰)
+  const tagHits = list => ctx.emotion && list.includes(ctx.emotion) || ctx.tags && ctx.tags.some(t => list.includes(t));
+  if (tagHits(['무기력', 'lethargic', '귀찮음'])) {
+    if (mission.code?.includes('BREATH') || mission.type === 'instant') s += 1.0;
+  }
+  if (tagHits(['초조', 'anxious'])) {
+    if (mission.code?.includes('TAKE_A_BREATH') || mission.type === 'habit') s += 1.0;
+  }
+  return s;
+}
+
+// -------------------------------------
+// [3] (옵션) Score Logging Stub (추후 확장)
+// -------------------------------------
+async function recordScoreEvent(userId, missionId, score) {
+  // 미래에 score 저장/로그 쌓고 싶을 때 여기 구현
+  // 지금은 NO-OP
+  return;
+}
+function categoryFrom(mission) {
+  if (mission.code === 'APP_OPEN') return '일상';
+  if (mission.type === 'instant') return '일상';
+  if (mission.type === 'habit') return '마음';
+  if (mission.type === 'ar_optional') return '활동';
+  if (mission.type === 'action') return '활동';
+  return '일상';
+}
+function toDTO(mission) {
+  return {
+    id: mission.user_mission_id ?? mission.mission_id,
+    missionId: mission.mission_id,
+    title: mission.title,
+    description: mission.desc ?? '',
+    completed: mission.user_mission_status === 'complete',
+    category: categoryFrom(mission),
+    rewardExp: mission.exp_reward
+  };
+}
+
+// KST 03:00 == UTC 18:00(전날)
+function next3amKST() {
+  const now = new Date();
+  const y = now.getUTCFullYear(),
+    m = now.getUTCMonth(),
+    d = now.getUTCDate(),
+    h = now.getUTCHours();
+  // 오늘 UTC 18:00이 다음날 KST 03:00
+  const base = new Date(Date.UTC(y, m, d, 18, 0, 0, 0));
+  // 이미 UTC 18시를 지났다면 다음 날 18:00이 타겟
+  if (h >= 18) base.setUTCDate(base.getUTCDate() + 1);
+  return base; // UTC로 18:00Z
+}
+
+// KST 00:00 == UTC 15:00(전날)
+function today0amKSTUTC() {
+  const now = new Date();
+  const y = now.getUTCFullYear(),
+    m = now.getUTCMonth(),
+    d = now.getUTCDate(),
+    h = now.getUTCHours();
+  // 오늘 UTC 15:00이 KST 기준 '오늘 00:00'
+  const base = new Date(Date.UTC(y, m, d, 15, 0, 0, 0));
+  // 아직 UTC 15:00 전이면, 하루 전 15:00이 '오늘 00:00(KST)'
+  if (h < 15) base.setUTCDate(base.getUTCDate() - 1);
+  return base; // UTC로 15:00Z
+}
+function timeBucketKST() {
+  const h = new Date(Date.now() + 9 * 3600 * 1000).getHours();
+  if (h < 11) return 'morning';
+  if (h < 17) return 'afternoon';
+  if (h < 21) return 'evening';
+  return 'night';
+}
+function softScore(code, type, bucket) {
+  let score = 0;
+  if (bucket === 'morning') {
+    if (code === 'LIGHT_CHECK') score += 2;
+    if (code === 'DRINK_WATER_250ML') score += 1;
+    if (code === 'CHECK_HOME_PLANT') score += 1;
+  }
+  if (bucket === 'afternoon') {
+    if (code === 'MARCH_IN_PLACE_1MIN') score += 1;
+    if (code === 'STRETCH_30S') score += 1;
+  }
+  if (bucket === 'evening') {
+    if (code === 'TAKE_A_BREATH_10S') score += 1;
+    if (code === 'ONE_LINE_JOURNAL') score += 1;
+  }
+  if (bucket === 'night') {
+    if (code === 'TAKE_A_BREATH_10S') score += 1.2;
+    if (code === 'ONE_LINE_JOURNAL') score += 1.2;
+    if (code === 'LOOK_OUT_WINDOW_30S') score += 0.6;
+  }
+  if (type === 'ar_optional') score -= 0.2;
+  score += Math.random() * 0.01;
+  return score;
+}
+const plantStateService = new PlantStateService();
 export class MissionService {
-  /**
-   * MissionService를 생성합니다.
-   * @param plantStateService - 식물 상태 관리를 위한 서비스
-   */
-  constructor(plantStateService) {
-    this.plantStateService = plantStateService;
+  static async getToday(userId) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new Error('Invalid user context');
+    }
+    const start = today0amKSTUTC().toISOString().slice(0, 19).replace('T', ' ');
+    const rows = await db.sequelize.query(`
+        SELECT m.*, um.id AS user_mission_id, um.status AS user_mission_status,
+               um.assigned_at, um.expires_at
+        FROM user_missions um
+        JOIN missions m ON m.mission_id = um.mission_id
+        WHERE um.user_id = :userId
+          AND um.status IN ('assigned','complete')
+          AND um.assigned_at >= :start
+          AND (um.expires_at IS NULL OR um.expires_at > NOW())
+        ORDER BY um.assigned_at ASC
+      `, {
+      replacements: {
+        userId,
+        start
+      },
+      type: QueryTypes.SELECT
+    });
+    return rows.map(toDTO);
   }
 
-  /**
-   * 특정 사용자의 미션 목록을 조회합니다.
-   * (현재 코드에서는 Mission 모델을 사용하고 있으나, 전체적인 흐름에 맞춰 User_Event를 조회하도록 수정하는 것을 고려해볼 수 있습니다.)
-   * @param userId - 사용자 ID
-   */
-  async getMissions(userId) {
-    // 참고: 현재 코드는 Mission 테이블을 직접 조회하고 있습니다.
-    // 사용자별로 할당된 미션을 보려면 'User_Event' 테이블을 조회하는 것이 더 정확할 수 있습니다.
+  // ---------------------------------------
+  // ✅ 변경 주요 포인트: contextScore 반영
+  // ---------------------------------------
+  static async recommendIfEmpty(userId, n = 2) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new Error('Invalid user context');
+    }
+    const startedAt = Date.now();
+    const logLatency = () => logger.info({
+      event: 'recommend_latency',
+      userId,
+      ms: Date.now() - startedAt
+    });
+    const today = await this.getToday(userId);
+    if (today.length > 0) {
+      logLatency();
+      return today;
+    }
+    const candidates = await db.sequelize.query(`SELECT * FROM missions WHERE is_active = 1 AND burden <= 2`, {
+      type: QueryTypes.SELECT
+    });
+    try {
+      const lastRows = await db.sequelize.query(`
+        SELECT um.mission_id, MAX(um.assigned_at) AS last_assigned_at
+        FROM user_missions um
+        WHERE um.user_id = :userId
+        GROUP BY um.mission_id
+        `, {
+        replacements: {
+          userId
+        },
+        type: QueryTypes.SELECT
+      });
+      const lastMap = new Map();
+      for (const row of lastRows) {
+        if (row.last_assigned_at) {
+          lastMap.set(row.mission_id, new Date(row.last_assigned_at).getTime());
+        }
+      }
+      let wouldSkip = 0;
+      const now = Date.now();
+      for (const mission of candidates) {
+        const cooldownSec = mission.cooldown_sec ?? mission.cooldownSec ?? 0;
+        if (!cooldownSec) continue;
+        const lastTs = lastMap.get(mission.mission_id) ?? 0;
+        if (now - lastTs < cooldownSec * 1000) {
+          wouldSkip++;
+        }
+      }
+      if (wouldSkip > 0) {
+        logger.info({
+          event: 'cooldown_filter_dryrun',
+          userId,
+          candidates: candidates.length,
+          wouldSkip
+        });
+      }
+    } catch (error) {
+      logger.warn({
+        event: 'cooldown_filter_dryrun_error',
+        userId,
+        error: error.message
+      });
+    }
+    if (candidates.length === 0) {
+      logLatency();
+      return today;
+    }
+    const bucket = timeBucketKST();
+    const ctx = await loadUserContext(userId);
+    const recentHistory = await loadRecentHistoryMap(userId);
+    const scoredRaw = candidates.map(mission => {
+      const missionId = mission.mission_id;
+      const baseScore = softScore(mission.code, mission.type, bucket);
+      const ctxScore = contextScore(mission, ctx);
+      const noveltyPenalty = noveltyPenaltyById(missionId, recentHistory);
+      const finalScore = baseScore + ctxScore + noveltyPenalty;
+      logger.info({
+        event: 'recommend_scored',
+        userId,
+        missionId,
+        score: finalScore,
+        softScore: baseScore,
+        ctxAdj: ctxScore,
+        noveltyPenalty,
+        timeBucket: bucket,
+        emotion: ctx?.emotion ?? null,
+        arousal: ctx?.arousal ?? null
+      });
+      recordScoreEvent(userId, missionId, finalScore);
+      return {
+        mission,
+        score: finalScore
+      };
+    });
+    const sorted = scoredRaw.sort((a, b) => b.score - a.score);
+    const k = Math.max(1, Math.min(Number.isFinite(TOPK) ? TOPK : 6, sorted.length));
+    const topK = sorted.slice(0, k);
+    const want = Math.min(n, 3, topK.length);
+    const probs = want > 0 ? softmax(topK.map(entry => entry.score), SM_TAU) : [];
+    let picked = want > 0 ? weightedSample(topK, probs, want) : [];
+    if (Math.random() < Math.max(0, Math.min(Number.isFinite(EPSILON) ? EPSILON : 0.1, 1)) && sorted.length > want) {
+      const rest = sorted.slice(k).filter(item => !picked.some(existing => existing.mission.mission_id === item.mission.mission_id));
+      if (rest.length > 0) {
+        picked.push(rest[Math.floor(Math.random() * rest.length)]);
+        picked = picked.sort((a, b) => b.score - a.score).slice(0, want);
+      }
+    }
+    picked = ensureDiversity(picked, want);
+    if (picked.length > 0) {
+      const scores = picked.map(item => item.score);
+      const min = Math.min(...scores);
+      const max = Math.max(...scores);
+      const avg = scores.reduce((acc, value) => acc + value, 0) / scores.length;
+      logger.info({
+        event: 'recommend_summary',
+        userId,
+        timeBucket: bucket,
+        size: picked.length,
+        summary: {
+          min: Number(min.toFixed(4)),
+          max: Number(max.toFixed(4)),
+          avg: Number(avg.toFixed(4))
+        },
+        picks: picked.map(item => ({
+          missionId: item.mission.mission_id,
+          score: Number(item.score.toFixed(4))
+        }))
+      });
+    }
+    const pick = picked.map(({
+      mission
+    }) => mission);
+    if (pick.length === 0) {
+      logLatency();
+      return today;
+    }
+    const transaction = await db.sequelize.transaction();
+    try {
+      const assignedAt = new Date();
+      const expiresAt = next3amKST();
+      for (const mission of pick) {
+        const dup = await db.UserMission.findOne({
+          where: {
+            userId,
+            missionId: mission.mission_id,
+            assignedAt: {
+              [Op.gte]: today0amKSTUTC()
+            }
+          },
+          transaction,
+          lock: transaction.LOCK.UPDATE
+        });
+        if (dup) continue;
+        const created = await db.UserMission.create({
+          userId,
+          missionId: mission.mission_id,
+          status: 'assigned',
+          assignedAt,
+          expiresAt,
+          evidence: null
+        }, {
+          transaction
+        });
+        logger.info({
+          event: 'recommend_assigned',
+          userId,
+          missionId: mission.mission_id,
+          userMissionId: Number(created.get('id')),
+          assignedAt: assignedAt.toISOString(),
+          expiresAt: expiresAt.toISOString()
+        });
+      }
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      logLatency();
+      throw error;
+    }
+    const nextMissions = await this.getToday(userId);
+    logLatency();
+    return nextMissions;
+  }
+
+  // ----- 이하 기존 코드 그대로 (생략 없이 유지) -----
+  static async complete(userId, userMissionId, body) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new Error('Invalid user context');
+    }
+    return db.sequelize.transaction(async transaction => {
+      const userMission = await db.UserMission.findOne({
+        where: {
+          id: userMissionId,
+          userId
+        },
+        lock: transaction.LOCK.UPDATE,
+        transaction
+      });
+      if (!userMission) {
+        throw new Error('User mission not found');
+      }
+      if (userMission.get('status') === 'expired') {
+        throw new Error('Mission expired');
+      }
+      const expiresAt = userMission.get('expiresAt');
+      if (expiresAt && expiresAt.getTime() <= Date.now()) {
+        throw new Error('Mission expired');
+      }
+      const missionId = userMission.get('missionId');
+      if (userMission.get('status') === 'complete') {
+        const mission = await db.Mission.findByPk(missionId, {
+          transaction
+        });
+        const baseExp = mission ? Number(mission.get('expReward') ?? mission.get('exp_reward') ?? 0) : 0;
+        return {
+          message: 'Already completed',
+          baseExp,
+          arBonus: 0,
+          expGained: 0,
+          plantStatus: null
+        };
+      }
+      if (userMission.get('status') !== 'assigned') {
+        throw new Error('Mission not assignable');
+      }
+      const mission = await db.Mission.findByPk(missionId, {
+        transaction
+      });
+      if (!mission) {
+        throw new Error('Mission definition missing');
+      }
+      const baseExp = Number(mission.get('expReward') ?? mission.get('exp_reward') ?? 0);
+      const requiresArAction = mission.get('requiresArAction') ?? mission.get('requires_ar_action');
+      const arBonus = body.arUsed && requiresArAction && body.arAction === requiresArAction ? Number(mission.get('arBonusExp') ?? mission.get('ar_bonus_exp') ?? 0) : 0;
+      const gained = baseExp + arBonus;
+      const plant = await db.Plant.findOne({
+        where: {
+          user_id: userId
+        },
+        transaction
+      });
+      if (!plant) {
+        throw new Error('Plant not found for user');
+      }
+      const plantId = Number(plant.get('plant_id'));
+      let plantStatus = null;
+      try {
+        plantStatus = await plantStateService.gainExperience(userId, plantId, gained);
+      } catch (error) {
+        const level = Number(plant.get('plant_level') ?? 1);
+        const experience = Number(plant.get('plant_experience') ?? 0) + gained;
+        plantStatus = {
+          level,
+          experience,
+          leveledUp: false
+        };
+      }
+      const evidencePayload = body?.evidence ? {
+        arUsed: !!body.arUsed,
+        arAction: body.arAction ?? null,
+        ...(body.evidence || {})
+      } : null;
+      userMission.set({
+        status: 'complete',
+        completedAt: new Date(),
+        evidence: evidencePayload
+      });
+      await userMission.save({
+        transaction
+      });
+      logger.info({
+        event: 'complete_done',
+        userId,
+        userMissionId,
+        missionId,
+        baseExp,
+        arBonus,
+        expGained: gained,
+        plantId,
+        leveledUp: !!plantStatus?.leveledUp
+      });
+      return {
+        message: 'Mission completed',
+        baseExp,
+        arBonus,
+        expGained: gained,
+        plantStatus
+      };
+    });
+  }
+  static async assignTodayByCodes(userId, codes = []) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new Error('Invalid user context');
+    }
+    const uniqueCodes = [...new Set((codes || []).map(code => String(code).trim()).filter(Boolean))];
+    if (uniqueCodes.length === 0) {
+      return this.getToday(userId);
+    }
+    const start = today0amKSTUTC().toISOString().slice(0, 19).replace('T', ' ');
+    const assigned = await db.sequelize.query(`
+        SELECT m.code
+        FROM user_missions um
+        JOIN missions m ON m.mission_id = um.mission_id
+        WHERE um.user_id = :userId
+          AND um.status IN ('assigned','complete')
+          AND um.assigned_at >= :start
+          AND (um.expires_at IS NULL OR um.expires_at > NOW())
+          AND m.code IN (:codes)
+      `, {
+      replacements: {
+        userId,
+        start,
+        codes: uniqueCodes
+      },
+      type: QueryTypes.SELECT
+    });
+    const already = new Set(assigned.map(row => row.code));
+    const targets = uniqueCodes.filter(code => !already.has(code));
+    if (targets.length === 0) {
+      return this.getToday(userId);
+    }
     const missions = await db.Mission.findAll({
-      // where: { user_id: userId }, // Mission 테이블에 user_id가 있다는 가정
-      order: [['created_at', 'DESC']]
+      where: {
+        code: {
+          [Op.in]: targets
+        }
+      }
     });
-    return missions;
+    if (missions.length === 0) {
+      return this.getToday(userId);
+    }
+    const transaction = await db.sequelize.transaction();
+    try {
+      const assignedAt = new Date();
+      const expiresAt = next3amKST();
+      for (const mission of missions) {
+        const missionId = Number(mission.get('missionId') ?? mission.get('mission_id'));
+        await db.UserMission.create({
+          userId,
+          missionId,
+          status: 'assigned',
+          assignedAt,
+          expiresAt,
+          evidence: null
+        }, {
+          transaction
+        });
+      }
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+    return this.getToday(userId);
   }
-
-  /**
-   * 특정 미션(이벤트)을 완료하고, 보상(경험치)을 지급합니다.
-   * @param user_id - 사용자 ID
-   * @param event_id - 완료할 이벤트(미션) ID
-   */
-  async completeMission(user_id, event_id) {
-    // 1. 완료할 미션(이벤트)이 사용자에게 할당되었는지 확인
-    const userEvent = await db.User_Event.findOne({
-      where: {
-        user_id: user_id,
-        event_id: event_id,
-        status: "assigned"
-      },
-      raw: true
-    });
-    console.log(userEvent);
-    if (!userEvent) {
-      throw new Error('Mission not found or already completed for this user');
+  static async clearToday(userId) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new Error('Invalid user context');
     }
-
-    // 2. 미션(이벤트)의 보상(경험치) 정보 조회
-    // (events 테이블에 exp_reward 컬럼이 있다고 가정)
-    const eventInfo = await db.Event.findOne({
+    const start = today0amKSTUTC();
+    await db.UserMission.destroy({
       where: {
-        event_id: event_id
-      },
-      raw: true
-    });
-    console.log(eventInfo);
-    if (!eventInfo || !eventInfo.exp_reward) {
-      throw new Error('Event reward information not found');
-    }
-    const expToGain = eventInfo.exp_reward;
-
-    // 3. 경험치를 지급할 사용자의 식물 ID 조회
-    const plant = await db.Plant.findOne({
-      where: {
-        user_id: user_id
+        userId,
+        assignedAt: {
+          [Op.gte]: start
+        }
       }
     });
-    if (!plant) {
-      throw new Error("User's plant not found");
-    }
-
-    // 4. PlantStateService를 호출하여 경험치 지급!
-    const expResult = await this.plantStateService.gainExperience(user_id, plant.plant_id, expToGain);
-
-    // 5. 미션(이벤트) 상태를 '완료'로 업데이트
-    await db.User_Event.update({
-      status: "complete",
-      completed_at: new Date()
-    }, {
-      where: {
-        user_id: user_id,
-        event_id: event_id
-      }
-    });
-
-    // 6. 프론트엔드에 전달할 최종 결과 조합
-    return {
-      message: 'Mission completed successfully!',
-      expGained: expToGain,
-      plantStatus: expResult // { level, experience, leveledUp }
-    };
+    return this.getToday(userId);
   }
 }
+export default MissionService;

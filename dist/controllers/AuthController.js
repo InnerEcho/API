@@ -8,6 +8,8 @@ import { UserService } from "../services/UserService.js";
  * 토큰 관리 전용 컨트롤러로 구성
  */
 export class AuthController {
+  tokenService;
+  userService;
   constructor() {
     this.tokenService = new TokenService();
     this.userService = new UserService();

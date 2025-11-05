@@ -1,5 +1,6 @@
 import { RealtimeSpeechService } from "../services/RealtimeSpeechService.js";
 export class RealtimeSpeechController {
+  realtimeSpeechService;
   constructor() {
     this.realtimeSpeechService = new RealtimeSpeechService();
   }

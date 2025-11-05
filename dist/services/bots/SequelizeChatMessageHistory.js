@@ -6,6 +6,9 @@ const {
 } = db;
 export class SequelizeChatMessageHistory extends BaseChatMessageHistory {
   lc_namespace = ['langchain', 'stores', 'message', 'sequelize'];
+  userId;
+  plantId;
+
   // sessionId 문자열 대신, 필요한 데이터를 명확하게 받아 의존성을 낮춥니다.
   constructor(userId, plantId) {
     super();

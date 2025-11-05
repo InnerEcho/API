@@ -1,4 +1,5 @@
 export class PlantStateController {
+  plantStateService;
   constructor(plantStateService) {
     this.plantStateService = plantStateService;
   }

@@ -1,4 +1,5 @@
 import { WebSocketServer } from 'ws';
+import { URL } from 'url';
 import { RealtimeSpeechControllerOld } from "../controllers/RealtimeSpeechControllerOld.js";
 import { RealtimeTicketService } from "../services/RealtimeTicketService.js";
 
@@ -7,13 +8,23 @@ import { RealtimeTicketService } from "../services/RealtimeTicketService.js";
  * @param server HTTP 서버 인스턴스
  */
 export function setupRealtimeSpeechWebSocketOld(server) {
-  // WebSocket 서버 생성 (path: /chat/realtime-old)
+  // noServer 모드로 WebSocket 서버 생성 (upgrade 이벤트 수동 처리)
   const wss = new WebSocketServer({
-    server,
-    path: '/chat/realtime-old'
+    noServer: true
   });
   const realtimeSpeechController = new RealtimeSpeechControllerOld();
   const ticketService = new RealtimeTicketService();
+
+  // upgrade 이벤트 핸들러 등록
+  server.on('upgrade', (req, socket, head) => {
+    const pathname = new URL(req.url, `http://${req.headers.host}`).pathname;
+    if (pathname === '/chat/realtime-old') {
+      wss.handleUpgrade(req, socket, head, ws => {
+        wss.emit('connection', ws, req);
+      });
+    }
+    // 다른 경로는 무시 (다른 WebSocket 서버가 처리하도록)
+  });
   console.log('🎙️ Realtime Speech WebSocket (Old - G.711) 서버 초기화 완료');
 
   // WebSocket 연결 이벤트 핸들러
