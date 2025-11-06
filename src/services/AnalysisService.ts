@@ -152,7 +152,7 @@ export class AnalysisService {
 
   async getLatestUserAnalysis(userId: number): Promise<{
     analysisId: number;
-    historyId: number;
+    historyId: number | null;
     emotion: string | null;
     factor: string | null;
     message: string | null;
@@ -179,7 +179,12 @@ export class AnalysisService {
       return null;
     }
 
-    const history = record.get('history') as any;
+    const history = record.get('history') as {
+      history_id?: number | null;
+      message?: string | null;
+      plant_id?: number | null;
+      send_date?: Date | null;
+    } | null;
     const analysisId = Number(record.get('analysis_id'));
     const rawHistoryId = history?.history_id;
     const historyId =
@@ -203,7 +208,7 @@ export class AnalysisService {
   async getUserAnalysesSince(userId: number, since: Date): Promise<
     Array<{
       analysisId: number;
-      historyId: number;
+      historyId: number | null;
       emotion: string | null;
       factor: string | null;
       message: string | null;
@@ -239,8 +244,13 @@ export class AnalysisService {
       order: [['created_at', 'DESC']],
     });
 
-    return records.map(record => {
-      const history = record.get('history') as any;
+    return records.map((record: any) => {
+      const history = record.get('history') as {
+        history_id?: number | null;
+        message?: string | null;
+        plant_id?: number | null;
+        send_date?: Date | null;
+      } | null;
       const analysisId = Number(record.get('analysis_id'));
       const rawHistoryId = history?.history_id;
       const historyId =

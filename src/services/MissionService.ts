@@ -79,10 +79,10 @@ function weightedSample<T>(items: T[], probs: number[], count: number): T[] {
   return picked;
 }
 
-function ensureDiversity(pick: Array<{ mission: MissionRow; score: number }>, want = 2) {
+function ensureDiversity(pick: ScoredMission[], want = 2): ScoredMission[] {
   const codes = new Set<string>();
   const types = new Map<string, number>();
-  const out: typeof pick = [];
+  const out: ScoredMission[] = [];
   for (const item of pick) {
     const code = item.mission.code;
     const type = item.mission.type;
@@ -191,6 +191,8 @@ type MissionRow = {
   expires_at?: string | null;
 };
 
+type ScoredMission = { mission: MissionRow; score: number };
+
 function categoryFrom(mission: MissionRow): string {
   if (mission.code === 'APP_OPEN') return '일상';
   if (mission.type === 'instant') return '일상';
@@ -266,7 +268,7 @@ export class MissionService {
       throw new Error('Invalid user context');
     }
     const start = today0amKSTUTC().toISOString().slice(0, 19).replace('T', ' ');
-    const rows = await db.sequelize.query<MissionRow>(
+    const rows = (await db.sequelize.query(
       `
         SELECT m.*, um.id AS user_mission_id, um.status AS user_mission_status,
                um.assigned_at, um.expires_at
@@ -279,8 +281,8 @@ export class MissionService {
         ORDER BY um.assigned_at ASC
       `,
       { replacements: { userId, start }, type: QueryTypes.SELECT },
-    );
-    return rows.map(toDTO);
+    )) as MissionRow[];
+    return rows.map(mission => toDTO(mission));
   }
 
   // ---------------------------------------
@@ -306,19 +308,21 @@ export class MissionService {
     }
 
     const maxBurden = RECO.candidateFilter.maxBurden;
-    const candidates =
-      maxBurden !== null && maxBurden !== undefined
-        ? await db.sequelize.query<MissionRow>(
-            `SELECT * FROM missions WHERE is_active = 1 AND burden <= :maxBurden`,
-            { replacements: { maxBurden }, type: QueryTypes.SELECT },
-          )
-        : await db.sequelize.query<MissionRow>(
-            `SELECT * FROM missions WHERE is_active = 1`,
-            { type: QueryTypes.SELECT },
-          );
+    let candidates: MissionRow[];
+    if (maxBurden !== null && maxBurden !== undefined) {
+      candidates = (await db.sequelize.query(
+        `SELECT * FROM missions WHERE is_active = 1 AND burden <= :maxBurden`,
+        { replacements: { maxBurden }, type: QueryTypes.SELECT },
+      )) as MissionRow[];
+    } else {
+      candidates = (await db.sequelize.query(
+        `SELECT * FROM missions WHERE is_active = 1`,
+        { type: QueryTypes.SELECT },
+      )) as MissionRow[];
+    }
 
     try {
-      const lastRows = await db.sequelize.query<{ mission_id: number; last_assigned_at: string }>(
+      const lastRows = (await db.sequelize.query(
         `
         SELECT um.mission_id, MAX(um.assigned_at) AS last_assigned_at
         FROM user_missions um
@@ -326,17 +330,20 @@ export class MissionService {
         GROUP BY um.mission_id
         `,
         { replacements: { userId }, type: QueryTypes.SELECT },
-      );
+      )) as Array<{ mission_id: number; last_assigned_at: string | null }>;
       const lastMap = new Map<number, number>();
       for (const row of lastRows) {
         if (row.last_assigned_at) {
-          lastMap.set(row.mission_id, new Date(row.last_assigned_at).getTime());
+          lastMap.set(Number(row.mission_id), new Date(row.last_assigned_at).getTime());
         }
       }
       let wouldSkip = 0;
       const now = Date.now();
       for (const mission of candidates) {
-        const cooldownSec = (mission as any).cooldown_sec ?? (mission as any).cooldownSec ?? 0;
+        const cooldownSec =
+          (mission as any).cooldown_sec ??
+          (mission as any).cooldownSec ??
+          0;
         if (!cooldownSec) continue;
         const lastTs = lastMap.get(mission.mission_id) ?? 0;
         if (now - lastTs < cooldownSec * 1000) {
@@ -369,7 +376,7 @@ export class MissionService {
 
     const recentHistory = await loadRecentHistoryMap(userId, RECO.novelty.historyDays);
 
-    const scoredRaw = candidates.map(mission => {
+    const scoredRaw: ScoredMission[] = candidates.map(mission => {
       const missionId = mission.mission_id;
       const baseScore = softScore(mission.code, mission.type, bucket);
       const ctxScore = contextScore(mission, ctx);
@@ -393,7 +400,7 @@ export class MissionService {
       return { mission, score: finalScore };
     });
 
-    const sorted = scoredRaw.sort((a, b) => b.score - a.score);
+    const sorted: ScoredMission[] = [...scoredRaw].sort((a, b) => b.score - a.score);
 
     const k = Math.max(1, Math.min(Number.isFinite(TOPK) ? TOPK : 6, sorted.length));
     const topK = sorted.slice(0, k);
@@ -402,7 +409,7 @@ export class MissionService {
 
     const probs = want > 0 ? softmax(topK.map(entry => entry.score), SM_TAU) : [];
 
-    let picked = want > 0 ? weightedSample(topK, probs, want) : [];
+    let picked: ScoredMission[] = want > 0 ? weightedSample<ScoredMission>(topK, probs, want) : [];
 
     if (
       Math.random() < Math.max(0, Math.min(Number.isFinite(EPSILON) ? EPSILON : 0.1, 1)) &&
@@ -410,10 +417,12 @@ export class MissionService {
     ) {
       const rest = sorted
         .slice(k)
-        .filter(item => !picked.some(existing => existing.mission.mission_id === item.mission.mission_id));
+        .filter(item =>
+          !picked.some(existing => existing.mission.mission_id === item.mission.mission_id),
+        );
       if (rest.length > 0) {
         picked.push(rest[Math.floor(Math.random() * rest.length)]);
-        picked = picked.sort((a, b) => b.score - a.score).slice(0, want);
+        picked = [...picked].sort((a, b) => b.score - a.score).slice(0, want);
       }
     }
 
@@ -504,7 +513,7 @@ export class MissionService {
     if (!Number.isInteger(userId) || userId <= 0) {
       throw new Error('Invalid user context');
     }
-    return db.sequelize.transaction(async transaction => {
+    return db.sequelize.transaction(async (transaction: Transaction) => {
       const userMission = await db.UserMission.findOne({
         where: { id: userMissionId, userId },
         lock: transaction.LOCK.UPDATE,
@@ -613,7 +622,7 @@ export class MissionService {
     }
 
     const start = today0amKSTUTC().toISOString().slice(0, 19).replace('T', ' ');
-    const assigned = await db.sequelize.query<{ code: string }>(
+    const assigned = (await db.sequelize.query(
       `
         SELECT m.code
         FROM user_missions um
@@ -628,7 +637,7 @@ export class MissionService {
         replacements: { userId, start, codes: uniqueCodes },
         type: QueryTypes.SELECT,
       },
-    );
+    )) as Array<{ code: string }>;
 
     const already = new Set(assigned.map(row => row.code));
     const targets = uniqueCodes.filter(code => !already.has(code));
@@ -648,7 +657,7 @@ export class MissionService {
       return this.getToday(userId);
     }
 
-    const transaction = await db.sequelize.transaction();
+    const transaction: Transaction = await db.sequelize.transaction();
     try {
       const assignedAt = new Date();
       const expiresAt = next3amKST();

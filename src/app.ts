@@ -186,9 +186,11 @@ setupRealtimeSpeechWebSocket(server);
 setupMultiplayerARWebSocket(server);
 console.log('📡 새로운 WebRTC API는 /chat/realtime/session 엔드포인트 사용 (권장)');
 
-server.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Server is running on http://0.0.0.0:${port}`);
-  console.log(`📱 Android emulator can access via http://10.0.2.2:${port}`);
+const listenPort = typeof port === 'number' ? port : Number(port) || 3000;
+
+server.listen(listenPort, '0.0.0.0', () => {
+  console.log(`🚀 Server is running on http://0.0.0.0:${listenPort}`);
+  console.log(`📱 Android emulator can access via http://10.0.2.2:${listenPort}`);
 });
 server.on('error', onError);
 server.on('listening', onListening);

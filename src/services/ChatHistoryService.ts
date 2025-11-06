@@ -66,7 +66,7 @@ export class ChatHistoryService {
     });
 
     // 3. DB 데이터를 IMessage 형식으로 변환
-    const chatHistory = chatHistoryDb.map((item) => this.convertDbToMessage(item));
+    const chatHistory = (chatHistoryDb as any[]).map(item => this.convertDbToMessage(item));
 
     // 4. 변환된 데이터를 Redis에 캐싱
     try {
@@ -129,7 +129,7 @@ export class ChatHistoryService {
     });
 
     // 3. DB 데이터를 IMessage 형식으로 변환
-    const results = resultsDb.map((item) => this.convertDbToMessage(item));
+    const results = (resultsDb as any[]).map(item => this.convertDbToMessage(item));
 
     // 4. 오늘의 대화는 더 짧은 만료 시간 설정 (5분)
     try {

@@ -79,7 +79,7 @@ export abstract class BaseChatBot {
     const llmChain = RunnablePassthrough.assign<{
       input: string;
       history?: BaseMessage[];
-      analysisContext: string;
+      analysisContext?: string;
     }, {
       analysisContext: string;
     }>({
@@ -114,7 +114,7 @@ export abstract class BaseChatBot {
     const sessionId = `${userId}-${plantId}`;
 
     const result = await historyChain.invoke(
-      { input: userMessage },
+      { input: userMessage, analysisContext: '' },
       {
         configurable: {
           sessionId: sessionId,
@@ -180,7 +180,12 @@ export abstract class BaseChatBot {
     return parts.join('\n');
   }
 
-  private extractAnalysisFromHistory(history?: BaseMessage[]) {
+  private extractAnalysisFromHistory(history?: BaseMessage[]): {
+    emotion: string | null;
+    factor: string | null;
+    message: string | null;
+    createdAt: Date | string | null;
+  } | null {
     if (!history || history.length === 0) {
       return null;
     }
@@ -226,7 +231,7 @@ export abstract class BaseChatBot {
 
     if (Array.isArray(content)) {
       return content
-        .map(item => {
+        .map((item: any) => {
           if (typeof item === 'string') {
             return item;
           }

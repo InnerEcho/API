@@ -50,7 +50,7 @@ export async function loadRecentHistoryMap(
 
   const since = new Date(Date.now() - clampedDays * 24 * 60 * 60 * 1000);
 
-  const rows = await db.sequelize.query<{ mission_id: number; cnt: number }>(
+  const rows = (await db.sequelize.query(
     `
     SELECT um.mission_id, COUNT(*) AS cnt
     FROM user_missions um
@@ -63,7 +63,7 @@ export async function loadRecentHistoryMap(
       replacements: { userId, statuses, since },
       type: QueryTypes.SELECT,
     },
-  );
+  )) as Array<{ mission_id: number; cnt: number }>;
 
   const map = new Map<number, number>();
   for (const row of rows) {

@@ -41,7 +41,10 @@ export async function complete(req: Request, res: Response, next: NextFunction) 
 export async function assignByCodes(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = ensureUserId(req);
-    const codes = Array.isArray(req.body?.codes) ? req.body.codes.map(code => String(code)) : [];
+    const rawCodes = req.body?.codes;
+    const codes = Array.isArray(rawCodes)
+      ? rawCodes.map(code => String(code))
+      : [];
     const data = await MissionService.assignTodayByCodes(userId, codes);
     res.json(data);
   } catch (err) { return next(err); }

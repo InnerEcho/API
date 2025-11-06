@@ -179,13 +179,14 @@ async function ensureMockUsers(
       },
     );
 
-    const [row] = await db.sequelize.query<{ user_id: number }[]>(
+    const userRows = (await db.sequelize.query(
       `SELECT user_id FROM \`user\` WHERE user_email = :email LIMIT 1`,
       { replacements: { email }, type: QueryTypes.SELECT },
-    );
+    )) as Array<{ user_id: number }>;
 
-    if (row?.user_id) {
-      created.push({ user_id: Number(row.user_id), persona });
+    const userRow = userRows[0];
+    if (userRow?.user_id !== undefined) {
+      created.push({ user_id: Number(userRow.user_id), persona });
     }
     idx++;
   }
@@ -196,18 +197,18 @@ async function ensureMockUsers(
 type MissionRow = { mission_id: number; code: string; type: 'instant' | 'habit' | 'action' | 'ar_optional'; burden: number };
 
 async function loadMissionPool(): Promise<MissionRow[]> {
-  const rows = await db.sequelize.query<MissionRow[]>(
+  const rows = (await db.sequelize.query(
     `SELECT mission_id, code, type, burden
      FROM missions
      WHERE is_active = 1`,
     { type: QueryTypes.SELECT },
-  );
+  )) as Array<{ mission_id: number; code: string; type: MissionRow['type']; burden: number }>;
 
   return rows.map(row => ({
-    mission_id: Number((row as any).mission_id),
-    code: (row as any).code,
-    type: (row as any).type,
-    burden: Number((row as any).burden),
+    mission_id: Number(row.mission_id),
+    code: row.code,
+    type: row.type,
+    burden: Number(row.burden),
   }));
 }
 
@@ -247,17 +248,17 @@ async function loadExistingMockUsers(
   rng: () => number,
 ) {
   const likePattern = `${prefix}%`;
-  const rows = await db.sequelize.query<{ user_id: number; user_email: string }[]>(
+  const rows = (await db.sequelize.query(
     `SELECT user_id, user_email FROM \`user\`
      WHERE user_email LIKE :likePattern
      ORDER BY user_id
      LIMIT ${Math.max(0, limit)}`,
     { replacements: { likePattern }, type: QueryTypes.SELECT },
-  );
+  )) as Array<{ user_id: number; user_email: string }>;
 
   const fallback = () => personas[Math.floor(rng() * personas.length)];
 
-  return rows.map(row => {
+  return rows.map((row: { user_id: number; user_email: string }) => {
     const match = row.user_email.match(/\+([a-z0-9]+)_/i);
     const key = match?.[1]?.toUpperCase() ?? '';
     const persona = (isPersonaKey(key) ? key : fallback()) as PersonaKey;
