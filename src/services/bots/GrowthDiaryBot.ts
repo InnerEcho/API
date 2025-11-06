@@ -1,4 +1,5 @@
-import { BaseChatBot, LatestAnalysis } from '@/services/bots/BaseChatBot.js';
+import { BaseChatBot } from '@/services/bots/BaseChatBot.js';
+import type { LatestAnalysis } from '@/services/bots/BaseChatBot.js';
 import { convertPlantState } from '@/utils/plant.js';
 import type { StateData } from '@/interface/index.js';
 import type { PlantDbInfo } from '@/interface/index.js';

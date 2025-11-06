@@ -3,10 +3,12 @@ import { Op, QueryTypes, type Transaction } from 'sequelize';
 import { PlantStateService } from '@/services/PlantStateService.js';
 import { loadRecentHistoryMap, noveltyPenaltyById } from '@/services/mission/recentHistory.js';
 import logger from '@/utils/logger.js';
+import { getMissionRecoConfig, type TimeBucket } from '@/config/missionReco.config.js';
 
 const SM_TAU = Number(process.env.RECO_SOFTMAX_TAU ?? 0.7);
 const EPSILON = Number(process.env.RECO_EPSILON ?? 0.1);
 const TOPK = Number(process.env.RECO_TOPK ?? 6);
+const RECO = getMissionRecoConfig();
 
 // -------------------------
 // [1] Context Loader (추가)
@@ -104,26 +106,58 @@ function ensureDiversity(pick: Array<{ mission: MissionRow; score: number }>, wa
 // ----------------------------------
 // [2] Context-based Score Adjustment
 // ----------------------------------
+function matchesEmotionTags(ctx: { emotion?: string | null; tags?: string[] }, tags: string[]): boolean {
+  const pool: string[] = [];
+  if (ctx.emotion) pool.push(String(ctx.emotion));
+  if (Array.isArray(ctx.tags)) {
+    for (const tag of ctx.tags) {
+      pool.push(String(tag));
+    }
+  }
+  return pool.some(value => tags.includes(value));
+}
+
+function matchesCondition(mission: any, condition: { codes?: string[]; codeIncludes?: string[]; types?: string[] }): boolean {
+  const { codes, codeIncludes, types } = condition;
+  if (!codes && !codeIncludes && !types) return true;
+
+  let ok = true;
+  if (codes && codes.length > 0) {
+    const missionCode = String(mission.code ?? '');
+    ok = ok && codes.includes(missionCode);
+  }
+  if (codeIncludes && codeIncludes.length > 0) {
+    const code = String(mission.code ?? '');
+    ok = ok && codeIncludes.some(substr => substr && code.includes(substr));
+  }
+  if (types && types.length > 0) {
+    ok = ok && types.includes(mission.type);
+  }
+  return ok;
+}
+
 function contextScore(mission: any, ctx: any): number {
   if (!ctx) return 0;
 
   let s = 0;
 
-  // 1) 저각성(arousal <= 0.3) → 무거운 미션 감점
-  if (typeof ctx.arousal === 'number' && ctx.arousal <= 0.3) {
-    if (mission.burden >= 3) s -= 0.8;
+  const lowArousal = RECO.context.lowArousal;
+  if (
+    typeof ctx.arousal === 'number' &&
+    ctx.arousal <= lowArousal.threshold &&
+    typeof mission.burden === 'number' &&
+    mission.burden >= lowArousal.minBurden
+  ) {
+    s -= lowArousal.penalty;
   }
 
-  // 2) emotionTag 매칭 가점 (간단 룰)
-  const tagHits = (list: string[]) =>
-    (ctx.emotion && list.includes(ctx.emotion)) ||
-    (ctx.tags && ctx.tags.some((t: string) => list.includes(t)));
-
-  if (tagHits(['무기력', 'lethargic', '귀찮음'])) {
-    if (mission.code?.includes('BREATH') || mission.type === 'instant') s += 1.0;
-  }
-  if (tagHits(['초조', 'anxious'])) {
-    if (mission.code?.includes('TAKE_A_BREATH') || mission.type === 'habit') s += 1.0;
+  for (const boost of RECO.context.emotionBoosts) {
+    if (!matchesEmotionTags(ctx, boost.tags)) continue;
+    const conditions = boost.conditions && boost.conditions.length > 0 ? boost.conditions : [{}];
+    const shouldApply = conditions.some(condition => matchesCondition(mission, condition));
+    if (shouldApply) {
+      s += boost.boost;
+    }
   }
 
   return s;
@@ -209,28 +243,18 @@ function timeBucketKST(): 'morning' | 'afternoon' | 'evening' | 'night' {
   return 'night';
 }
 
-function softScore(code: string, type: string, bucket: ReturnType<typeof timeBucketKST>) {
+function softScore(code: string, type: string, bucket: TimeBucket) {
   let score = 0;
-  if (bucket === 'morning') {
-    if (code === 'LIGHT_CHECK') score += 2;
-    if (code === 'DRINK_WATER_250ML') score += 1;
-    if (code === 'CHECK_HOME_PLANT') score += 1;
+  const bucketAdjust = RECO.softScore.byBucket[bucket];
+  if (bucketAdjust && bucketAdjust[code] !== undefined) {
+    score += bucketAdjust[code];
   }
-  if (bucket === 'afternoon') {
-    if (code === 'MARCH_IN_PLACE_1MIN') score += 1;
-    if (code === 'STRETCH_30S') score += 1;
+  if (RECO.softScore.typeAdjustments[type] !== undefined) {
+    score += RECO.softScore.typeAdjustments[type];
   }
-  if (bucket === 'evening') {
-    if (code === 'TAKE_A_BREATH_10S') score += 1;
-    if (code === 'ONE_LINE_JOURNAL') score += 1;
+  if (RECO.softScore.jitter > 0) {
+    score += Math.random() * RECO.softScore.jitter;
   }
-  if (bucket === 'night') {
-    if (code === 'TAKE_A_BREATH_10S') score += 1.2;
-    if (code === 'ONE_LINE_JOURNAL') score += 1.2;
-    if (code === 'LOOK_OUT_WINDOW_30S') score += 0.6;
-  }
-  if (type === 'ar_optional') score -= 0.2;
-  score += Math.random() * 0.01;
   return score;
 }
 
@@ -281,10 +305,17 @@ export class MissionService {
       return today;
     }
 
-    const candidates = await db.sequelize.query<MissionRow>(
-      `SELECT * FROM missions WHERE is_active = 1 AND burden <= 2`,
-      { type: QueryTypes.SELECT },
-    );
+    const maxBurden = RECO.candidateFilter.maxBurden;
+    const candidates =
+      maxBurden !== null && maxBurden !== undefined
+        ? await db.sequelize.query<MissionRow>(
+            `SELECT * FROM missions WHERE is_active = 1 AND burden <= :maxBurden`,
+            { replacements: { maxBurden }, type: QueryTypes.SELECT },
+          )
+        : await db.sequelize.query<MissionRow>(
+            `SELECT * FROM missions WHERE is_active = 1`,
+            { type: QueryTypes.SELECT },
+          );
 
     try {
       const lastRows = await db.sequelize.query<{ mission_id: number; last_assigned_at: string }>(
@@ -336,7 +367,7 @@ export class MissionService {
     const bucket = timeBucketKST();
     const ctx = await loadUserContext(userId);
 
-    const recentHistory = await loadRecentHistoryMap(userId);
+    const recentHistory = await loadRecentHistoryMap(userId, RECO.novelty.historyDays);
 
     const scoredRaw = candidates.map(mission => {
       const missionId = mission.mission_id;
