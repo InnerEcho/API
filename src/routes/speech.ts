@@ -1,6 +1,6 @@
 import express from 'express';
-import { PlantSpeechController } from '@/controllers/SpeechController.js';
-import { SpeechService } from '@/services/SpeechService.js';
+import { PlantSpeechController } from '@/controllers/speech/SpeechController.js';
+import { SpeechService } from '@/services/speech/SpeechService.js';
 import multer from 'multer';
 
 const router = express.Router();

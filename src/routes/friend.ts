@@ -1,7 +1,7 @@
 import express from 'express';
-import { FriendService } from '@/services/FriendService.js';
-import { FriendRecommendationService } from '@/services/FriendRecommendationService.js';
-import { FriendController } from '@/controllers/FriendController.js';
+import { FriendService } from '@/services/friend/FriendService.js';
+import { FriendRecommendationService } from '@/services/friend/FriendRecommendationService.js';
+import { FriendController } from '@/controllers/friend/FriendController.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();

@@ -5,7 +5,7 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { BaseMessage, HumanMessage } from '@langchain/core/messages';
 import type { PlantDbInfo } from '@/interface/index.js';
-import { AnalysisService } from '@/services/AnalysisService.js';
+import { AnalysisService } from '@/services/analysis/AnalysisService.js';
 import { RedisChatMessageHistory } from './RedisChatMessageHistory.js';
 
 export type LatestAnalysis = Awaited<

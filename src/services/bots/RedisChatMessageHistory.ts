@@ -7,7 +7,7 @@ import {
 } from '@langchain/core/messages';
 import redisClient from '@/config/redis.config.js';
 import db from '@/models/index.js';
-import { AnalysisService } from '@/services/AnalysisService.js';
+import { AnalysisService } from '@/services/analysis/AnalysisService.js';
 
 const { ChatHistory } = db;
 const analysisService = new AnalysisService();

@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { RealtimeTicketService } from '@/services/RealtimeTicketService.js';
+import { RealtimeTicketService } from '@/services/realtime/RealtimeTicketService.js';
 
 /**
  * Realtime WebSocket 연결을 위한 티켓 발급 컨트롤러

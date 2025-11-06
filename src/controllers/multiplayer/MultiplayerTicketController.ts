@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { MultiplayerTicketService } from '@/services/MultiplayerTicketService.js';
+import { MultiplayerTicketService } from '@/services/multiplayer/MultiplayerTicketService.js';
 
 /**
  * AR 멀티플레이어 WebSocket 연결을 위한 티켓 발급 컨트롤러

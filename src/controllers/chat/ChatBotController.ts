@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import type { ApiResult } from '@/interface/index.js';
-import { ChatService } from '@/services/ChatService.js';
+import { ChatService } from '@/services/chat/ChatService.js';
 
 export class PlantChatBotController {
   private chatService: ChatService;

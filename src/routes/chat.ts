@@ -1,11 +1,11 @@
 import express from 'express';
-import { PlantChatBotController } from '@/controllers/ChatBotController.js';
-import { ChatHistoryController } from '@/controllers/ChatHistoryController.js';
-import { RealtimeTicketController } from '@/controllers/RealtimeTicketController.js';
-import { RealtimeSpeechController } from '@/controllers/RealtimeSpeechController.js';
-import { ChatService } from '@/services/ChatService.js';
+import { PlantChatBotController } from '@/controllers/chat/ChatBotController.js';
+import { ChatHistoryController } from '@/controllers/chat/ChatHistoryController.js';
+import { RealtimeTicketController } from '@/controllers/realtime/RealtimeTicketController.js';
+import { RealtimeSpeechController } from '@/controllers/realtime/RealtimeSpeechController.js';
+import { ChatService } from '@/services/chat/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
-import { ChatHistoryService } from '@/services/ChatHistoryService.js';
+import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();

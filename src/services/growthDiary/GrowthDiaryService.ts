@@ -1,5 +1,5 @@
-import { GrowthDiaryBot } from './bots/GrowthDiaryBot.js';
-import db from '../models/index.js';
+import { GrowthDiaryBot } from '@/services/bots/GrowthDiaryBot.js';
+import db from '@/models/index.js';
 import { Op } from 'sequelize';
 import dayjs from 'dayjs';
 

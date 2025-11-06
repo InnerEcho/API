@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import type { ApiResult } from '@/interface/index.js';
-import { GrowthDiaryCommentService } from '@/services/GrowthDiaryCommentService.js';
+import { GrowthDiaryCommentService } from '@/services/growthDiary/GrowthDiaryCommentService.js';
 
 export class GrowthDiaryCommentController {
   private growthDiaryCommentService: GrowthDiaryCommentService;

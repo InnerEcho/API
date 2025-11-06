@@ -1,5 +1,5 @@
 import express from 'express';
-import { AuthController } from '@/controllers/AuthController.js';
+import { AuthController } from '@/controllers/auth/AuthController.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 import { loginRateLimiter, apiRateLimiter } from '@/middlewares/rateLimiter.js';
 

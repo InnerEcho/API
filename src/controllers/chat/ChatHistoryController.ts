@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import type { ApiResult } from '@/interface/index.js';
-import { ChatHistoryService } from '@/services/ChatHistoryService.js';
+import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 
 export class ChatHistoryController {
   private chatHistoryService: ChatHistoryService;

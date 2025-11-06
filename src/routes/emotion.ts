@@ -1,5 +1,5 @@
 import express from 'express';
-import { EmotionController } from '@/controllers/EmotionController.js';
+import { EmotionController } from '@/controllers/emotion/EmotionController.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();

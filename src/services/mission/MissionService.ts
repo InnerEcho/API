@@ -1,6 +1,6 @@
 import db from '@/models/index.js';
 import { Op, QueryTypes, type Transaction } from 'sequelize';
-import { PlantStateService } from '@/services/PlantStateService.js';
+import { PlantStateService } from '@/services/plant/PlantStateService.js';
 import { loadRecentHistoryMap, noveltyPenaltyById } from '@/services/mission/recentHistory.js';
 import logger from '@/utils/logger.js';
 import { getMissionRecoConfig, type TimeBucket } from '@/config/missionReco.config.js';

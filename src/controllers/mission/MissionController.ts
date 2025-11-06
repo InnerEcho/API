@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import createError from 'http-errors';
-import MissionService from '@/services/MissionService.js';
+import MissionService from '@/services/mission/MissionService.js';
 
 function ensureUserId(req: Request): number {
   const user = req.user ?? (req as any).user;

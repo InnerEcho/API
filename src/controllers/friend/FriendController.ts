@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApiResult } from '@/interface/index.js';
-import { FriendService } from '@/services/FriendService.js';
-import { FriendRecommendationService } from '@/services/FriendRecommendationService.js';
+import { FriendService } from '@/services/friend/FriendService.js';
+import { FriendRecommendationService } from '@/services/friend/FriendRecommendationService.js';
 import db from '@/models/index.js';
 import { Op } from 'sequelize';
 

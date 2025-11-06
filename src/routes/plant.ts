@@ -1,5 +1,5 @@
-import { PlantStateController } from '@/controllers/PlantStateController.js';
-import { PlantStateService } from '@/services/PlantStateService.js';
+import { PlantStateController } from '@/controllers/plant/PlantStateController.js';
+import { PlantStateService } from '@/services/plant/PlantStateService.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 import express from 'express';
 

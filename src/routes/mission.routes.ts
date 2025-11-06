@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { recommend, getToday, complete, assignByCodes, clearToday } from '@/controllers/MissionController.js';
+import { recommend, getToday, complete, assignByCodes, clearToday } from '@/controllers/mission/MissionController.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = Router();

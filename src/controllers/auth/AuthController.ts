@@ -2,8 +2,8 @@ import type { Request, Response } from 'express';
 import {
   TokenService,
   type AccessTokenPayload,
-} from '@/services/TokenService.js';
-import { UserService } from '@/services/UserService.js';
+} from '@/services/auth/TokenService.js';
+import { UserService } from '@/services/user/UserService.js';
 
 /**
  * AuthController - JWT 인증 관련 컨트롤러

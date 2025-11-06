@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { RealtimeSpeechService } from '@/services/RealtimeSpeechService.js';
+import { RealtimeSpeechService } from '@/services/realtime/RealtimeSpeechService.js';
 
 export class RealtimeSpeechController {
   private realtimeSpeechService: RealtimeSpeechService;

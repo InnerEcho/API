@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import nodemailer from 'nodemailer';
 import type { ApiResult } from '@/interface/index.js';
-import { UserService } from '@/services/UserService.js';
+import { UserService } from '@/services/user/UserService.js';
 
 export class UserController {
   private userService: UserService;

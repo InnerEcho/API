@@ -3,7 +3,7 @@ import type { LatestAnalysis } from '@/services/bots/BaseChatBot.js';
 import { convertPlantState } from '@/utils/plant.js';
 import type { StateData } from '@/interface/index.js';
 import type { PlantDbInfo } from '@/interface/index.js';
-import { ChatHistoryService } from '@/services/ChatHistoryService.js';
+import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 
 export class GrowthDiaryBot extends BaseChatBot {
   private chatHistoryService: ChatHistoryService;

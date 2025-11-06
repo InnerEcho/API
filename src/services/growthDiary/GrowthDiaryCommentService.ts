@@ -1,4 +1,4 @@
-import db from '../models/index.js';
+import db from '@/models/index.js';
 
 export class GrowthDiaryCommentService {
   public async getComments(userId: number, diaryId: number): Promise<any> {

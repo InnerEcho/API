@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import type { ApiResult } from '@/interface/index.js';
-import { AnalysisService } from '@/services/AnalysisService.js';
+import { AnalysisService } from '@/services/analysis/AnalysisService.js';
 import db from '@/models/index.js';
 
 export class EmotionController {

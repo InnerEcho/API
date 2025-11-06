@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { PlantStateService } from '@/services/PlantStateService.js';
+import { PlantStateService } from '@/services/plant/PlantStateService.js';
 import type { ApiResult } from '@/interface/index.js';
 
 export class PlantStateController {
