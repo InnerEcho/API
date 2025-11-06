@@ -21,6 +21,12 @@ type FriendRow = {
   friend_name: string | null;
 };
 
+type EmotionRow = {
+  user_id: number;
+  emotion: string | null;
+  created_at: Date | null;
+};
+
 export class FriendService {
   private async getUserOrThrow(userId: number) {
     const user = await db.User.findOne({
@@ -236,6 +242,8 @@ export class FriendService {
       },
     )) as FriendRow[];
 
+    const emotionMap = await this.getLatestEmotions(rows.map(row => row.friend_user_id));
+
     return rows.map(row => ({
       requestId: row.friend_id,
       friend: {
@@ -243,7 +251,48 @@ export class FriendService {
         email: row.friend_email,
         name: row.friend_name,
       },
+      latestEmotion: emotionMap.get(row.friend_user_id) ?? null,
     }));
+  }
+
+  private async getLatestEmotions(friendIds: number[]) {
+    if (!friendIds.length) {
+      return new Map<number, { emotion: string | null; analyzedAt: Date | null }>();
+    }
+
+    const rows = (await db.sequelize.query(
+      `
+        WITH ranked AS (
+          SELECT
+            ch.user_id,
+            ca.emotion,
+            ca.created_at,
+            ROW_NUMBER() OVER (
+              PARTITION BY ch.user_id
+              ORDER BY ca.created_at DESC
+            ) AS rn
+          FROM chat_analysis ca
+          JOIN plant_history ch ON ch.history_id = ca.history_id
+          WHERE ch.user_id IN (:friendIds)
+        )
+        SELECT user_id, emotion, created_at
+        FROM ranked
+        WHERE rn = 1
+      `,
+      {
+        replacements: { friendIds },
+        type: QueryTypes.SELECT,
+      },
+    )) as EmotionRow[];
+
+    const map = new Map<number, { emotion: string | null; analyzedAt: Date | null }>();
+    for (const row of rows) {
+      map.set(row.user_id, {
+        emotion: row.emotion ?? null,
+        analyzedAt: row.created_at ?? null,
+      });
+    }
+    return map;
   }
 
   public async removeFriend(userId: number, friendUserId: number) {

@@ -3460,6 +3460,19 @@ components:
               type: string
               nullable: true
               example: "mockUser"
+        latestEmotion:
+          type: object
+          nullable: true
+          properties:
+            emotion:
+              type: string
+              nullable: true
+              example: "happy"
+            analyzedAt:
+              type: string
+              format: date-time
+              nullable: true
+              example: "2025-01-12T06:40:00Z"
 
     FriendList:
       type: array
