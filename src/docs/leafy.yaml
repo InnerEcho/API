@@ -3200,12 +3200,12 @@ components:
     # -------------------- Diary Schemas --------------------
     GrowthDiary:
       type: object
-      description: 성장 일기 스키마 (DB 모델 기준)
+      description: 성장 일기 스키마 (API 응답 형식)
       properties:
-        diary_id:
+        diaryId:
           type: integer
           readOnly: true
-        user_id:
+        userId:
           type: integer
         title:
           type: string
@@ -3213,16 +3213,16 @@ components:
         content:
           type: string
           example: "오늘 금쪽이와 많은 이야기를 나누었다. 행복한 하루였다."
-        image_url:
+        imageUrl:
           type: string
           nullable: true
-        created_at:
+        createdAt:
           type: string
           format: date-time
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
-        is_deleted:
+        isDeleted:
           type: boolean
         edited:
           type: boolean
@@ -3244,22 +3244,26 @@ components:
     # -------------------- Comment Schemas --------------------
     GrowthDiaryComment:
       type: object
-      description: 성장 일기 댓글 스키마 (DB 모델 기준)
+      description: 성장 일기 댓글 스키마 (API 응답 형식)
       properties:
-        comment_id:
+        commentId:
           type: integer
-        diary_id:
+        diaryId:
           type: integer
-        user_id:
+        userId:
           type: integer
         content:
           type: string
-        created_at:
+        createdAt:
           type: string
           format: date-time
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
+        isDeleted:
+          type: boolean
+        edited:
+          type: boolean
 
     CommentCreateRequest:
       type: object

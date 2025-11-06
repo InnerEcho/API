@@ -1,4 +1,5 @@
 import db from '@/models/index.js';
+import { toCamelCase } from '@/utils/casing.js';
 
 export class GrowthDiaryCommentService {
   public async getComments(userId: number, diaryId: number): Promise<any> {
@@ -18,7 +19,11 @@ export class GrowthDiaryCommentService {
         order: [['created_at', 'ASC']], // 작성순으로 정렬
       });
 
-      return comments;
+      const plainComments = comments.map(comment =>
+        comment.get({ plain: true }),
+      );
+
+      return toCamelCase(plainComments);
     } catch (err) {
       console.error('Error fetching comments:', err);
       throw new Error('Failed to fetch comments');
@@ -49,7 +54,7 @@ export class GrowthDiaryCommentService {
         edited: false,
       });
 
-      return newComment;
+      return toCamelCase(newComment.get({ plain: true }));
     } catch (err) {
       console.error('Error creating comment:', err);
       throw new Error('Failed to create comment');
@@ -96,7 +101,11 @@ export class GrowthDiaryCommentService {
         },
       });
 
-      return updatedComment;
+      if (!updatedComment) {
+        throw new Error('Comment not found');
+      }
+
+      return toCamelCase(updatedComment.get({ plain: true }));
     } catch (err) {
       console.error('Error updating comment:', err);
       throw err;

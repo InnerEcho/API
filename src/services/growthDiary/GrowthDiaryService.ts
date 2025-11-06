@@ -2,6 +2,8 @@ import { GrowthDiaryBot } from '@/services/bots/GrowthDiaryBot.js';
 import db from '@/models/index.js';
 import { Op } from 'sequelize';
 import dayjs from 'dayjs';
+import { toCamelCase } from '@/utils/casing.js';
+import { formatToKstIsoString } from '@/utils/date.js';
 
 export class GrowthDiaryService {
   constructor(private growthDiaryBot: GrowthDiaryBot) {}
@@ -52,7 +54,7 @@ export class GrowthDiaryService {
             (diary.content.length > 100 ? '...' : '')
           : '',
         edited: diary.edited,
-        createdAt: diary.created_at,
+        createdAt: formatToKstIsoString(diary.created_at),
       }));
     } catch (err) {
       console.error('Error fetching diary dates:', err);
@@ -78,7 +80,8 @@ export class GrowthDiaryService {
         throw new Error('Diary not found');
       }
 
-      return diary;
+      const plainDiary = diary.get({ plain: true });
+      return toCamelCase(plainDiary);
     } catch (err) {
       console.error('Error fetching diary by id:', err);
       throw err;
@@ -105,7 +108,12 @@ export class GrowthDiaryService {
         },
       });
 
-      return diary;
+      if (!diary) {
+        return null;
+      }
+
+      const plainDiary = diary.get({ plain: true });
+      return toCamelCase(plainDiary);
     } catch (err) {
       console.error('Error fetching diary:', err);
       throw new Error('Failed to fetch diary');
@@ -165,7 +173,11 @@ export class GrowthDiaryService {
       });
     }
 
-    // 4. 결과 반환
-    return result;
+    // 4. 결과 반환 (camelCase 변환)
+    if (typeof result.get === 'function') {
+      return toCamelCase(result.get({ plain: true }));
+    }
+
+    return toCamelCase(result);
   }
 }
