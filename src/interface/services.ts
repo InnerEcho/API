@@ -57,6 +57,9 @@ export interface IMessage {
   message: string | undefined;
   sendDate: Date;
   userType: UserType;
+  historyId?: number | null;
+  emotion?: string | null;
+  factor?: string | null;
 }
 
 export interface IMessageDb {

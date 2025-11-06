@@ -1,11 +1,24 @@
 import db from '@/models/index.js';
-import { RunnableWithMessageHistory } from '@langchain/core/runnables';
+import { RunnableWithMessageHistory, RunnablePassthrough } from '@langchain/core/runnables';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
+import { BaseMessage, HumanMessage } from '@langchain/core/messages';
+import type { PlantDbInfo } from '@/interface/index.js';
+import { AnalysisService } from '@/services/AnalysisService.js';
 import { RedisChatMessageHistory } from './RedisChatMessageHistory.js';
 
+export type LatestAnalysis = Awaited<
+  ReturnType<AnalysisService['getLatestUserAnalysis']>
+>;
+
 export abstract class BaseChatBot {
+  private readonly analysisService: AnalysisService;
+
+  constructor() {
+    this.analysisService = new AnalysisService();
+  }
+
   public async processChat(
     userId: number,
     plantId: number,
@@ -42,7 +55,19 @@ export abstract class BaseChatBot {
       speciesName: plant.get('species')?.species_name,
     };
 
-    const prompt = await this.createPrompt(plantDbInfo, userId, plantId, userMessage);
+    const latestAnalysis = await this.analysisService.getLatestUserAnalysis(
+      userId,
+    );
+    const analysisContextVariable = 'analysisContext';
+    const analysisContextPlaceholder = `{${analysisContextVariable}}`;
+    const prompt = await this.createPrompt(
+      plantDbInfo,
+      userId,
+      plantId,
+      userMessage,
+      latestAnalysis,
+      analysisContextPlaceholder,
+    );
 
     const llm = new ChatOpenAI({
       model: 'gpt-4o',
@@ -51,7 +76,23 @@ export abstract class BaseChatBot {
 
     const userMessageTemplate = ChatPromptTemplate.fromMessages(prompt);
     const outputParser = new StringOutputParser();
-    const llmChain = userMessageTemplate.pipe(llm).pipe(outputParser);
+    const llmChain = RunnablePassthrough.assign<{
+      input: string;
+      history?: BaseMessage[];
+      analysisContext: string;
+    }, {
+      analysisContext: string;
+    }>({
+      analysisContext: ({ history }) =>
+        this.buildAnalysisContext({
+          plantDbInfo,
+          history,
+          latestAnalysis,
+        }),
+    })
+      .pipe(userMessageTemplate)
+      .pipe(llm)
+      .pipe(outputParser);
 
     // 2. RunnableWithMessageHistory 설정 변경
     const historyChain = new RunnableWithMessageHistory({
@@ -85,9 +126,131 @@ export abstract class BaseChatBot {
   }
 
   protected abstract createPrompt(
-    plantDbInfo: any,
+    plantDbInfo: PlantDbInfo,
     userId: number,
     plantId: number,
     userMessage: string,
+    latestAnalysis: LatestAnalysis,
+    analysisContextPlaceholder: string,
   ): Promise<Array<[string, string]>>;
+
+  private buildAnalysisContext({
+    plantDbInfo,
+    history,
+    latestAnalysis,
+  }: {
+    plantDbInfo: PlantDbInfo;
+    history?: BaseMessage[];
+    latestAnalysis: LatestAnalysis;
+  }): string {
+    const historyAnalysis = this.extractAnalysisFromHistory(history);
+    const fallbackAnalysis = latestAnalysis
+      ? {
+          emotion: latestAnalysis.emotion ?? null,
+          factor: latestAnalysis.factor ?? null,
+          message: latestAnalysis.message ?? null,
+          createdAt: latestAnalysis.createdAt ?? null,
+        }
+      : null;
+
+    const source = historyAnalysis ?? fallbackAnalysis;
+
+    if (!source || (!source.emotion && !source.factor)) {
+      return `${plantDbInfo.userName ?? '사용자'}의 감정이 아직 파악되지 않았어요. 대화 내용을 경청하며 자연스럽게 마음을 살펴 주세요.`;
+    }
+
+    const parts: string[] = [];
+    if (source.emotion) {
+      parts.push(`- 감정: ${source.emotion}`);
+    }
+    if (source.factor) {
+      parts.push(`- 요인: ${this.truncate(source.factor, 120)}`);
+    }
+    if (source.message) {
+      parts.push(`- 관련 발화: "${this.truncate(source.message, 120)}"`);
+    }
+    if (source.createdAt) {
+      const timestamp =
+        typeof source.createdAt === 'string'
+          ? source.createdAt
+          : source.createdAt.toISOString();
+      parts.push(`- 분석 시각(UTC): ${timestamp}`);
+    }
+
+    return parts.join('\n');
+  }
+
+  private extractAnalysisFromHistory(history?: BaseMessage[]) {
+    if (!history || history.length === 0) {
+      return null;
+    }
+
+    for (let i = history.length - 1; i >= 0; i -= 1) {
+      const message = history[i];
+      if (!(message instanceof HumanMessage)) {
+        continue;
+      }
+
+      const analysis = message.additional_kwargs?.analysis as
+        | {
+            emotion?: string | null;
+            factor?: string | null;
+          }
+        | undefined;
+
+      if (!analysis) {
+        continue;
+      }
+
+      const emotion = analysis.emotion ?? null;
+      const factor = analysis.factor ?? null;
+      const text = this.toText(message.content);
+
+      if (emotion || factor) {
+        return {
+          emotion,
+          factor,
+          message: text ?? null,
+          createdAt: null,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  private toText(content: BaseMessage['content']): string | null {
+    if (typeof content === 'string') {
+      return content;
+    }
+
+    if (Array.isArray(content)) {
+      return content
+        .map(item => {
+          if (typeof item === 'string') {
+            return item;
+          }
+          if (typeof item?.text === 'string') {
+            return item.text;
+          }
+          return '';
+        })
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+    }
+
+    if (typeof (content as any)?.text === 'string') {
+      return (content as any).text;
+    }
+
+    return null;
+  }
+
+  private truncate(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return `${text.slice(0, maxLength - 3)}...`;
+  }
 }

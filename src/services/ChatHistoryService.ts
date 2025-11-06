@@ -1,5 +1,5 @@
 import db from '@/models/index.js';
-import type { IMessage, IMessageDb } from '@/interface/index.js';
+import type { IMessage } from '@/interface/index.js';
 import redisClient from '@/config/redis.config.js';
 
 const { ChatHistory } = db;
@@ -14,13 +14,19 @@ export class ChatHistoryService {
   /**
    * DB 데이터를 API 응답 형식으로 변환
    */
-  private convertDbToMessage(dbData: IMessageDb): IMessage {
+  private convertDbToMessage(dbData: any): IMessage {
+    const plain = typeof dbData.get === 'function' ? dbData.get({ plain: true }) : dbData;
+    const analysis = plain.analysis ?? null;
+
     return {
-      userId: dbData.user_id,
-      plantId: dbData.plant_id,
-      message: dbData.message,
-      sendDate: dbData.send_date,
-      userType: dbData.user_type,
+      userId: plain.user_id,
+      plantId: plain.plant_id,
+      message: plain.message,
+      sendDate: plain.send_date,
+      userType: plain.user_type,
+      historyId: plain.history_id ?? null,
+      emotion: analysis?.emotion ?? null,
+      factor: analysis?.factor ?? null,
     };
   }
 
@@ -50,13 +56,17 @@ export class ChatHistoryService {
     const chatHistoryDb = await ChatHistory.findAll({
       where: { user_id: userId, plant_id: plantId },
       order: [['send_date', 'ASC']],
-      raw: true,
+      include: [
+        {
+          model: db.ChatAnalysis,
+          as: 'analysis',
+          attributes: ['emotion', 'factor'],
+        },
+      ],
     });
 
     // 3. DB 데이터를 IMessage 형식으로 변환
-    const chatHistory = (chatHistoryDb as unknown as IMessageDb[]).map(
-      (item) => this.convertDbToMessage(item)
-    );
+    const chatHistory = chatHistoryDb.map((item) => this.convertDbToMessage(item));
 
     // 4. 변환된 데이터를 Redis에 캐싱
     try {
@@ -109,13 +119,17 @@ export class ChatHistoryService {
         },
       },
       order: [['send_date', 'ASC']],
-      raw: true,
+      include: [
+        {
+          model: db.ChatAnalysis,
+          as: 'analysis',
+          attributes: ['emotion', 'factor'],
+        },
+      ],
     });
 
     // 3. DB 데이터를 IMessage 형식으로 변환
-    const results = (resultsDb as unknown as IMessageDb[]).map((item) =>
-      this.convertDbToMessage(item)
-    );
+    const results = resultsDb.map((item) => this.convertDbToMessage(item));
 
     // 4. 오늘의 대화는 더 짧은 만료 시간 설정 (5분)
     try {
