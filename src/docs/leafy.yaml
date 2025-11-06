@@ -1801,6 +1801,46 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /friends/recommend:
+    get:
+      tags:
+        - Friend
+      summary: 반대 성향 친구 추천
+      description: |
+        최근 활동 기반으로 사용자와 성향이 대비되는 친구 후보를 추천합니다.
+        Access Token에서 userId를 추출하여 사용합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: n
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: "가져올 추천 수 (기본 10)"
+          example: 10
+      responses:
+        '200':
+          description: 친구 추천 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  msg:
+                    type: string
+                    example: "Ok"
+                  data:
+                    $ref: '#/components/schemas/FriendRecommendationResult'
+        '401':
+          description: 인증 실패 (토큰 없음 또는 유효하지 않음)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /friends/friendRequest:
     post:
       tags:
@@ -3299,6 +3339,52 @@ components:
         state:
           type: string
           description: "친구의 현재 감정 상태"
+
+    FriendRecommendationCandidate:
+      type: object
+      description: 추천된 친구 후보 상세 정보
+      properties:
+        userId:
+          type: integer
+          description: "추천된 사용자 ID"
+        score:
+          type: number
+          format: float
+          description: "0~1 사이의 반대 매칭 점수 (1에 가까울수록 대비되는 성향)"
+        activityBias:
+          type: number
+          format: float
+          description: "활동성 편향 (음수=고요, 양수=활동)"
+        arScore:
+          type: number
+          format: float
+          description: "AR 선호도 (0~1)"
+        burdenScore:
+          type: number
+          format: float
+          description: "부담 선호도 (0~1 정규화)"
+        timeBias:
+          type: number
+          format: float
+          description: "시간대 편향 (음수=주간, 양수=야간)"
+        samples:
+          type: integer
+          description: "집계에 사용된 미션 샘플 수"
+
+    FriendRecommendationResult:
+      type: object
+      description: 친구 추천 API 응답 데이터
+      properties:
+        userId:
+          type: integer
+          description: "요청한 사용자 ID"
+        topN:
+          type: integer
+          description: "요청된 추천 개수"
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FriendRecommendationCandidate'
 
     MissionDetails:
       type: object

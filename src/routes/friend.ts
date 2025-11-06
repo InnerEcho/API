@@ -1,11 +1,13 @@
 import express from 'express';
 import { FriendService } from '@/services/FriendService.js';
+import { FriendRecommendationService } from '@/services/FriendRecommendationService.js';
 import { FriendController } from '@/controllers/FriendController.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();
 const friendService= new FriendService();
-const friendController = new FriendController(friendService);
+const friendRecommendationService = new FriendRecommendationService();
+const friendController = new FriendController(friendService, friendRecommendationService);
 
 // 친구 요청 생성
 router.post(
@@ -33,6 +35,12 @@ router.get(
   '/friendslist',
   verifyTokenV2,
   friendController.getFriendList.bind(friendController)
+);
+
+router.get(
+  '/recommend',
+  verifyTokenV2,
+  friendController.recommendOpposites.bind(friendController)
 );
 
 // 친구 삭제

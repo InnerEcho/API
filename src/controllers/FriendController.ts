@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApiResult } from '@/interface/index.js';
 import { FriendService } from '@/services/FriendService.js';
+import { FriendRecommendationService } from '@/services/FriendRecommendationService.js';
 import db from '@/models/index.js';
 import { Op } from 'sequelize';
 
@@ -9,9 +10,11 @@ const { User } = db;
 
 export class FriendController {
   private friendService: FriendService;
+  private friendRecommendationService: FriendRecommendationService;
 
-  constructor(friendService: FriendService) {
+  constructor(friendService: FriendService, friendRecommendationService: FriendRecommendationService) {
     this.friendService = friendService;
+    this.friendRecommendationService = friendRecommendationService;
   }
 
   // 친구 목록 조회
@@ -47,6 +50,39 @@ export class FriendController {
       apiResult.code = 200;
       apiResult.msg = '친구 목록 조회 완료';
       apiResult.data = friendList;
+      res.status(200).json(apiResult);
+    } catch (err) {
+      console.error(err);
+      apiResult.code = 500;
+      apiResult.msg = '서버 오류';
+      res.status(500).json(apiResult);
+    }
+  }
+
+  public async recommendOpposites(
+    req: Request,
+    res: Response<ApiResult>,
+  ): Promise<void> {
+    const apiResult: ApiResult = { code: 400, data: null, msg: '' };
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        apiResult.msg = 'Missing userId';
+        res.status(400).json(apiResult);
+        return;
+      }
+
+      const topParam = req.query.n ?? req.query.topN;
+      const rawTop = Array.isArray(topParam) ? topParam[0] : topParam;
+      const parsedTop = rawTop !== undefined ? Number(rawTop) : undefined;
+      const result = await this.friendRecommendationService.recommendOpposites(
+        userId,
+        Number.isFinite(parsedTop ?? NaN) ? parsedTop : undefined,
+      );
+
+      apiResult.code = 200;
+      apiResult.msg = '친구 추천 완료';
+      apiResult.data = result;
       res.status(200).json(apiResult);
     } catch (err) {
       console.error(err);
