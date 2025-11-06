@@ -203,7 +203,7 @@ export class FriendRecommendationService {
       }
     }
 
-    const rows = await db.sequelize.query<RawMissionRow>(
+    const rows = await db.sequelize.query(
       `
         SELECT
           um.user_id,
@@ -217,7 +217,7 @@ export class FriendRecommendationService {
         WHERE COALESCE(um.completed_at, um.assigned_at) >= :since
       `,
       { replacements: { since }, type: QueryTypes.SELECT },
-    );
+    ) as RawMissionRow[];
 
     const sampleMap = toSamples(rows);
     const profiles: Profile[] = [];
