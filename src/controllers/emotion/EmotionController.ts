@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import type { ApiResult } from '@/interface/index.js';
 import { AnalysisService } from '@/services/analysis/AnalysisService.js';
-import db from '@/models/index.js';
 
 export class EmotionController {
   private analysisService: AnalysisService;
@@ -18,23 +17,21 @@ export class EmotionController {
 
     try {
       const userId = req.user!.userId;
-
-      // 사용자 정보 조회 (state 필드 가져오기)
-      const user = await db.User.findOne({
-        where: { user_id: userId },
-        attributes: ['state'], // state 필드만 조회
-      });
-
-      if (!user) {
-        result.code = 404;
-        result.msg = 'User not found';
-        res.status(404).json(result);
-        return;
-      }
+      const latest = await this.analysisService.getLatestUserAnalysis(userId);
 
       result.code = 200;
-      result.data = { emotion: user.state }; // 감정 상태를 'emotion' 키로 반환
-      result.msg = 'Ok';
+      result.msg = latest ? 'Ok' : 'No analysis';
+      result.data = latest
+        ? {
+            emotion: latest.emotion,
+            message: latest.message,
+            factor: latest.factor,
+            analyzedAt: latest.createdAt,
+            plantId: latest.plantId,
+            historyId: latest.historyId,
+            sendDate: latest.sendDate,
+          }
+        : null;
       res.status(200).json(result);
     } catch (err) {
       console.error(err);

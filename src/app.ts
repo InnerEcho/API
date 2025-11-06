@@ -24,7 +24,7 @@ import chatRouter from '@/routes/chat.js';
 import plantRouter from '@/routes/plant.js';
 import diaryRouter from '@/routes/diary.js';
 import speechRouter from '@/routes/speech.js';
-import missionRouter from '@/routes/mission.routes.js';
+import missionRouter from '@/routes/mission.js';
 import friendRouter from '@/routes/friend.js';
 import emotionRouter from '@/routes/emotion.js';
 import arMultiplayerRouter from '@/routes/arMultiplayer.js';
