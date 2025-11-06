@@ -1,6 +1,6 @@
 import axios from 'axios';
+import { Op } from 'sequelize';
 import db from "../models/index.js";
-import { Op } from "sequelize";
 const EMOTION_LABELS = ['공포', '놀람', '분노', '슬픔', '중립', '행복', '혐오'];
 export class AnalysisService {
   emotionEndpoint;
@@ -53,13 +53,11 @@ export class AnalysisService {
         emotion,
         question: trimmedMessage
       });
-
       if (data && data.success === false) {
         console.warn('AnalysisService: factor API returned failure', data);
         return undefined;
       }
-
-      const factor = typeof (data?.factor) === 'string' ? data.factor : typeof (data?.result?.factor) === 'string' ? data.result.factor : undefined;
+      const factor = typeof data?.factor === 'string' ? data.factor : typeof data?.result?.factor === 'string' ? data.result.factor : undefined;
       if (typeof factor === 'string' && factor.length > 0) {
         return factor;
       }

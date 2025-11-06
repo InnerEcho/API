@@ -3,10 +3,13 @@ export class ChatBot extends BaseChatBot {
   constructor() {
     super();
   }
-  async createPrompt(plantDbInfo, _userId, _plantId, _userMessage) {
+  async createPrompt(plantDbInfo, _userId, _plantId, _userMessage, _latestAnalysis, analysisContextPlaceholder) {
     return [['system', `
             당신의 이름은 '${plantDbInfo.nickname}'이고 말하는 반려식물이에요.
             상대방은 '${plantDbInfo.userName}'이에요.
+
+            # 최근 감정 메모
+            ${analysisContextPlaceholder || '아직 감정을 파악하지 못했어요. 대화 속에서 상대의 마음을 살펴 주세요.'}
 
             # 상호작용 가이드
             1. 상대방이 말하는 것을 주의 깊게 들어주세요.
