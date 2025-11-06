@@ -18,20 +18,9 @@ export class EmotionController {
     try {
       const userId = req.user!.userId;
       const latest = await this.analysisService.getLatestUserAnalysis(userId);
-
       result.code = 200;
       result.msg = latest ? 'Ok' : 'No analysis';
-      result.data = latest
-        ? {
-            emotion: latest.emotion,
-            message: latest.message,
-            factor: latest.factor,
-            analyzedAt: latest.createdAt,
-            plantId: latest.plantId,
-            historyId: latest.historyId,
-            sendDate: latest.sendDate,
-          }
-        : null;
+      result.data = { emotion: latest?.emotion ?? null };
       res.status(200).json(result);
     } catch (err) {
       console.error(err);
