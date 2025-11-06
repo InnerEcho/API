@@ -48,14 +48,14 @@ export class RealtimeTicketController {
       // 티켓 생성
       const ticket = await this.ticketService.createTicket(userId, plantId);
 
-      // 성공 응답 (Old WebSocket 엔드포인트)
+      // 성공 응답
       res.status(200).json({
         code: 200,
-        message: 'Ticket created successfully (Old WebSocket - G.711)',
+        message: 'Ticket created successfully',
         data: {
           ticket,
           expiresIn: 30, // 초 단위
-          wsUrl: `wss://${req.get('host')}/chat/realtime-old?ticket=${ticket}`,
+          wsUrl: `wss://${req.get('host')}/chat/realtime?ticket=${ticket}`,
         },
       });
 
