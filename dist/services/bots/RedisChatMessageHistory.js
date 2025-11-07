@@ -30,14 +30,7 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
       const cached = await redisClient.lrange(this.sessionKey, 0, -1);
       if (cached && cached.length > 0) {
         // Redis에 캐시가 있으면 파싱하여 반환
-        return cached.map(item => {
-          const parsed = JSON.parse(item);
-          if (parsed.type === 'human') {
-            return new HumanMessage(parsed.content);
-          } else {
-            return new AIMessage(parsed.content);
-          }
-        });
+        return cached.map(item => this.deserializeMessage(item)).filter(message => message !== null);
       }
 
       // 2. Redis에 없으면 DB에서 조회
@@ -46,29 +39,23 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
           user_id: this.userId,
           plant_id: this.plantId
         },
+        include: [{
+          model: db.ChatAnalysis,
+          as: 'analysis',
+          attributes: ['emotion', 'factor']
+        }],
         order: [['send_date', 'DESC']],
         limit: 20
       });
       if (histories.length === 0) {
         return [];
       }
-      const reversedHistories = histories.reverse();
-      const messages = reversedHistories.map(history => {
-        if (history.user_type === 'User') {
-          return new HumanMessage(history.message);
-        } else {
-          return new AIMessage(history.message);
-        }
-      });
+      const messages = this.mapHistoriesToMessages(histories);
 
       // 3. DB에서 가져온 데이터를 Redis에 캐싱
       const pipeline = redisClient.pipeline();
       messages.forEach(msg => {
-        const serialized = JSON.stringify({
-          type: msg instanceof HumanMessage ? 'human' : 'ai',
-          content: msg.content
-        });
-        pipeline.rpush(this.sessionKey, serialized);
+        pipeline.rpush(this.sessionKey, this.serializeMessage(msg));
       });
       pipeline.expire(this.sessionKey, this.TTL);
       await pipeline.exec();
@@ -108,11 +95,7 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
       // 1. Redis에 즉시 저장 (빠른 응답)
       const pipeline = redisClient.pipeline();
       messages.forEach(msg => {
-        const serialized = JSON.stringify({
-          type: msg instanceof HumanMessage ? 'human' : 'ai',
-          content: msg.content
-        });
-        pipeline.rpush(this.sessionKey, serialized);
+        pipeline.rpush(this.sessionKey, this.serializeMessage(msg));
       });
       pipeline.expire(this.sessionKey, this.TTL);
       await pipeline.exec();
@@ -158,6 +141,7 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
         }
       }
     }
+    await this.refreshRedisCache();
   }
 
   /**
@@ -178,6 +162,94 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
     } catch (error) {
       console.error('메시지를 삭제하는 중 오류 발생:', error);
       throw error;
+    }
+  }
+  deserializeMessage(item) {
+    try {
+      const parsed = JSON.parse(item);
+      const content = typeof parsed.content === 'string' ? parsed.content : String(parsed.content);
+      if (parsed.type === 'human') {
+        const analysis = parsed.analysis;
+        return new HumanMessage({
+          content,
+          additional_kwargs: analysis ? {
+            analysis
+          } : {}
+        });
+      }
+      if (parsed.type === 'ai') {
+        return new AIMessage(content);
+      }
+      return null;
+    } catch (error) {
+      console.error('RedisChatMessageHistory: failed to deserialize message', error);
+      return null;
+    }
+  }
+  mapHistoriesToMessages(histories) {
+    return [...histories].reverse().map(history => {
+      const analysis = history.get('analysis');
+      const rawHistoryId = history.get('history_id');
+      const historyIdNumber = rawHistoryId === null ? null : Number(rawHistoryId);
+      const safeHistoryId = historyIdNumber !== null && !Number.isNaN(historyIdNumber) ? historyIdNumber : null;
+      if (history.user_type === 'User') {
+        const analysisPayload = {
+          historyId: safeHistoryId,
+          emotion: analysis?.emotion ?? null,
+          factor: analysis?.factor ?? null
+        };
+        return new HumanMessage({
+          content: history.message,
+          additional_kwargs: {
+            analysis: analysisPayload
+          }
+        });
+      }
+      return new AIMessage(history.message);
+    });
+  }
+  serializeMessage(message) {
+    const basePayload = {
+      type: message instanceof HumanMessage ? 'human' : 'ai',
+      content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content)
+    };
+    if (message instanceof HumanMessage) {
+      const analysis = message.additional_kwargs?.analysis;
+      if (analysis) {
+        basePayload.analysis = {
+          historyId: analysis.historyId !== undefined && analysis.historyId !== null ? Number(analysis.historyId) : null,
+          emotion: analysis.emotion ?? null,
+          factor: analysis.factor ?? null
+        };
+      }
+    }
+    return JSON.stringify(basePayload);
+  }
+  async refreshRedisCache() {
+    try {
+      const histories = await ChatHistory.findAll({
+        where: {
+          user_id: this.userId,
+          plant_id: this.plantId
+        },
+        include: [{
+          model: db.ChatAnalysis,
+          as: 'analysis',
+          attributes: ['emotion', 'factor']
+        }],
+        order: [['send_date', 'DESC']],
+        limit: 20
+      });
+      const messages = this.mapHistoriesToMessages(histories);
+      const pipeline = redisClient.pipeline();
+      pipeline.del(this.sessionKey);
+      messages.forEach(msg => {
+        pipeline.rpush(this.sessionKey, this.serializeMessage(msg));
+      });
+      pipeline.expire(this.sessionKey, this.TTL);
+      await pipeline.exec();
+    } catch (error) {
+      console.error('RedisChatMessageHistory: failed to refresh cache', error);
     }
   }
 }

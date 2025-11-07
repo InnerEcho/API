@@ -1,8 +1,9 @@
 import { BaseChatBot } from '@/services/bots/BaseChatBot.js';
+import type { LatestAnalysis } from '@/services/bots/BaseChatBot.js';
 import { convertPlantState } from '@/utils/plant.js';
 import type { StateData } from '@/interface/index.js';
 import type { PlantDbInfo } from '@/interface/index.js';
-import { ChatHistoryService } from '@/services/ChatHistoryService.js';
+import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 
 export class GrowthDiaryBot extends BaseChatBot {
   private chatHistoryService: ChatHistoryService;
@@ -17,6 +18,8 @@ export class GrowthDiaryBot extends BaseChatBot {
     userId: number,
     plantId: number,
     userMessage: string,
+    _latestAnalysis: LatestAnalysis,
+    analysisContextPlaceholder: string,
   ): Promise<Array<[string, string]>> {
     const todayHistory = await this.chatHistoryService.getTodayHistory(
       userId,
@@ -32,6 +35,9 @@ export class GrowthDiaryBot extends BaseChatBot {
     
         ## 오늘 대화 내역
         ${todayHistory}
+
+        ## 감정 참고 메모
+        ${analysisContextPlaceholder || '오늘 감정 정보가 부족해요. 대화 속에서 자연스럽게 마음을 묻고 기록해 주세요.'}
 
         ## 작성 지침:
         1. 오늘의 감정과 배움을 담아 진솔하게 작성해 주세요. (200자 이내)

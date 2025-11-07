@@ -2,7 +2,7 @@ import type { Server as HTTPServer } from 'http';
 import { WebSocketServer } from 'ws';
 import WebSocket from 'ws';
 import type { IncomingMessage } from 'http';
-import { RealtimeTicketService } from '@/services/RealtimeTicketService.js';
+import { RealtimeTicketService } from '@/services/realtime/RealtimeTicketService.js';
 
 /**
  * Realtime Speech WebSocket 서버 설정

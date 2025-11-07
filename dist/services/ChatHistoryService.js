@@ -14,12 +14,19 @@ export class ChatHistoryService {
    * DB 데이터를 API 응답 형식으로 변환
    */
   convertDbToMessage(dbData) {
+    const plain = typeof dbData.get === 'function' ? dbData.get({
+      plain: true
+    }) : dbData;
+    const analysis = plain.analysis ?? null;
     return {
-      userId: dbData.user_id,
-      plantId: dbData.plant_id,
-      message: dbData.message,
-      sendDate: dbData.send_date,
-      userType: dbData.user_type
+      userId: plain.user_id,
+      plantId: plain.plant_id,
+      message: plain.message,
+      sendDate: plain.send_date,
+      userType: plain.user_type,
+      historyId: plain.history_id ?? null,
+      emotion: analysis?.emotion ?? null,
+      factor: analysis?.factor ?? null
     };
   }
 
@@ -48,7 +55,11 @@ export class ChatHistoryService {
         plant_id: plantId
       },
       order: [['send_date', 'ASC']],
-      raw: true
+      include: [{
+        model: db.ChatAnalysis,
+        as: 'analysis',
+        attributes: ['emotion', 'factor']
+      }]
     });
 
     // 3. DB 데이터를 IMessage 형식으로 변환
@@ -94,7 +105,11 @@ export class ChatHistoryService {
         }
       },
       order: [['send_date', 'ASC']],
-      raw: true
+      include: [{
+        model: db.ChatAnalysis,
+        as: 'analysis',
+        attributes: ['emotion', 'factor']
+      }]
     });
 
     // 3. DB 데이터를 IMessage 형식으로 변환

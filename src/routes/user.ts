@@ -1,8 +1,8 @@
 import express from 'express';
 import { verifyToken } from '@/middlewares/auth.js';
-import { UserController } from '@/controllers/UserController.js';
-import { UserService } from '@/services/UserService.js';
-import { EmotionController } from '@/controllers/EmotionController.js';
+import { UserController } from '@/controllers/user/UserController.js';
+import { UserService } from '@/services/user/UserService.js';
+import { EmotionController } from '@/controllers/emotion/EmotionController.js';
 
 const router = express.Router();
 

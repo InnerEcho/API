@@ -1,9 +1,9 @@
 import express from 'express';
-import { GrowthDiaryController } from '@/controllers/GrowthDiaryController.js';
-import { GrowthDiaryService } from '@/services/GrowthDiaryService.js';
+import { GrowthDiaryController } from '@/controllers/growthDiary/GrowthDiaryController.js';
+import { GrowthDiaryService } from '@/services/growthDiary/GrowthDiaryService.js';
 import { GrowthDiaryBot } from '@/services/bots/GrowthDiaryBot.js';
-import { GrowthDiaryCommentController } from '@/controllers/GrowthDiaryCommentController.js';
-import { GrowthDiaryCommentService } from '@/services/GrowthDiaryCommentService.js';
+import { GrowthDiaryCommentController } from '@/controllers/growthDiary/GrowthDiaryCommentController.js';
+import { GrowthDiaryCommentService } from '@/services/growthDiary/GrowthDiaryCommentService.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();

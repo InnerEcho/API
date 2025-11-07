@@ -7,4 +7,5 @@ const emotionController = new EmotionController();
 // 특정 사용자의 감정 정보 조회 (토큰에서 user_id 추출)
 router.get('/', verifyTokenV2, emotionController.getEmotion.bind(emotionController));
 router.get('/latest', verifyTokenV2, emotionController.getLatestAnalysis.bind(emotionController));
+router.get('/history/monthly', verifyTokenV2, emotionController.getMonthlyAnalyses.bind(emotionController));
 export default router;

@@ -1,5 +1,5 @@
 import express from 'express';
-import { MultiplayerTicketController } from '@/controllers/MultiplayerTicketController.js';
+import { MultiplayerTicketController } from '@/controllers/multiplayer/MultiplayerTicketController.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();

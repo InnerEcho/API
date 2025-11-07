@@ -1,11 +1,11 @@
 import express from 'express';
-import { PlantChatBotController } from '@/controllers/ChatBotController.js';
-import { ChatHistoryController } from '@/controllers/ChatHistoryController.js';
-import { RealtimeTicketController } from '@/controllers/RealtimeTicketController.js';
-import { RealtimeSpeechController } from '@/controllers/RealtimeSpeechController.js';
-import { ChatService } from '@/services/ChatService.js';
+import { PlantChatBotController } from '@/controllers/chat/ChatBotController.js';
+import { ChatHistoryController } from '@/controllers/chat/ChatHistoryController.js';
+import { RealtimeTicketController } from '@/controllers/realtime/RealtimeTicketController.js';
+import { RealtimeSpeechController } from '@/controllers/realtime/RealtimeSpeechController.js';
+import { ChatService } from '@/services/chat/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
-import { ChatHistoryService } from '@/services/ChatHistoryService.js';
+import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();
@@ -311,17 +311,16 @@ router.get(
 
 /**
  * @swagger
- * /chat/realtime-old/ticket:
+ * /chat/realtime/ticket:
  *   post:
- *     summary: (구버전) Realtime WebSocket 연결용 일회용 티켓 발급
+ *     summary: Realtime WebSocket 연결용 일회용 티켓 발급
  *     description: |
- *       [DEPRECATED] WebSocket + G.711 방식입니다. 새로운 WebRTC 방식(/realtime/session)을 사용하세요.
- *       보안을 위해 WebSocket 연결 전에 HTTP API로 먼저 티켓을 발급받습니다.
+ *       WebSocket 연결 전에 HTTP API로 먼저 티켓을 발급받습니다.
  *       - JWT 토큰은 안전한 HTTPS로만 전송
  *       - 티켓은 30초 유효, 일회용
  *       - 발급받은 티켓으로 WebSocket 연결
  *     tags:
- *       - Realtime Speech (Old)
+ *       - Realtime Speech
  *     security:
  *       - BearerAuth: []
  *     requestBody:
@@ -365,7 +364,7 @@ router.get(
  *                     wsUrl:
  *                       type: string
  *                       description: WebSocket 연결 URL
- *                       example: "wss://your-server.com/chat/realtime-old?ticket=abc123..."
+ *                       example: "wss://your-server.com/chat/realtime?ticket=abc123..."
  *       401:
  *         description: 인증 실패
  *       400:
@@ -374,7 +373,7 @@ router.get(
  *         description: 서버 오류
  */
 router.post(
-  '/realtime-old/ticket',
+  '/realtime/ticket',
   verifyTokenV2,
   realtimeTicketController.createTicket.bind(realtimeTicketController)
 );

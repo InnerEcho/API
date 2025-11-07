@@ -1,8 +1,8 @@
 import type { Server as HTTPServer, IncomingMessage } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { URL } from 'url';
-import { MultiplayerTicketService } from '@/services/MultiplayerTicketService.js';
-import { RoomManager } from '@/services/RoomManager.js';
+import { MultiplayerTicketService } from '@/services/multiplayer/MultiplayerTicketService.js';
+import { RoomManager } from '@/services/multiplayer/RoomManager.js';
 
 /**
  * 멀티플레이어 AR WebSocket 서버를 설정합니다.

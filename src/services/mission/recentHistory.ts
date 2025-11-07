@@ -1,24 +1,44 @@
 import db from '@/models/index.js';
 import { QueryTypes } from 'sequelize';
+import { getMissionRecoConfig } from '@/config/missionReco.config.js';
 
 export type UserMissionStatus = 'assigned' | 'complete' | 'skipped' | 'expired';
 
-const VALID_STATUS_SET: ReadonlySet<UserMissionStatus> = new Set([
-  'assigned',
-  'complete',
-  'skipped',
-  'expired',
-]);
+const RECO = getMissionRecoConfig();
 
-const DEFAULT_STATUSES: UserMissionStatus[] = ['assigned', 'complete'];
+const STATUS_VALUES: UserMissionStatus[] = ['assigned', 'complete', 'skipped', 'expired'];
+const VALID_STATUS_SET: ReadonlySet<UserMissionStatus> = new Set(STATUS_VALUES);
 
-const MAX_DAYS = Number.isFinite(Number(process.env.RECENT_HISTORY_MAX_DAYS))
-  ? Math.max(1, Number(process.env.RECENT_HISTORY_MAX_DAYS))
-  : 30;
+function normalizeStatuses(values: string[]): UserMissionStatus[] {
+  const unique: UserMissionStatus[] = [];
+  for (const value of values) {
+    if (!VALID_STATUS_SET.has(value as UserMissionStatus)) continue;
+    const typed = value as UserMissionStatus;
+    if (unique.includes(typed)) continue;
+    unique.push(typed);
+  }
+  return unique;
+}
+
+const DEFAULT_STATUSES: UserMissionStatus[] = (() => {
+  const normalized = normalizeStatuses(RECO.novelty.statuses ?? []);
+  if (normalized.length > 0) return normalized;
+  return ['assigned', 'complete'];
+})();
+
+const DEFAULT_HISTORY_DAYS = Math.max(1, RECO.novelty.historyDays ?? 3);
+
+const MAX_DAYS = (() => {
+  const envValue = Number(process.env.RECENT_HISTORY_MAX_DAYS);
+  if (Number.isFinite(envValue)) {
+    return Math.max(DEFAULT_HISTORY_DAYS, Math.max(1, Math.floor(envValue)));
+  }
+  return Math.max(DEFAULT_HISTORY_DAYS, 30);
+})();
 
 export async function loadRecentHistoryMap(
   userId: number,
-  days = 3,
+  days = DEFAULT_HISTORY_DAYS,
   opts?: { statuses?: UserMissionStatus[] },
 ): Promise<Map<number, number>> {
   const clampedDays = Math.max(1, Math.min(Math.floor(days || 0), MAX_DAYS));
@@ -30,7 +50,7 @@ export async function loadRecentHistoryMap(
 
   const since = new Date(Date.now() - clampedDays * 24 * 60 * 60 * 1000);
 
-  const rows = await db.sequelize.query<{ mission_id: number; cnt: number }>(
+  const rows = (await db.sequelize.query(
     `
     SELECT um.mission_id, COUNT(*) AS cnt
     FROM user_missions um
@@ -43,7 +63,7 @@ export async function loadRecentHistoryMap(
       replacements: { userId, statuses, since },
       type: QueryTypes.SELECT,
     },
-  );
+  )) as Array<{ mission_id: number; cnt: number }>;
 
   const map = new Map<number, number>();
   for (const row of rows) {
@@ -54,8 +74,11 @@ export async function loadRecentHistoryMap(
 
 export function noveltyPenaltyById(missionId: number, recentMap: Map<number, number>): number {
   const cnt = recentMap.get(missionId) ?? 0;
-  if (cnt <= 0) return 0;
-  if (cnt === 1) return -0.2;
-  if (cnt === 2) return -0.5;
-  return -1.0;
+  const penalties = RECO.novelty.penaltiesByCount;
+  if (!Array.isArray(penalties) || penalties.length === 0) {
+    return 0;
+  }
+  const index = Math.min(Math.max(0, Math.floor(cnt)), penalties.length - 1);
+  const value = Number(penalties[index]);
+  return Number.isFinite(value) ? value : 0;
 }
