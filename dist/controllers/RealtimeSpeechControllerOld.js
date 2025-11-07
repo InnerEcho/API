@@ -1,6 +1,7 @@
 import WebSocket from 'ws';
 import { RealtimeSpeechServiceOld } from "../services/RealtimeSpeechServiceOld.js";
 export class RealtimeSpeechControllerOld {
+  realtimeSpeechService;
   constructor() {
     this.realtimeSpeechService = new RealtimeSpeechServiceOld();
   }

@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { UserService } from "../services/UserService.js";
 export class UserController {
+  userService;
   constructor(userService) {
     this.userService = userService;
   }

@@ -8,6 +8,10 @@ import db from "../models/index.js";
 // 토큰 검증 결과 타입
 
 export class TokenService {
+  accessTokenSecret;
+  refreshTokenSecret;
+  accessTokenExpiry;
+  refreshTokenExpiry;
   constructor() {
     // 환경변수에서 시크릿 키 가져오기
     this.accessTokenSecret = process.env.JWT_ACCESS_SECRET || process.env.JWT_AUTH_KEY || '';

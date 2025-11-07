@@ -23,26 +23,51 @@ export class AnalysisService {
   }
 
   async analyzeEmotion(message: string): Promise<string | undefined> {
-    try {
-      const response = await axios.post(this.emotionEndpoint, { text: message });
-      const data = response.data;
+  try {
+    const response = await axios.post(this.emotionEndpoint, { text: message });
+    const data = response.data;
 
-      if (!data || !data.predictions || !Array.isArray(data.predictions)) {
-        console.warn('AnalysisService: emotion API response invalid', data);
-        return undefined;
-      }
-
-      const probs: number[] = data.predictions;
-      if (!Array.isArray(probs) || probs.length === 0) {
-        return undefined;
-      }
-
-      const maxIndex = probs.indexOf(Math.max(...probs));
-      return EMOTION_LABELS[maxIndex];
-    } catch (error) {
-      console.error('AnalysisService: emotion analysis failed', error);
+    if (!data || !data.predictions || !Array.isArray(data.predictions)) {
+      console.warn('AnalysisService: emotion API response invalid', data);
       return undefined;
     }
+
+    const probs: number[] = data.predictions;
+    if (!Array.isArray(probs) || probs.length === 0) {
+      return undefined;
+    }
+
+    const sortedProbs = [...probs].sort((a, b) => b - a);
+    const maxProb = sortedProbs[0];
+    const secondProb = sortedProbs[1];
+    const maxIndex = probs.indexOf(maxProb);
+    const dominantEmotion = EMOTION_LABELS[maxIndex];
+
+    // 4️⃣ 불확실 감정 판정
+    if (maxProb < 0.55 || Math.abs(maxProb - secondProb) < 0.08) {
+      const sorted = probs
+        .map((p, i) => ({ label: EMOTION_LABELS[i], prob: p }))
+        .sort((a, b) => b.prob - a.prob);
+
+      console.log("AnalysisService: 불확실 감정 → undefined 반환");
+      console.log(
+        "🔍 감정 확률 상세:",
+        sorted.map((s) => `${s.label}: ${(s.prob * 100).toFixed(1)}%`).join(", ")
+      );
+      console.log(
+        `➡️ 상위 감정: ${sorted[0].label} (${(sorted[0].prob * 100).toFixed(1)}%), 2위: ${sorted[1].label} (${(sorted[1].prob * 100).toFixed(1)}%)`
+      );
+
+      return undefined;
+    }
+
+    // 5️⃣ 최종 감정 반환
+    return dominantEmotion;
+
+  } catch (error) {
+    console.error('AnalysisService: emotion analysis failed', error);
+    return undefined;
+  }
   }
 
   async extractFactor(message: string): Promise<string | undefined> {

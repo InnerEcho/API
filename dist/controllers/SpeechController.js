@@ -1,4 +1,5 @@
 export class PlantSpeechController {
+  speechService;
   constructor(speechService) {
     this.speechService = speechService;
   }

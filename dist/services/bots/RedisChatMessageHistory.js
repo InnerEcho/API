@@ -2,11 +2,16 @@ import { BaseChatMessageHistory } from '@langchain/core/chat_history';
 import { AIMessage, HumanMessage, mapChatMessagesToStoredMessages } from '@langchain/core/messages';
 import redisClient from "../../config/redis.config.js";
 import db from "../../models/index.js";
+import { AnalysisService } from "../AnalysisService.js";
 const {
   ChatHistory
 } = db;
+const analysisService = new AnalysisService();
 export class RedisChatMessageHistory extends BaseChatMessageHistory {
   lc_namespace = ['langchain', 'stores', 'message', 'redis'];
+  userId;
+  plantId;
+  sessionKey;
   TTL = 24 * 60 * 60; // 24시간
 
   constructor(userId, plantId) {
@@ -127,15 +132,31 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
    */
   async saveToDatabase(messages) {
     const storedMessages = mapChatMessagesToStoredMessages(messages);
-    const recordsToCreate = storedMessages.map(message => ({
-      user_id: this.userId,
-      plant_id: this.plantId,
-      message: message.data.content,
-      user_type: message.type === 'human' ? 'User' : 'Bot',
-      send_date: new Date()
-    }));
-    if (recordsToCreate.length > 0) {
-      await ChatHistory.bulkCreate(recordsToCreate);
+    for (const message of storedMessages) {
+      const payload = {
+        user_id: this.userId,
+        plant_id: this.plantId,
+        message: message.data.content,
+        user_type: message.type === 'human' ? 'User' : 'Bot',
+        send_date: new Date()
+      };
+      const record = await ChatHistory.create(payload);
+      if (payload.user_type === 'User') {
+        const rawHistoryId = record.get('history_id');
+        const historyIdNumber = Number(rawHistoryId);
+        if (!Number.isNaN(historyIdNumber)) {
+          try {
+            await analysisService.analyzeAndStore({
+              historyId: historyIdNumber,
+              userId: this.userId,
+              message: payload.message,
+              userType: 'User'
+            });
+          } catch (error) {
+            console.error('RedisChatMessageHistory: analysis store failed', error);
+          }
+        }
+      }
     }
   }
 

@@ -1,14 +1,10 @@
 import db from "../../models/index.js";
-import { EmotionService } from "../EmotionService.js";
 import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RedisChatMessageHistory } from "./RedisChatMessageHistory.js";
 export class BaseChatBot {
-  constructor() {
-    this.emotionService = new EmotionService();
-  }
   async processChat(userId, plantId, userMessage) {
     // Sequelize 모델을 사용하여 user, plant, species 정보를 JOIN
     const plant = await db.Plant.findOne({

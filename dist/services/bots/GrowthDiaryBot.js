@@ -1,6 +1,7 @@
 import { BaseChatBot } from "./BaseChatBot.js";
 import { ChatHistoryService } from "../ChatHistoryService.js";
 export class GrowthDiaryBot extends BaseChatBot {
+  chatHistoryService;
   constructor() {
     super();
     this.chatHistoryService = new ChatHistoryService();

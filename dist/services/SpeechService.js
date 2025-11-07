@@ -4,6 +4,7 @@ import fs from 'fs';
 import { UserType } from "../interface/index.js";
 import { ZyphraError } from '@zyphra/client';
 export class SpeechService {
+  client;
   constructor() {
     if (!process.env.ZONOS_API_KEY) {
       throw new Error('ZONOS_API_KEY is not defined');

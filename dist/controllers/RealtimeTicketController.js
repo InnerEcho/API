@@ -4,6 +4,7 @@ import { RealtimeTicketService } from "../services/RealtimeTicketService.js";
  * Realtime WebSocket 연결을 위한 티켓 발급 컨트롤러
  */
 export class RealtimeTicketController {
+  ticketService;
   constructor() {
     this.ticketService = new RealtimeTicketService();
   }
