@@ -52,7 +52,7 @@ export class AnalysisService {
         .map((p, i) => ({ label: EMOTION_LABELS[i], prob: p }))
         .sort((a, b) => b.prob - a.prob);
 
-      console.log("AnalysisService: 불확실 감정 → undefined 반환");
+      console.log("AnalysisService: 불확실 감정 → 중립 반환");
       console.log(
         "🔍 감정 확률 상세:",
         sorted.map((s) => `${s.label}: ${(s.prob * 100).toFixed(1)}%`).join(", ")
@@ -61,7 +61,7 @@ export class AnalysisService {
         `➡️ 상위 감정: ${sorted[0].label} (${(sorted[0].prob * 100).toFixed(1)}%), 2위: ${sorted[1].label} (${(sorted[1].prob * 100).toFixed(1)}%)`
       );
 
-      return undefined;
+      return "중립";
     }
 
     // 5️⃣ 최종 감정 반환
