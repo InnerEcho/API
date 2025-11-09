@@ -1,6 +1,10 @@
 import db from '@/models/index.js';
 import type { IMessage } from '@/interface/index.js';
 import redisClient from '@/config/redis.config.js';
+import {
+  buildFullHistoryCacheKey,
+  buildTodayHistoryCacheKey,
+} from '@/services/chat/historyCache.util.js';
 
 const { ChatHistory } = db;
 
@@ -31,13 +35,37 @@ export class ChatHistoryService {
   }
 
   /**
+   * DB에서 직접 대화 이력을 조회한다.
+   * - 공통 포맷 유지
+   * - 캐시 미사용
+   */
+  private async fetchHistoryFromDb(
+    userId: number,
+    plantId: number,
+  ): Promise<IMessage[]> {
+    const chatHistoryDb = await ChatHistory.findAll({
+      where: { user_id: userId, plant_id: plantId },
+      order: [['send_date', 'ASC']],
+      include: [
+        {
+          model: db.ChatAnalysis,
+          as: 'analysis',
+          attributes: ['emotion', 'factor'],
+        },
+      ],
+    });
+
+    return (chatHistoryDb as any[]).map(item => this.convertDbToMessage(item));
+  }
+
+  /**
    * 특정 사용자와 식물 간의 대화 이력 조회
    */
   public async getChatHistory(
     userId: number,
     plantId: number,
   ): Promise<IMessage[]> {
-    const cacheKey = `chat-history:${userId}:${plantId}`;
+    const cacheKey = buildFullHistoryCacheKey(userId, plantId);
 
     // 1. Redis 캐시 조회
     try {
@@ -53,20 +81,7 @@ export class ChatHistoryService {
 
     // 2. Cache Miss: DB에서 데이터 조회
     console.log(`[Cache Miss] ${cacheKey}`);
-    const chatHistoryDb = await ChatHistory.findAll({
-      where: { user_id: userId, plant_id: plantId },
-      order: [['send_date', 'ASC']],
-      include: [
-        {
-          model: db.ChatAnalysis,
-          as: 'analysis',
-          attributes: ['emotion', 'factor'],
-        },
-      ],
-    });
-
-    // 3. DB 데이터를 IMessage 형식으로 변환
-    const chatHistory = (chatHistoryDb as any[]).map(item => this.convertDbToMessage(item));
+    const chatHistory = await this.fetchHistoryFromDb(userId, plantId);
 
     // 4. 변환된 데이터를 Redis에 캐싱
     try {
@@ -82,6 +97,16 @@ export class ChatHistoryService {
     return chatHistory;
   }
 
+  /**
+   * API/서비스에서 즉시 최신 이력을 확인해야 할 때 사용
+   */
+  public async getChatHistoryFromDb(
+    userId: number,
+    plantId: number,
+  ): Promise<IMessage[]> {
+    return this.fetchHistoryFromDb(userId, plantId);
+  }
+
 
 
   /**
@@ -92,7 +117,7 @@ export class ChatHistoryService {
     plantId: number,
   ): Promise<IMessage[]> {
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const cacheKey = `chat-history:today:${userId}:${plantId}:${today}`;
+    const cacheKey = buildTodayHistoryCacheKey(userId, plantId, today);
 
     // 1. Redis 캐시 조회
     try {
