@@ -60,6 +60,8 @@ export class GrowthDiaryController {
         diaryId,
       );
 
+      console.log(response);
+
       result.code = 200;
       result.data = response;
       result.msg = 'Ok';

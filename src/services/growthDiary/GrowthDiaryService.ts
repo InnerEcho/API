@@ -94,6 +94,9 @@ export class GrowthDiaryService {
       }
 
       const plainDiary = diary.get({ plain: true });
+      
+      console.log(plainDiary);
+      
       return this.applyDiaryMetaFallback(toCamelCase(plainDiary));
     } catch (err) {
       console.error('Error fetching diary by id:', err);
