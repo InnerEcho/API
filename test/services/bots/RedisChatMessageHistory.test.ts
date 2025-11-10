@@ -79,6 +79,7 @@ describe('RedisChatMessageHistory', () => {
         type: 'human',
         content: 'hi',
         analysis: { emotion: 'joy', factor: 'light' },
+        timestamp: '2024-01-01T00:00:00.000Z',
       }),
     ];
     redisMock.lrange.mockResolvedValueOnce(cached);
@@ -88,6 +89,9 @@ describe('RedisChatMessageHistory', () => {
 
     expect(messages).toHaveLength(1);
     expect(messages[0].content).toBe('hi');
+    expect(messages[0].additional_kwargs?.timestamp).toBe(
+      '2024-01-01T00:00:00.000Z',
+    );
     expect(chatHistoryMock.findAll).not.toHaveBeenCalled();
   });
 
@@ -99,12 +103,14 @@ describe('RedisChatMessageHistory', () => {
         user_type: 'User',
         message: 'Hello',
         analysis: { emotion: null, factor: null },
+        send_date: new Date('2024-01-01T00:00:00Z'),
       }),
       buildRecord({
         history_id: 2,
         user_type: 'Bot',
         message: 'Hi!',
         analysis: null,
+        send_date: new Date('2024-01-01T00:01:00Z'),
       }),
     ]);
     const pipeline = buildPipeline();
@@ -114,7 +120,9 @@ describe('RedisChatMessageHistory', () => {
 
     expect(messages).toHaveLength(2);
     expect(messages[0].content).toBe('Hi!');
+    expect(messages[0].additional_kwargs?.timestamp).toBeDefined();
     expect(messages[1].content).toBe('Hello');
+    expect(messages[1].additional_kwargs?.timestamp).toBeDefined();
     expect(redisMock.pipeline).toHaveBeenCalledTimes(1);
     expect(pipeline.rpush).toHaveBeenCalledWith(sessionKey, expect.any(String));
     expect(pipeline.ltrim).toHaveBeenCalledWith(sessionKey, -200, -1);
@@ -132,8 +140,11 @@ describe('RedisChatMessageHistory', () => {
 
     expect(pipeline.rpush).toHaveBeenCalledWith(
       sessionKey,
-      expect.any(String),
+      expect.stringMatching(/timestamp/),
     );
+    const serialized = pipeline.rpush.mock.calls[0][1];
+    const parsed = JSON.parse(serialized);
+    expect(parsed.timestamp).toBeDefined();
     expect(chatHistoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: userId,
@@ -174,6 +185,7 @@ describe('RedisChatMessageHistory', () => {
         user_type: 'User',
         message: 'ask',
         analysis: { emotion: 'happy', factor: 'sun' },
+        send_date: new Date('2024-01-01T12:00:00Z'),
       }),
     ]);
 
@@ -183,5 +195,8 @@ describe('RedisChatMessageHistory', () => {
       emotion: 'happy',
       factor: 'sun',
     });
+    expect(messages[0].additional_kwargs?.timestamp).toBe(
+      '2024-01-01T12:00:00.000Z',
+    );
   });
 });
