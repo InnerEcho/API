@@ -142,6 +142,7 @@ export class GrowthDiaryService {
       userId,
       plantId,
       message,
+      { storeHistory: false },
     );
 
     // 2. DB 저장용 메시지 객체 생성

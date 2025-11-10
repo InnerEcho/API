@@ -23,7 +23,9 @@ export abstract class BaseChatBot {
     userId: number,
     plantId: number,
     userMessage: string,
+    options: { storeHistory?: boolean } = {},
   ): Promise<string> {
+    const { storeHistory = true } = options;
     // Sequelize 모델을 사용하여 user, plant, species 정보를 JOIN
     const plant = await db.Plant.findOne({
       where: {
@@ -95,34 +97,32 @@ export abstract class BaseChatBot {
       .pipe(outputParser);
 
     // 2. RunnableWithMessageHistory 설정 변경
-    const historyChain = new RunnableWithMessageHistory({
-      runnable: llmChain,
-      getMessageHistory: (sessionId: string) => {
-        // sessionId를 파싱하여 userId와 plantId를 추출합니다.
-        const [uid, pid] = sessionId.split('-').map(Number);
-        if (isNaN(uid) || isNaN(pid)) {
-          throw new Error(`잘못된 sessionId 형식입니다. "userId-plantId"가 필요합니다: "${sessionId}"`);
-        }
-        // 명확하게 분리된 인자를 생성자에 전달합니다.
-        return new RedisChatMessageHistory(uid, pid);
-      },
-      inputMessagesKey: 'input',
-      historyMessagesKey: 'history',
-    });
+    const historyStore = new RedisChatMessageHistory(userId, plantId);
 
-    // 3. sessionId를 "userId-plantId" 조합으로 생성
-    const sessionId = `${userId}-${plantId}`;
+    if (storeHistory) {
+      const historyChain = new RunnableWithMessageHistory({
+        runnable: llmChain,
+        getMessageHistory: () => historyStore,
+        inputMessagesKey: 'input',
+        historyMessagesKey: 'history',
+      });
 
-    const result = await historyChain.invoke(
-      { input: userMessage, analysisContext: '' },
-      {
-        configurable: {
-          sessionId: sessionId,
+      return historyChain.invoke(
+        { input: userMessage, analysisContext: '' },
+        {
+          configurable: {
+            sessionId: `${userId}-${plantId}`,
+          },
         },
-      },
-    );
+      );
+    }
 
-    return result;
+    const historyMessages = await historyStore.getMessages();
+    return llmChain.invoke({
+      input: userMessage,
+      history: historyMessages,
+      analysisContext: '',
+    });
   }
 
   protected abstract createPrompt(
