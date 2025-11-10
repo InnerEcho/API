@@ -1461,6 +1461,21 @@ paths:
                               type: string
                               description: "일기 제목"
                               example: "2025-10-10 일지"
+                            emotion:
+                              type: string
+                              nullable: true
+                              description: "해당 일기의 대표 감정"
+                              example: "행복"
+                            emotionFactor:
+                              type: string
+                              nullable: true
+                              description: "대표 감정의 원인"
+                              example: "아침 산책으로 기분이 환기되었음"
+                            primaryMission:
+                              type: string
+                              nullable: true
+                              description: "오늘 가장 먼저 완료한 미션 이름"
+                              example: "스트레칭 30초"
                             contentPreview:
                               type: string
                               description: "일기 내용 미리보기 (최대 100자, 초과 시 '...' 추가)"
@@ -1484,12 +1499,18 @@ paths:
                     - diaryId: 10
                       date: "2025-10-10"
                       title: "2025-10-10 일지"
+                      emotion: "행복"
+                      emotionFactor: "햇살 좋은 오전 산책"
+                      primaryMission: "스트레칭 30초"
                       contentPreview: "오늘은 조금 힘든 하루였지만, 금쪽이와 대화하면서 위로받았다..."
                       edited: true
                       createdAt: "2025-10-10T20:15:00.000Z"
                     - diaryId: 15
                       date: "2025-10-15"
                       title: "2025-10-15 일지"
+                      emotion: "슬픔"
+                      emotionFactor: "업무 스트레스로 지침"
+                      primaryMission: null
                       contentPreview: "오늘은 정말 좋은 하루였다. 아침에 일어나서 식물이 자라는 모습을 보니 기분이 좋았다..."
                       edited: false
                       createdAt: "2025-10-15T09:30:00.000Z"
@@ -3268,6 +3289,18 @@ components:
         title:
           type: string
           example: "금쪽이와의 하루"
+        emotion:
+          type: string
+          nullable: true
+          description: "일기의 대표 감정"
+        emotionFactor:
+          type: string
+          nullable: true
+          description: "대표 감정의 원인 또는 맥락"
+        primaryMission:
+          type: string
+          nullable: true
+          description: "오늘 가장 먼저 완료한 대표 미션 이름"
         content:
           type: string
           example: "오늘 금쪽이와 많은 이야기를 나누었다. 행복한 하루였다."

@@ -62,6 +62,9 @@ export interface GrowthDiaryAttributes {
   diary_id: number;
   user_id: number;
   title: string;
+  dominant_emotion?: string | null;
+  emotion_factor?: string | null;
+  primary_mission?: string | null;
   content: string;
   image_url?: string;
   created_at: Date;

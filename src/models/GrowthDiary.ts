@@ -4,6 +4,9 @@ interface GrowthDiaryAttributes {
   diary_id: number;
   user_id: number;
   title: string;
+  dominant_emotion?: string | null;
+  emotion_factor?: string | null;
+  primary_mission?: string | null;
   content: string;
   image_url?: string;
   created_at: Date;
@@ -12,7 +15,8 @@ interface GrowthDiaryAttributes {
   edited: boolean;
 }
 
-interface GrowthDiaryCreationAttributes extends Optional<GrowthDiaryAttributes, 'diary_id' | 'created_at' | 'updated_at'> {}
+interface GrowthDiaryCreationAttributes
+  extends Optional<GrowthDiaryAttributes, 'diary_id' | 'created_at' | 'updated_at'> {}
 
 export default function (sequelize: Sequelize) {
   return sequelize.define<Model<GrowthDiaryAttributes, GrowthDiaryCreationAttributes>>(
@@ -34,6 +38,21 @@ export default function (sequelize: Sequelize) {
         type: DataTypes.STRING(255),
         allowNull: false,
         comment: "일지 제목",
+      },
+      dominant_emotion: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+        comment: "일지 대표 감정",
+      },
+      emotion_factor: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: "대표 감정의 원인",
+      },
+      primary_mission: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        comment: "대표 미션 이름",
       },
       content: {
         type: DataTypes.TEXT,
