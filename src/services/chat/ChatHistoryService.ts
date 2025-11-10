@@ -5,6 +5,12 @@ import {
   buildFullHistoryCacheKey,
   buildTodayHistoryCacheKey,
 } from '@/services/chat/historyCache.util.js';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const { ChatHistory } = db;
 
@@ -116,8 +122,7 @@ export class ChatHistoryService {
     userId: number,
     plantId: number,
   ): Promise<IMessage[]> {
-    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const cacheKey = buildTodayHistoryCacheKey(userId, plantId, today);
+    const { cacheKey, startUtc, endUtc } = this.buildTodayRange(userId, plantId);
 
     // 1. Redis 캐시 조회
     try {
@@ -132,15 +137,13 @@ export class ChatHistoryService {
 
     // 2. Cache Miss: DB에서 오늘 데이터 조회
     console.log(`[Cache Miss] ${cacheKey}`);
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
     const resultsDb = await ChatHistory.findAll({
       where: {
         user_id: userId,
         plant_id: plantId,
         send_date: {
-          [db.Sequelize.Op.gte]: todayStart,
+          [db.Sequelize.Op.gte]: startUtc,
+          [db.Sequelize.Op.lt]: endUtc,
         },
       },
       order: [['send_date', 'ASC']],
@@ -164,6 +167,23 @@ export class ChatHistoryService {
     }
 
     return results;
+  }
+
+  private buildTodayRange(userId: number, plantId: number): {
+    cacheKey: string;
+    startUtc: Date;
+    endUtc: Date;
+  } {
+    const nowKst = dayjs().tz('Asia/Seoul');
+    const startUtc = nowKst.startOf('day').utc().toDate();
+    const endUtc = nowKst.endOf('day').utc().toDate();
+    const cacheKey = buildTodayHistoryCacheKey(
+      userId,
+      plantId,
+      nowKst.format('YYYY-MM-DD'),
+    );
+
+    return { cacheKey, startUtc, endUtc };
   }
 }
 

@@ -8,6 +8,11 @@ vi.mock('@/config/redis.config.js', () => ({
   },
 }));
 
+const symbols = vi.hoisted(() => ({
+  gte: Symbol('gte'),
+  lt: Symbol('lt'),
+}));
+
 vi.mock('@/models/index.js', () => {
   const findAll = vi.fn();
   return {
@@ -16,7 +21,12 @@ vi.mock('@/models/index.js', () => {
         findAll,
       },
       ChatAnalysis: {},
-      Sequelize: {},
+      Sequelize: {
+        Op: {
+          gte: symbols.gte,
+          lt: symbols.lt,
+        },
+      },
     },
   };
 });
@@ -66,6 +76,7 @@ const buildDbRecord = (overrides = {}) => {
 describe('ChatHistoryService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     redisMock.get.mockReset();
     redisMock.setex.mockReset();
     dbMock.ChatHistory.findAll.mockReset();
@@ -141,5 +152,25 @@ describe('ChatHistoryService', () => {
       }),
     );
     expect(result[0]?.historyId).toBe(100);
+  });
+
+  it('getTodayHistory는 KST 기준 하루 범위를 조회한다', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2025-11-10T06:00:00.000Z')); // 15:00 KST
+    redisMock.get.mockResolvedValueOnce(null);
+    dbMock.ChatHistory.findAll.mockResolvedValueOnce([]);
+    redisMock.setex.mockResolvedValueOnce(null as unknown as string);
+
+    await service.getTodayHistory(1, 2);
+
+    const callArg = dbMock.ChatHistory.findAll.mock.calls[0][0];
+    const sendDate = callArg.where.send_date;
+    expect(sendDate[symbols.gte]).toEqual(new Date('2025-11-09T15:00:00.000Z'));
+    expect(sendDate[symbols.lt]).toEqual(new Date('2025-11-10T14:59:59.999Z'));
+    expect(redisMock.setex).toHaveBeenCalledWith(
+      'chat-history:today:1:2:2025-11-10',
+      300,
+      JSON.stringify([]),
+    );
   });
 });
