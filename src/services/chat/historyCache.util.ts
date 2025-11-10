@@ -3,6 +3,16 @@ import redisClient from '@/config/redis.config.js';
 const FULL_HISTORY_PREFIX = 'chat-history';
 const TODAY_HISTORY_PREFIX = 'chat-history:today';
 
+export function toHistoryDateKey(date: Date | string): string {
+  const reference = new Date(date as Date | string);
+
+  if (Number.isNaN(reference.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return reference.toISOString().slice(0, 10);
+}
+
 export const buildFullHistoryCacheKey = (userId: number, plantId: number) =>
   `${FULL_HISTORY_PREFIX}:${userId}:${plantId}`;
 

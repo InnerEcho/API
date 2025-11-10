@@ -8,7 +8,10 @@ import {
 import redisClient from '@/config/redis.config.js';
 import db from '@/models/index.js';
 import { AnalysisService } from '@/services/analysis/AnalysisService.js';
-import { invalidateHistoryCaches } from '@/services/chat/historyCache.util.js';
+import {
+  invalidateHistoryCaches,
+  toHistoryDateKey,
+} from '@/services/chat/historyCache.util.js';
 
 const { ChatHistory } = db;
 const analysisService = new AnalysisService();
@@ -165,7 +168,7 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
       };
 
       const record = await ChatHistory.create(payload);
-      affectedDates.add(this.formatDateKey(sendDate));
+      affectedDates.add(toHistoryDateKey(sendDate));
 
       if (payload.user_type === 'User') {
         const rawHistoryId = record.get('history_id') as number | string | bigint;
@@ -178,6 +181,8 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
               userId: this.userId,
               message: payload.message,
               userType: 'User',
+              plantId: this.plantId,
+              sendDate,
             })
             .catch(error => {
               console.error('RedisChatMessageHistory: analysis store failed', error);
@@ -187,7 +192,9 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
     }
 
     if (affectedDates.size > 0) {
-      await invalidateHistoryCaches(this.userId, this.plantId, [...affectedDates]);
+      await invalidateHistoryCaches(this.userId, this.plantId, [
+        ...affectedDates,
+      ]);
     }
   }
 
@@ -325,7 +332,4 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
     return JSON.stringify(basePayload);
   }
 
-  private formatDateKey(date: Date): string {
-    return date.toISOString().slice(0, 10);
-  }
 }

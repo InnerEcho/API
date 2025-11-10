@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { Op } from 'sequelize';
 import db from '@/models/index.js';
+import {
+  invalidateHistoryCaches,
+  toHistoryDateKey,
+} from '@/services/chat/historyCache.util.js';
 
 const EMOTION_LABELS = ['공포', '놀람', '분노', '슬픔', '중립', '행복', '혐오'];
 
@@ -11,6 +15,8 @@ interface AnalyzeAndStoreParams {
   userId: number;
   message: string;
   userType?: UserType;
+  plantId?: number;
+  sendDate?: Date | string | null;
 }
 
 export class AnalysisService {
@@ -129,6 +135,8 @@ export class AnalysisService {
     userId,
     message,
     userType = 'User',
+    plantId,
+    sendDate,
   }: AnalyzeAndStoreParams): Promise<{ emotion?: string; factor?: string }> {
     // Only user utterances are analysed/stored for now.
     if (userType !== 'User') {
@@ -156,6 +164,12 @@ export class AnalysisService {
         history_id: historyId,
         emotion: emotion ?? null,
         factor: factor ?? null,
+      });
+      await this.invalidateCachesAfterAnalysis({
+        userId,
+        historyId,
+        plantId,
+        sendDate,
       });
     } catch (error) {
       console.error('AnalysisService: failed to persist chat analysis', error);
@@ -301,5 +315,68 @@ export class AnalysisService {
     const monthAgo = new Date();
     monthAgo.setMonth(monthAgo.getMonth() - 1);
     return this.getUserAnalysesSince(userId, monthAgo);
+  }
+
+  private async invalidateCachesAfterAnalysis({
+    userId,
+    historyId,
+    plantId,
+    sendDate,
+  }: {
+    userId: number;
+    historyId: number;
+    plantId?: number;
+    sendDate?: Date | string | null;
+  }): Promise<void> {
+    try {
+      let resolvedPlantId =
+        typeof plantId === 'number' && !Number.isNaN(plantId)
+          ? plantId
+          : null;
+      let resolvedSendDate = sendDate ?? null;
+
+      if (resolvedPlantId === null || resolvedSendDate === null) {
+        const history = await db.ChatHistory.findOne({
+          where: { history_id: historyId },
+          attributes: ['plant_id', 'send_date', 'user_id'],
+        });
+
+        if (history) {
+          if (resolvedPlantId === null) {
+            const rawPlantId = history.get
+              ? history.get('plant_id')
+              : (history as any).plant_id;
+            if (rawPlantId !== undefined && rawPlantId !== null) {
+              const parsedPlantId = Number(rawPlantId);
+              resolvedPlantId = Number.isNaN(parsedPlantId)
+                ? null
+                : parsedPlantId;
+            }
+          }
+
+          if (resolvedSendDate === null) {
+            resolvedSendDate = history.get
+              ? history.get('send_date')
+              : (history as any).send_date;
+          }
+        }
+      }
+
+      if (resolvedPlantId === null) {
+        return;
+      }
+
+      const dateKeys =
+        resolvedSendDate !== null
+          ? [toHistoryDateKey(resolvedSendDate)]
+          : [];
+
+      await invalidateHistoryCaches(userId, resolvedPlantId, dateKeys);
+    } catch (error) {
+      console.error(
+        `AnalysisService: failed to invalidate caches for history ${historyId}`,
+        error,
+      );
+    }
   }
 }

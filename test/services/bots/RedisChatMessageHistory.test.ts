@@ -4,6 +4,7 @@ const redisMock = vi.hoisted(() => ({
   lrange: vi.fn(),
   pipeline: vi.fn(),
   del: vi.fn(),
+  get: vi.fn(),
 }));
 
 const chatHistoryMock = vi.hoisted(() => ({
@@ -97,6 +98,7 @@ describe('RedisChatMessageHistory', () => {
 
   it('Redis에 없으면 DB에서 로드해 Redis에 채운다', async () => {
     redisMock.lrange.mockResolvedValueOnce([]);
+    redisMock.get.mockResolvedValueOnce(null);
     chatHistoryMock.findAll.mockResolvedValueOnce([
       buildRecord({
         history_id: 1,
@@ -160,6 +162,8 @@ describe('RedisChatMessageHistory', () => {
       expect.objectContaining({
         historyId: 99,
         message: 'latest',
+        plantId,
+        sendDate: expect.any(Date),
       }),
     );
   });
