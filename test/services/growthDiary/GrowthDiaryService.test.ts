@@ -66,14 +66,14 @@ describe('GrowthDiaryService helpers', () => {
     service = new GrowthDiaryService({} as any);
   });
 
-  it('대표 감정이 없으면 null을 반환한다', () => {
+  it('대표 감정이 없으면 "없음"으로 처리된다', () => {
     const history = [
       buildHistory({ emotion: '중립', factor: '이유', sendDate: new Date('2025-01-01T09:00:00Z') }),
     ];
 
     const result = (service as any).getDominantEmotionFromHistory(history);
 
-    expect(result).toEqual({ emotion: null, factor: null });
+    expect(result).toEqual({ emotion: '없음', factor: '없음' });
   });
 
   it('행복이 다른 감정과 동률일 때 행복을 선택한다', () => {

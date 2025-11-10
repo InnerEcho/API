@@ -211,7 +211,7 @@ export class GrowthDiaryService {
     history: IMessage[],
   ): { emotion: string | null; factor: string | null } {
     if (!history || history.length === 0) {
-      return { emotion: null, factor: null };
+      return { emotion: '없음', factor: '없음' };
     }
 
     const userMessages = history.filter(
@@ -222,7 +222,7 @@ export class GrowthDiaryService {
     );
 
     if (userMessages.length === 0) {
-      return { emotion: null, factor: null };
+      return { emotion: '없음', factor: '없음' };
     }
 
     const counts = new Map<string, number>();
