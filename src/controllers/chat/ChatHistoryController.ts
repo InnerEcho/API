@@ -28,7 +28,7 @@ export class ChatHistoryController {
         return;
       }
 
-      const response = await this.chatHistoryService.getChatHistory(
+      const response = await this.chatHistoryService.getChatHistoryFromDb(
         userId,
         parsedPlantId,
       );

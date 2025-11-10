@@ -176,8 +176,8 @@ paths:
                     properties:
                       emotion:
                         type: string
-                        description: "사용자의 현재 감정 상태 (예: 행복, 슬픔)"
-                        example: "행복"
+                        description: "사용자의 현재 감정 상태 (예: happy, sad)"
+                        example: "happy"
                   msg:
                     type: string
                     example: "Ok"
@@ -227,7 +227,7 @@ paths:
                             type: string
                             nullable: true
                             description: 감정 분석 결과
-                            example: "행복"
+                            example: "happy"
                           message:
                             type: string
                             nullable: true
@@ -299,7 +299,7 @@ paths:
                           type: string
                           nullable: true
                           description: 감정 분석 결과
-                          example: "행복"
+                          example: "happy"
                         message:
                           type: string
                           nullable: true
@@ -828,7 +828,7 @@ paths:
                         example: "김Inner"
                       state:
                         type: string
-                        example: "중립"
+                        example: "neutral"
         '401':
           description: 토큰이 유효하지 않거나 만료됨
           content:
@@ -1272,9 +1272,9 @@ paths:
                   example: "오늘 하루 어땠어?"
                 emotion:
                   type: string
-                  description: "(선택) 사용자의 현재 감정 상태. 챗봇 답변에 영향을 줄 수 있습니다."
+                  description: "(선택) 사용자의 현재 감정 상태. 챗봇 답변에 영향을 줄 수 있습니다. (예: happy, sad)"
                   nullable: true
-                  example: "행복"
+                  example: "happy"
       responses:
         '200':
           description: 챗봇의 응답 성공
@@ -1902,6 +1902,35 @@ paths:
                   msg:
                     type: string
                     example: "Ok"
+              examples:
+                inboundList:
+                  summary: 받은 친구 요청 예시
+                  value:
+                    code: 200
+                    data:
+                      - requestId: 501
+                        status: "pending"
+                        direction: "inbound"
+                        from:
+                          userId: 78
+                          email: "friend1@example.com"
+                          name: "친구1"
+                        to:
+                          userId: 12
+                          email: "me@example.com"
+                          name: "나"
+                      - requestId: 502
+                        status: "pending"
+                        direction: "inbound"
+                        from:
+                          userId: 82
+                          email: "friend2@example.com"
+                          name: "친구2"
+                        to:
+                          userId: 12
+                          email: "me@example.com"
+                          name: "나"
+                    msg: "Ok"
         '401':
           description: 인증 실패
         '500':
@@ -1932,6 +1961,35 @@ paths:
                   msg:
                     type: string
                     example: "Ok"
+              examples:
+                outboundList:
+                  summary: 보낸 친구 요청 예시
+                  value:
+                    code: 200
+                    data:
+                      - requestId: 610
+                        status: "pending"
+                        direction: "outbound"
+                        from:
+                          userId: 12
+                          email: "me@example.com"
+                          name: "나"
+                        to:
+                          userId: 91
+                          email: "target1@example.com"
+                          name: "친구3"
+                      - requestId: 611
+                        status: "pending"
+                        direction: "outbound"
+                        from:
+                          userId: 12
+                          email: "me@example.com"
+                          name: "나"
+                        to:
+                          userId: 95
+                          email: "target2@example.com"
+                          name: "친구4"
+                    msg: "Ok"
         '401':
           description: 인증 실패
         '500':
@@ -3050,7 +3108,7 @@ components:
           type: string
         state:
           type: string
-          description: "사용자의 현재 감정 상태 (예: 행복, 슬픔, 중립)"
+          description: "사용자의 현재 감정 상태 (예: happy, sad, neutral)"
           nullable: true
         created_at:
           type: string
@@ -3193,9 +3251,9 @@ components:
           example: "오늘 하루 어땠어?"
         emotion:
           type: string
-          description: "(선택) 사용자의 현재 감정 상태. 챗봇 답변에 영향을 줄 수 있습니다."
+          description: "(선택) 사용자의 현재 감정 상태. 챗봇 답변에 영향을 줄 수 있습니다. (예: happy, sad)"
           nullable: true
-          example: "행복"
+          example: "happy"
 
     # -------------------- Diary Schemas --------------------
     GrowthDiary:
@@ -3511,7 +3569,8 @@ components:
         direction:
           type: string
           enum: ["inbound", "outbound"]
-          example: "inbound"
+          description: "\"inbound\"는 내가 받은 요청, \"outbound\"는 내가 보낸 요청입니다."
+          example: "outbound"
         from:
           $ref: '#/components/schemas/FriendRequestParticipant'
         to:
