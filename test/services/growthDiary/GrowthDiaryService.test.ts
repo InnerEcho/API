@@ -146,9 +146,10 @@ describe('GrowthDiaryService helpers', () => {
 
     expect(normalized).toEqual({
       diaryId: 1,
-      dominantEmotion: '없음',
       emotionFactor: '없음',
       primaryMission: '없음',
+      emotion: '없음',
     });
+    expect((normalized as any).dominantEmotion).toBeUndefined();
   });
 });

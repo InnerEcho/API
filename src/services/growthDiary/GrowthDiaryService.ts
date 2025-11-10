@@ -313,16 +313,34 @@ export class GrowthDiaryService {
     }
   }
 
-  private applyDiaryMetaFallback<T extends {
-    dominantEmotion?: string | null;
-    emotionFactor?: string | null;
-    primaryMission?: string | null;
-  }>(data: T): T {
-    return {
-      ...data,
-      dominantEmotion: data.dominantEmotion ?? '없음',
-      emotionFactor: data.emotionFactor ?? '없음',
-      primaryMission: data.primaryMission ?? '없음',
-    };
+  private applyDiaryMetaFallback<
+    T extends {
+      dominantEmotion?: string | null;
+      emotion?: string | null;
+      emotionFactor?: string | null;
+      primaryMission?: string | null;
+    }
+  >(data: T): T & {
+    emotion: string;
+    emotionFactor: string;
+    primaryMission: string;
+  } {
+    const normalized: any = { ...data };
+    const emotion =
+      normalized.emotion ?? normalized.dominantEmotion ?? '없음';
+    const emotionFactor =
+      normalized.emotionFactor ?? normalized.emotion_factor ?? '없음';
+    const primaryMission =
+      normalized.primaryMission ?? normalized.primary_mission ?? '없음';
+
+    normalized.emotion = emotion;
+    normalized.emotionFactor = emotionFactor;
+    normalized.primaryMission = primaryMission;
+
+    delete normalized.dominantEmotion;
+    delete normalized.emotion_factor;
+    delete normalized.primary_mission;
+
+    return normalized;
   }
 }
