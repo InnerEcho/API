@@ -59,9 +59,9 @@ export class GrowthDiaryService {
         diaryId: diary.diary_id,
         date: diary.date,
         title: diary.title,
-        emotion: diary.dominant_emotion ?? null,
-        emotionFactor: diary.emotion_factor ?? null,
-        primaryMission: diary.primary_mission ?? null,
+        emotion: diary.dominant_emotion ?? '없음',
+        emotionFactor: diary.emotion_factor ?? '없음',
+        primaryMission: diary.primary_mission ?? '없음',
         contentPreview: diary.content
           ? diary.content.substring(0, 100) +
             (diary.content.length > 100 ? '...' : '')
@@ -94,7 +94,7 @@ export class GrowthDiaryService {
       }
 
       const plainDiary = diary.get({ plain: true });
-      return toCamelCase(plainDiary);
+      return this.applyDiaryMetaFallback(toCamelCase(plainDiary));
     } catch (err) {
       console.error('Error fetching diary by id:', err);
       throw err;
@@ -126,7 +126,7 @@ export class GrowthDiaryService {
       }
 
       const plainDiary = diary.get({ plain: true });
-      return toCamelCase(plainDiary);
+      return this.applyDiaryMetaFallback(toCamelCase(plainDiary));
     } catch (err) {
       console.error('Error fetching diary:', err);
       throw new Error('Failed to fetch diary');
@@ -201,10 +201,10 @@ export class GrowthDiaryService {
 
     // 4. 결과 반환 (camelCase 변환)
     if (typeof result.get === 'function') {
-      return toCamelCase(result.get({ plain: true }));
+      return this.applyDiaryMetaFallback(toCamelCase(result.get({ plain: true })));
     }
 
-    return toCamelCase(result);
+    return this.applyDiaryMetaFallback(toCamelCase(result));
   }
 
   private getDominantEmotionFromHistory(
@@ -311,5 +311,18 @@ export class GrowthDiaryService {
       console.error('Failed to resolve primary mission', error);
       return null;
     }
+  }
+
+  private applyDiaryMetaFallback<T extends {
+    dominantEmotion?: string | null;
+    emotionFactor?: string | null;
+    primaryMission?: string | null;
+  }>(data: T): T {
+    return {
+      ...data,
+      dominantEmotion: data.dominantEmotion ?? '없음',
+      emotionFactor: data.emotionFactor ?? '없음',
+      primaryMission: data.primaryMission ?? '없음',
+    };
   }
 }

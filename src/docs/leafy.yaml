@@ -1464,17 +1464,17 @@ paths:
                             emotion:
                               type: string
                               nullable: true
-                              description: "해당 일기의 대표 감정"
+                              description: "해당 일기의 대표 감정 (없으면 '없음')"
                               example: "행복"
                             emotionFactor:
                               type: string
                               nullable: true
-                              description: "대표 감정의 원인"
+                              description: "대표 감정의 원인 (없으면 '없음')"
                               example: "아침 산책으로 기분이 환기되었음"
                             primaryMission:
                               type: string
                               nullable: true
-                              description: "오늘 가장 먼저 완료한 미션 이름"
+                              description: "오늘 가장 먼저 완료한 미션 이름 (없으면 '없음')"
                               example: "스트레칭 30초"
                             contentPreview:
                               type: string
@@ -1510,7 +1510,7 @@ paths:
                       title: "2025-10-15 일지"
                       emotion: "슬픔"
                       emotionFactor: "업무 스트레스로 지침"
-                      primaryMission: null
+                      primaryMission: "없음"
                       contentPreview: "오늘은 정말 좋은 하루였다. 아침에 일어나서 식물이 자라는 모습을 보니 기분이 좋았다..."
                       edited: false
                       createdAt: "2025-10-15T09:30:00.000Z"
@@ -3292,15 +3292,15 @@ components:
         emotion:
           type: string
           nullable: true
-          description: "일기의 대표 감정"
+          description: "일기의 대표 감정 (없으면 '없음')"
         emotionFactor:
           type: string
           nullable: true
-          description: "대표 감정의 원인 또는 맥락"
+          description: "대표 감정의 원인 또는 맥락 (없으면 '없음')"
         primaryMission:
           type: string
           nullable: true
-          description: "오늘 가장 먼저 완료한 대표 미션 이름"
+          description: "오늘 가장 먼저 완료한 대표 미션 이름 (없으면 '없음')"
         content:
           type: string
           example: "오늘 금쪽이와 많은 이야기를 나누었다. 행복한 하루였다."

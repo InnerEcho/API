@@ -133,4 +133,22 @@ describe('GrowthDiaryService helpers', () => {
 
     expect(primaryMission).toBeNull();
   });
+
+  it('메타 데이터가 없으면 "없음"으로 치환한다', () => {
+    const base = {
+      diaryId: 1,
+      dominantEmotion: null,
+      emotionFactor: undefined,
+      primaryMission: null,
+    };
+
+    const normalized = (service as any).applyDiaryMetaFallback(base);
+
+    expect(normalized).toEqual({
+      diaryId: 1,
+      dominantEmotion: '없음',
+      emotionFactor: '없음',
+      primaryMission: '없음',
+    });
+  });
 });
