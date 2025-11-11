@@ -36,18 +36,21 @@ type Profile = {
   vec: Vec;
 };
 
+type RecommendationCandidate = {
+  userId: number;
+  score: number;
+  activityBias: number;
+  arScore: number;
+  burdenScore: number;
+  timeBias: number;
+  samples: number;
+  userName: string | null;
+};
+
 type RecommendResult = {
   userId: number;
   topN: number;
-  results: Array<{
-    userId: number;
-    score: number;
-    activityBias: number;
-    arScore: number;
-    burdenScore: number;
-    timeBias: number;
-    samples: number;
-  }>;
+  results: RecommendationCandidate[];
 };
 
 const BURDEN_MIN = 1;
@@ -253,9 +256,28 @@ export class FriendRecommendationService {
         burdenScore: profile.burdenScore,
         timeBias: profile.timeBias,
         samples: profile.samples,
+        userName: null as string | null,
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, topN);
+
+    if (ranked.length > 0) {
+      const candidateIds = ranked.map(candidate => candidate.userId);
+      const users = await db.User.findAll({
+        attributes: ['user_id', 'user_name'],
+        where: { user_id: { [Op.in]: candidateIds } },
+      });
+      const nameMap = new Map<number, string | null>();
+      for (const userRecord of users) {
+        const id = Number(userRecord.get('user_id'));
+        if (!Number.isFinite(id)) continue;
+        const rawName = userRecord.get('user_name');
+        nameMap.set(id, typeof rawName === 'string' ? rawName : null);
+      }
+      for (const candidate of ranked) {
+        candidate.userName = nameMap.get(candidate.userId) ?? null;
+      }
+    }
 
     logger.info({
       event: 'friends_reco_summary',
