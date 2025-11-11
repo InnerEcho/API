@@ -206,6 +206,7 @@ function toDTO(mission: MissionRow) {
   return {
     id: mission.user_mission_id ?? mission.mission_id,
     missionId: mission.mission_id,
+    code: mission.code,
     title: mission.title,
     description: mission.desc ?? '',
     completed: mission.user_mission_status === 'complete',
