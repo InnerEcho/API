@@ -1,57 +1,73 @@
-// src/ws/setupMultiplayerARWebSocket.ts
 import type { Server as HTTPServer, IncomingMessage } from 'http';
-import type { Socket } from 'net';
+import type { Duplex } from 'stream';
 import { WebSocketServer, WebSocket } from 'ws';
 import { URL } from 'url';
 import { MultiplayerTicketService } from '@/services/multiplayer/MultiplayerTicketService.js';
 import { RoomManager } from '@/services/multiplayer/RoomManager.js';
 
-/**
- * 멀티플레이어 AR WebSocket 서버를 설정합니다.
- * - 경로: /ws/ar-multiplayer
- * - 업그레이드 전에 ticket 검증 (만료/사용됨/없음 등) 후에만 101 업그레이드
- * - Nginx 프록시 뒤에서 동작 가정 (Host/X-Forwarded-* 제공)
- */
+let initialized = false;
+
 export function setupMultiplayerARWebSocket(server: HTTPServer): void {
-  // noServer 모드: upgrade를 직접 가로채서 검증 후 업그레이드
-  const wss = new WebSocketServer({ noServer: true });
+  if (initialized) { console.log('[WS] already initialized'); return; }
+  initialized = true;
+
+  const wss = new WebSocketServer({
+    noServer: true,
+    clientTracking: true,
+    perMessageDeflate: false,
+    maxPayload: 16 * 1024,
+  });
 
   const ticketService = new MultiplayerTicketService();
   const roomManager = new RoomManager();
 
-  function writeHttpAndDestroy(socket: Socket, status: number, reason: string) {
+  console.log('[WS] ALLOWED_ORIGINS', process.env.WS_ALLOWED_ORIGINS ?? 'https://leafy.wolyong.cloud');
+  console.log('[WS] TICKET_PREFIX', process.env.WS_TICKET_PREFIX ?? 'ws:ticket:', 'TTL', process.env.WS_TICKET_TTL ?? 30);
+
+  function writeHttpAndDestroy(socket: Duplex, status: number, reason: string) {
     try {
       socket.write(`HTTP/1.1 ${status} ${reason}\r\nX-Reason: ${reason}\r\nConnection: close\r\n\r\n`);
     } catch {}
-    try {
-      socket.destroy();
-    } catch {}
+    try { socket.destroy(); } catch {}
   }
 
-  server.on('upgrade', async (req, socket, head) => {
+  server.on('upgrade', async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     try {
       const url = new URL(req.url ?? '', `http://${req.headers.host}`);
-      const ticket = url.searchParams.get('ticket') || '';
-      const up = (req.headers.upgrade || '').toString();
-      const conn = (req.headers.connection || '').toString();
 
-      if (up.toLowerCase() !== 'websocket' || !conn.toLowerCase().includes('upgrade')) {
-        console.warn('[WS] BAD_UPGRADE', { up, conn });
-        writeHttpAndDestroy(socket, 400, 'BAD_UPGRADE');
-        return;
+      // 1) 정확 경로 매칭
+      if (url.pathname !== '/ws/ar-multiplayer') {
+        return writeHttpAndDestroy(socket, 404, 'PATH_MISMATCH');
       }
 
+      // 2) Origin 화이트리스트 — RN은 Origin이 비어있을 수 있으므로 "빈 값은 통과"
+      const allowed = (process.env.WS_ALLOWED_ORIGINS ?? 'https://leafy.wolyong.cloud')
+        .split(',').map(s => s.trim()).filter(Boolean);
+      const origin = String((req.headers as any).origin || '');
+      if (origin && !allowed.includes(origin)) {
+        console.warn('[WS] BAD_ORIGIN', { origin });
+        return writeHttpAndDestroy(socket, 403, 'BAD_ORIGIN');
+      }
+
+      // 3) 업그레이드 헤더 검증
+      const up = String((req.headers as any).upgrade || '');
+      const conn = String((req.headers as any).connection || '');
+      if (up.toLowerCase() !== 'websocket' || !conn.toLowerCase().includes('upgrade')) {
+        console.warn('[WS] BAD_UPGRADE', { up, conn });
+        return writeHttpAndDestroy(socket, 400, 'BAD_UPGRADE');
+      }
+
+      // 4) 티켓 검증 + 원자적 소비
+      const ticket = url.searchParams.get('ticket') || '';
       if (!ticket) {
         console.warn('[WS] TICKET_MISSING');
-        writeHttpAndDestroy(socket, 400, 'TICKET_MISSING');
-        return;
+        return writeHttpAndDestroy(socket, 400, 'TICKET_MISSING');
       }
 
       const ticketInfo = await ticketService.validateAndConsumeTicket(ticket);
       if (!ticketInfo) {
         console.warn('[WS] TICKET_NOT_FOUND', { ticket });
-        writeHttpAndDestroy(socket, 401, 'TICKET_NOT_FOUND');
-        return;
+        return writeHttpAndDestroy(socket, 401, 'TICKET_NOT_FOUND');
       }
 
       (req as any).userInfo = ticketInfo;
@@ -65,24 +81,39 @@ export function setupMultiplayerARWebSocket(server: HTTPServer): void {
     }
   });
 
-  // --- 보안/헬스 설정 ---
-  const MAX_MESSAGE_SIZE = 10 * 1024; // 10KB
-  const HEARTBEAT_INTERVAL = 30_000;  // 30초
+  // ---- 전역 Heartbeat (운영 안정) ----
+  const HEARTBEAT_INTERVAL = 30_000;
+  const aliveMap: WeakMap<WebSocket, boolean> = new WeakMap();
 
-  // --- 커넥션 핸들러 (이미 인증됨) ---
+  const hb = setInterval(() => {
+    for (const client of wss.clients) {
+      const alive = aliveMap.get(client);
+      if (!alive) {
+        try { client.terminate(); } catch {}
+        aliveMap.delete(client);
+        continue;
+      }
+      aliveMap.set(client, false);
+      try { client.ping(); } catch {}
+    }
+  }, HEARTBEAT_INTERVAL);
+
+  server.on('close', () => clearInterval(hb));
+
+  // ---- 커넥션 핸들러 ----
   wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
     const userInfo = (req as any).userInfo as
       | { userId: number; userName: string; roomId: string }
       | undefined;
 
     if (!userInfo) {
-      // 이론상 도달하지 않음(업그레이드 전에 검증됨)
       return ws.close(1011, 'Unauthorized');
     }
 
-    console.log(
-      `[Multiplayer] WS connected: ${userInfo.userName} (${userInfo.userId}) in room ${userInfo.roomId}`
-    );
+    aliveMap.set(ws, true);
+    ws.on('pong', () => { aliveMap.set(ws, true); });
+
+    console.log(`[Multiplayer] WS connected: ${userInfo.userName} (${userInfo.userId}) in room ${userInfo.roomId}`);
 
     const client = {
       ws,
@@ -91,21 +122,7 @@ export function setupMultiplayerARWebSocket(server: HTTPServer): void {
       roomId: userInfo.roomId,
     };
 
-    // Heartbeat(좀비 커넥션 정리)
-    let isAlive = true;
-    ws.on('pong', () => { isAlive = true; });
-
-    const heartbeatInterval = setInterval(() => {
-      if (!isAlive) {
-        console.log(`[Multiplayer] Client ${client.userId} timeout, terminating...`);
-        clearInterval(heartbeatInterval);
-        return ws.terminate();
-      }
-      isAlive = false;
-      try { ws.ping(); } catch {}
-    }, HEARTBEAT_INTERVAL);
-
-    // 인증 성공 통지 (클라이언트가 본인 식별자 획득)
+    // 인증 성공 통지
     ws.send(JSON.stringify({
       type: 'authenticated',
       payload: {
@@ -115,33 +132,36 @@ export function setupMultiplayerARWebSocket(server: HTTPServer): void {
       },
     }));
 
-    // 룸 매니저 등록 → 기존 로직 활용
+    // 룸 등록
     roomManager.addUserToRoom(client);
 
-    // 메시지 핸들링
-    ws.on('message', (data: Buffer) => {
-      if (data.length > MAX_MESSAGE_SIZE) {
+    // 메시지 검증(간단)
+    const MAX_MESSAGE_SIZE = 10 * 1024;
+    const isValidMessage = (x: any): x is { type: string; payload?: any } =>
+      x && typeof x === 'object' && typeof x.type === 'string' && x.type.length <= 32;
+
+    ws.on('message', (buf: Buffer) => {
+      if (buf.length > MAX_MESSAGE_SIZE) {
         console.warn(`[Multiplayer] Message too large from ${client.userId}`);
         return ws.close(1009, 'Message too large');
       }
-      try {
-        const parsed = JSON.parse(data.toString());
-        roomManager.handleMessage(client.userId, parsed);
-      } catch (err) {
-        console.error('[Multiplayer] JSON parse/handle error:', err);
-      }
+      let parsed: any;
+      try { parsed = JSON.parse(buf.toString()); } catch { return; }
+      if (!isValidMessage(parsed)) return;
+      try { roomManager.handleMessage(client.userId, parsed); }
+      catch (err) { console.error('[Multiplayer] handleMessage error:', err); }
     });
 
     ws.on('close', () => {
-      clearInterval(heartbeatInterval);
       roomManager.removeUserFromRoom(client.userId);
       console.log(`[Multiplayer] Client ${client.userId} disconnected`);
+      aliveMap.delete(ws);
     });
 
     ws.on('error', (err) => {
       console.error(`[Multiplayer] Error on client ${client.userId}:`, err);
-      clearInterval(heartbeatInterval);
       roomManager.removeUserFromRoom(client.userId);
+      aliveMap.delete(ws);
     });
   });
 

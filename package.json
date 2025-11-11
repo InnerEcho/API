@@ -9,6 +9,7 @@
     "test": "vitest",
     "db": "node --loader ts-node/esm src/public/insertSpeciesData.ts",
     "mock:users": "tsx src/cli/mock-users.ts",
+    "db:mock:relations": "tsx src/cli/mock-relations.ts",
     "migrate": "sequelize-cli db:migrate",
     "migrate:undo": "sequelize-cli db:migrate:undo",
     "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
