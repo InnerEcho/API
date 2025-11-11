@@ -19,61 +19,59 @@ export function setupMultiplayerARWebSocket(server: HTTPServer): void {
   const ticketService = new MultiplayerTicketService();
   const roomManager = new RoomManager();
 
-  // --- 유틸: HTTP 에러를 쓰고 소켓 종료 ---
   function writeHttpAndDestroy(socket: Socket, status: number, reason: string) {
     try {
       socket.write(`HTTP/1.1 ${status} ${reason}\r\nConnection: close\r\n\r\n`);
     } catch {}
-    try {
-      socket.destroy();
-    } catch {}
+    try { socket.destroy(); } catch {}
   }
 
-  // --- 업그레이드 핸들러 ---
   server.on('upgrade', async (req: IncomingMessage, socket: Socket, head: Buffer) => {
-    // 1) WebSocket 업그레이드 헤더 확인
     const upgrade = String(req.headers['upgrade'] || '').toLowerCase();
     const connection = String(req.headers['connection'] || '').toLowerCase();
+
     if (upgrade !== 'websocket' || !connection.includes('upgrade')) {
+      console.error('[WS upgrade] 400 BAD_UPGRADE_HEADERS', { upgrade, connection });
       return writeHttpAndDestroy(socket, 400, 'Bad Request');
     }
 
-    // 2) 경로/쿼리 파싱
     const base = `http://${req.headers.host || 'localhost'}`;
     let url: URL;
     try {
       url = new URL(req.url || '/', base);
-    } catch {
+    } catch (e) {
+      console.error('[WS upgrade] 400 BAD_URL_PARSE', { urlRaw: req.url, host: req.headers.host, err: e });
       return writeHttpAndDestroy(socket, 400, 'Bad Request');
     }
 
     if (url.pathname !== '/ws/ar-multiplayer') {
+      console.error('[WS upgrade] 404 PATH_MISMATCH', { path: url.pathname });
       return writeHttpAndDestroy(socket, 404, 'Not Found');
     }
 
-    // 3) ticket 검증 (업그레이드 전에!)
     const ticket = url.searchParams.get('ticket');
     if (!ticket) {
+      console.error('[WS upgrade] 400 MISSING_TICKET');
       return writeHttpAndDestroy(socket, 400, 'Missing ticket');
     }
 
     try {
       const userInfo = await ticketService.validateAndConsumeTicket(ticket);
       if (!userInfo) {
+        console.error('[WS upgrade] 401 INVALID_OR_EXPIRED_TICKET');
         return writeHttpAndDestroy(socket, 401, 'Invalid or expired ticket');
       }
 
-      // 검증 통과: userInfo를 req에 붙여서 connection 핸들러로 전달
       (req as any).userInfo = userInfo;
-
       wss.handleUpgrade(req, socket, head, (ws) => {
         wss.emit('connection', ws, req);
       });
     } catch (e) {
-      console.error('[WS upgrade] exception:', e);
+      console.error('[WS upgrade] 500 EXCEPTION', e);
       return writeHttpAndDestroy(socket, 500, 'Internal Error');
     }
   });
+
 
   // --- 보안/헬스 설정 ---
   const MAX_MESSAGE_SIZE = 10 * 1024; // 10KB
