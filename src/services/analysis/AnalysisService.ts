@@ -53,7 +53,7 @@ export class AnalysisService {
     const dominantEmotion = EMOTION_LABELS[maxIndex];
 
     // 4️⃣ 불확실 감정 판정
-    if (maxProb < 0.55 || Math.abs(maxProb - secondProb) < 0.08) {
+    if (maxProb < 0.55 || Math.abs(maxProb - secondProb) < 0.10) {
       const sorted = probs
         .map((p, i) => ({ label: EMOTION_LABELS[i], prob: p }))
         .sort((a, b) => b.prob - a.prob);
