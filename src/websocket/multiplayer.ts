@@ -27,6 +27,7 @@ export function setupMultiplayerARWebSocket(server: HTTPServer): void {
   }
 
   server.on('upgrade', async (req: IncomingMessage, socket: Socket, head: Buffer) => {
+    console.log('[WS upgrade] headers', req.headers.upgrade, req.headers.connection, req.url);
     const upgrade = String(req.headers['upgrade'] || '').toLowerCase();
     const connection = String(req.headers['connection'] || '').toLowerCase();
 
