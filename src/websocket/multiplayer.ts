@@ -26,52 +26,55 @@ export function setupMultiplayerARWebSocket(server: HTTPServer): void {
     try { socket.destroy(); } catch {}
   }
 
-  server.on('upgrade', async (req: IncomingMessage, socket: Socket, head: Buffer) => {
-    console.log('[WS upgrade] headers', req.headers.upgrade, req.headers.connection, req.url);
-    const upgrade = String(req.headers['upgrade'] || '').toLowerCase();
-    const connection = String(req.headers['connection'] || '').toLowerCase();
+server.on('upgrade', (req, socket, head) => {
+  try {
+    const url = new URL(req.url ?? '', `http://${req.headers.host}`);
+    const ticket = url.searchParams.get('ticket') || '';
+    const up = (req.headers.upgrade || '').toString();
+    const conn = (req.headers.connection || '').toString();
 
-    if (upgrade !== 'websocket' || !connection.includes('upgrade')) {
-      console.error('[WS upgrade] 400 BAD_UPGRADE_HEADERS', { upgrade, connection });
-      return writeHttpAndDestroy(socket, 400, 'Bad Request');
+    // 1) 업그레이드 1차 체크
+    if (up.toLowerCase() !== 'websocket' || !conn.toLowerCase().includes('upgrade')) {
+      console.warn('[WS] BAD_UPGRADE', { up, conn });
+      socket.write('HTTP/1.1 400 Bad Request\r\nX-Reason: BAD_UPGRADE\r\n\r\n');
+      socket.destroy(); return;
     }
 
-    const base = `http://${req.headers.host || 'localhost'}`;
-    let url: URL;
-    try {
-      url = new URL(req.url || '/', base);
-    } catch (e) {
-      console.error('[WS upgrade] 400 BAD_URL_PARSE', { urlRaw: req.url, host: req.headers.host, err: e });
-      return writeHttpAndDestroy(socket, 400, 'Bad Request');
-    }
-
-    if (url.pathname !== '/ws/ar-multiplayer') {
-      console.error('[WS upgrade] 404 PATH_MISMATCH', { path: url.pathname });
-      return writeHttpAndDestroy(socket, 404, 'Not Found');
-    }
-
-    const ticket = url.searchParams.get('ticket');
+    // 2) 티켓 로드 (Redis/메모리 무엇이든)
+    const info = /* loadTicket(ticket) */ null; // <-- 실제 함수
     if (!ticket) {
-      console.error('[WS upgrade] 400 MISSING_TICKET');
-      return writeHttpAndDestroy(socket, 400, 'Missing ticket');
+      console.warn('[WS] TICKET_MISSING');
+      socket.write('HTTP/1.1 400 Bad Request\r\nX-Reason: TICKET_MISSING\r\n\r\n');
+      socket.destroy(); return;
+    }
+    if (!info) {
+      console.warn('[WS] TICKET_NOT_FOUND', { ticket });
+      socket.write('HTTP/1.1 401 Unauthorized\r\nX-Reason: TICKET_NOT_FOUND\r\n\r\n');
+      socket.destroy(); return;
+    }
+    if (info.used) {
+      console.warn('[WS] TICKET_USED', { ticket });
+      socket.write('HTTP/1.1 401 Unauthorized\r\nX-Reason: TICKET_USED\r\n\r\n');
+      socket.destroy(); return;
+    }
+    if (Date.now() > info.exp + 2000) {
+      console.warn('[WS] TICKET_EXPIRED', { ticket, exp: info.exp, now: Date.now() });
+      socket.write('HTTP/1.1 401 Unauthorized\r\nX-Reason: TICKET_EXPIRED\r\n\r\n');
+      socket.destroy(); return;
     }
 
-    try {
-      const userInfo = await ticketService.validateAndConsumeTicket(ticket);
-      if (!userInfo) {
-        console.error('[WS upgrade] 401 INVALID_OR_EXPIRED_TICKET');
-        return writeHttpAndDestroy(socket, 401, 'Invalid or expired ticket');
-      }
+    // 3) 통과 → 여기서 used=true로 마킹하고 handleUpgrade
+    // markUsed(ticket)
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req /*, user */);
+    });
+  } catch (e) {
+    console.error('[WS] UPGRADE_ERR', e);
+    try { socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n'); } catch {}
+    socket.destroy();
+  }
+});
 
-      (req as any).userInfo = userInfo;
-      wss.handleUpgrade(req, socket, head, (ws) => {
-        wss.emit('connection', ws, req);
-      });
-    } catch (e) {
-      console.error('[WS upgrade] 500 EXCEPTION', e);
-      return writeHttpAndDestroy(socket, 500, 'Internal Error');
-    }
-  });
 
 
   // --- 보안/헬스 설정 ---
