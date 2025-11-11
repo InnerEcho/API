@@ -51,10 +51,17 @@ export class MultiplayerTicketController {
         roomId,
       });
 
-      // WebSocket URL 생성 (Express 라우터와 충돌 방지를 위해 /ws 경로 사용)
-      const protocol = req.secure ? 'wss' : 'ws';
-      const host = req.get('host');
-      const wsUrl = `${protocol}://${host}/ws/ar-multiplayer?ticket=${ticket}`;
+      // 프록시 환경 고려: wss 판단 & 호스트 결정
+      const xfProto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+      const wsProtocol = xfProto === 'https' ? 'wss' : 'ws';
+
+      const host =
+        req.get('x-forwarded-host') ||
+        req.get('host') ||
+        'process.env.PUBLIC_HOST' ||       // (옵션) 환경변수 백업
+        'leafy.wolyong.cloud';           // (옵션) 최후의 수단
+
+      const wsUrl = `${wsProtocol}://${host}/ws/ar-multiplayer?ticket=${ticket}`;
 
       // 성공 응답
       res.status(200).json({
