@@ -1,4 +1,6 @@
+// src/ws/setupMultiplayerARWebSocket.ts
 import type { Server as HTTPServer, IncomingMessage } from 'http';
+import type { Socket } from 'net';
 import { WebSocketServer, WebSocket } from 'ws';
 import { URL } from 'url';
 import { MultiplayerTicketService } from '@/services/multiplayer/MultiplayerTicketService.js';
@@ -6,101 +8,137 @@ import { RoomManager } from '@/services/multiplayer/RoomManager.js';
 
 /**
  * 멀티플레이어 AR WebSocket 서버를 설정합니다.
- * @param server - HTTP 서버 인스턴스
+ * - 경로: /ws/ar-multiplayer
+ * - 업그레이드 전에 ticket 검증 (만료/사용됨/없음 등) 후에만 101 업그레이드
+ * - Nginx 프록시 뒤에서 동작 가정 (Host/X-Forwarded-* 제공)
  */
 export function setupMultiplayerARWebSocket(server: HTTPServer): void {
-  // noServer 모드로 WebSocket 서버 생성 (upgrade 이벤트 수동 처리)
+  // noServer 모드: upgrade를 직접 가로채서 검증 후 업그레이드
   const wss = new WebSocketServer({ noServer: true });
 
   const ticketService = new MultiplayerTicketService();
   const roomManager = new RoomManager();
 
-  // upgrade 이벤트 핸들러 등록
-  server.on('upgrade', (req: IncomingMessage, socket, head) => {
-    const pathname = new URL(req.url!, `http://${req.headers.host}`).pathname;
+  // --- 유틸: HTTP 에러를 쓰고 소켓 종료 ---
+  function writeHttpAndDestroy(socket: Socket, status: number, reason: string) {
+    try {
+      socket.write(`HTTP/1.1 ${status} ${reason}\r\nConnection: close\r\n\r\n`);
+    } catch {}
+    try {
+      socket.destroy();
+    } catch {}
+  }
 
-    if (pathname === '/ws/ar-multiplayer') {
+  // --- 업그레이드 핸들러 ---
+  server.on('upgrade', async (req: IncomingMessage, socket: Socket, head: Buffer) => {
+    // 1) WebSocket 업그레이드 헤더 확인
+    const upgrade = String(req.headers['upgrade'] || '').toLowerCase();
+    const connection = String(req.headers['connection'] || '').toLowerCase();
+    if (upgrade !== 'websocket' || !connection.includes('upgrade')) {
+      return writeHttpAndDestroy(socket, 400, 'Bad Request');
+    }
+
+    // 2) 경로/쿼리 파싱
+    const base = `http://${req.headers.host || 'localhost'}`;
+    let url: URL;
+    try {
+      url = new URL(req.url || '/', base);
+    } catch {
+      return writeHttpAndDestroy(socket, 400, 'Bad Request');
+    }
+
+    if (url.pathname !== '/ws/ar-multiplayer') {
+      return writeHttpAndDestroy(socket, 404, 'Not Found');
+    }
+
+    // 3) ticket 검증 (업그레이드 전에!)
+    const ticket = url.searchParams.get('ticket');
+    if (!ticket) {
+      return writeHttpAndDestroy(socket, 400, 'Missing ticket');
+    }
+
+    try {
+      const userInfo = await ticketService.validateAndConsumeTicket(ticket);
+      if (!userInfo) {
+        return writeHttpAndDestroy(socket, 401, 'Invalid or expired ticket');
+      }
+
+      // 검증 통과: userInfo를 req에 붙여서 connection 핸들러로 전달
+      (req as any).userInfo = userInfo;
+
       wss.handleUpgrade(req, socket, head, (ws) => {
         wss.emit('connection', ws, req);
       });
+    } catch (e) {
+      console.error('[WS upgrade] exception:', e);
+      return writeHttpAndDestroy(socket, 500, 'Internal Error');
     }
-    // 다른 경로는 무시 (다른 WebSocket 서버가 처리하도록)
   });
 
-  // 보안: 최대 메시지 크기 제한 (10KB)
-  const MAX_MESSAGE_SIZE = 10 * 1024;
-  const HEARTBEAT_INTERVAL = 30000; // 30초
+  // --- 보안/헬스 설정 ---
+  const MAX_MESSAGE_SIZE = 10 * 1024; // 10KB
+  const HEARTBEAT_INTERVAL = 30_000;  // 30초
 
-  wss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
-    console.log(`[Multiplayer] New WebSocket connection attempt from ${req.socket.remoteAddress}`);
-    console.log(`[Multiplayer] Request URL: ${req.url}`);
+  // --- 커넥션 핸들러 (이미 인증됨) ---
+  wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
+    const userInfo = (req as any).userInfo as
+      | { userId: number; userName: string; roomId: string }
+      | undefined;
 
-    const url = new URL(req.url!, `http://${req.headers.host}`);
-    const ticket = url.searchParams.get('ticket');
-
-    if (!ticket) {
-      console.log('[Multiplayer] Connection rejected: No ticket provided');
-      return ws.close(1008, 'Ticket required.');
-    }
-
-    console.log(`[Multiplayer] Validating ticket: ${ticket.substring(0, 10)}...`);
-
-    const userInfo = await ticketService.validateAndConsumeTicket(ticket);
     if (!userInfo) {
-      console.log('[Multiplayer] Connection rejected: Invalid or expired ticket');
-      return ws.close(1008, 'Invalid ticket.');
+      // 이론상 도달하지 않음(업그레이드 전에 검증됨)
+      return ws.close(1011, 'Unauthorized');
     }
 
-    console.log(`[Multiplayer] User authenticated: ${userInfo.userName} (ID: ${userInfo.userId})`);
+    console.log(
+      `[Multiplayer] WS connected: ${userInfo.userName} (${userInfo.userId}) in room ${userInfo.roomId}`
+    );
 
     const client = {
       ws,
-      userId: userInfo.userId, // number 타입으로 유지
+      userId: userInfo.userId,
       userName: userInfo.userName,
       roomId: userInfo.roomId,
     };
 
-    // Heartbeat 설정 (좀비 연결 감지)
+    // Heartbeat(좀비 커넥션 정리)
     let isAlive = true;
-    ws.on('pong', () => {
-      isAlive = true;
-    });
+    ws.on('pong', () => { isAlive = true; });
 
     const heartbeatInterval = setInterval(() => {
       if (!isAlive) {
-        console.log(`[Multiplayer] Client ${client.userId} connection timeout, terminating...`);
+        console.log(`[Multiplayer] Client ${client.userId} timeout, terminating...`);
         clearInterval(heartbeatInterval);
         return ws.terminate();
       }
       isAlive = false;
-      ws.ping();
+      try { ws.ping(); } catch {}
     }, HEARTBEAT_INTERVAL);
 
-    // 인증 성공 메시지 먼저 전송 (클라이언트가 자신의 userId와 userName을 알 수 있도록)
+    // 인증 성공 통지 (클라이언트가 본인 식별자 획득)
     ws.send(JSON.stringify({
-        type: 'authenticated',
-        payload: {
-            message: 'Authentication successful!',
-            userId: client.userId,
-            userName: client.userName,
-        },
+      type: 'authenticated',
+      payload: {
+        message: 'Authentication successful!',
+        userId: client.userId,
+        userName: client.userName,
+      },
     }));
 
-    // RoomManager에 클라이언트 추가 (room-state 메시지가 authenticated 이후에 전송됨)
+    // 룸 매니저 등록 → 기존 로직 활용
     roomManager.addUserToRoom(client);
 
-    ws.on('message', (message: Buffer) => {
-      // 메시지 크기 제한
-      if (message.length > MAX_MESSAGE_SIZE) {
-        console.warn(`[Multiplayer] Message from ${client.userId} exceeds size limit`);
+    // 메시지 핸들링
+    ws.on('message', (data: Buffer) => {
+      if (data.length > MAX_MESSAGE_SIZE) {
+        console.warn(`[Multiplayer] Message too large from ${client.userId}`);
         return ws.close(1009, 'Message too large');
       }
-
       try {
-        const parsedMessage = JSON.parse(message.toString());
-        roomManager.handleMessage(client.userId, parsedMessage);
-      } catch (error) {
-        console.error('[Multiplayer] Failed to parse message or handle it:', error);
+        const parsed = JSON.parse(data.toString());
+        roomManager.handleMessage(client.userId, parsed);
+      } catch (err) {
+        console.error('[Multiplayer] JSON parse/handle error:', err);
       }
     });
 
@@ -110,8 +148,8 @@ export function setupMultiplayerARWebSocket(server: HTTPServer): void {
       console.log(`[Multiplayer] Client ${client.userId} disconnected`);
     });
 
-    ws.on('error', (error) => {
-      console.error(`[Multiplayer] Error on client ${client.userId}:`, error);
+    ws.on('error', (err) => {
+      console.error(`[Multiplayer] Error on client ${client.userId}:`, err);
       clearInterval(heartbeatInterval);
       roomManager.removeUserFromRoom(client.userId);
     });
