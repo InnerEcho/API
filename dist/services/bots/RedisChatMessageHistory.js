@@ -2,7 +2,8 @@ import { BaseChatMessageHistory } from '@langchain/core/chat_history';
 import { AIMessage, HumanMessage, mapChatMessagesToStoredMessages } from '@langchain/core/messages';
 import redisClient from "../../config/redis.config.js";
 import db from "../../models/index.js";
-import { AnalysisService } from "../AnalysisService.js";
+import { AnalysisService } from "../analysis/AnalysisService.js";
+import { invalidateHistoryCaches, toHistoryDateKey } from "../chat/historyCache.util.js";
 const {
   ChatHistory
 } = db;
@@ -13,7 +14,7 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
   plantId;
   sessionKey;
   TTL = 24 * 60 * 60; // 24시간
-
+  MAX_MESSAGES = 200;
   constructor(userId, plantId) {
     super();
     this.userId = userId;
@@ -57,6 +58,7 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
       messages.forEach(msg => {
         pipeline.rpush(this.sessionKey, this.serializeMessage(msg));
       });
+      pipeline.ltrim(this.sessionKey, -this.MAX_MESSAGES, -1);
       pipeline.expire(this.sessionKey, this.TTL);
       await pipeline.exec();
       return messages;
@@ -92,18 +94,21 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
    */
   async addMessages(messages) {
     try {
+      const entries = messages.map(message => ({
+        message,
+        timestamp: new Date()
+      }));
       // 1. Redis에 즉시 저장 (빠른 응답)
       const pipeline = redisClient.pipeline();
-      messages.forEach(msg => {
-        pipeline.rpush(this.sessionKey, this.serializeMessage(msg));
+      entries.forEach(item => {
+        pipeline.rpush(this.sessionKey, this.serializeMessage(item.message, item.timestamp));
       });
+      pipeline.ltrim(this.sessionKey, -this.MAX_MESSAGES, -1);
       pipeline.expire(this.sessionKey, this.TTL);
       await pipeline.exec();
 
-      // 2. DB에 비동기로 백업 (await 없이 fire-and-forget)
-      this.saveToDatabase(messages).catch(error => {
-        console.error('DB 백업 중 오류 발생:', error);
-      });
+      // 2. DB 저장 및 캐시 무효화
+      await this.saveToDatabase(entries);
     } catch (error) {
       console.error('Redis에 메시지를 추가하는 중 오류 발생:', error);
       throw error;
@@ -114,34 +119,39 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
    * DB에 메시지를 저장합니다 (비동기 백업용)
    */
   async saveToDatabase(messages) {
-    const storedMessages = mapChatMessagesToStoredMessages(messages);
-    for (const message of storedMessages) {
+    const storedMessages = mapChatMessagesToStoredMessages(messages.map(item => item.message));
+    const affectedDates = new Set();
+    for (const [index, message] of storedMessages.entries()) {
+      const sendDate = messages[index]?.timestamp ?? new Date();
       const payload = {
         user_id: this.userId,
         plant_id: this.plantId,
         message: message.data.content,
         user_type: message.type === 'human' ? 'User' : 'Bot',
-        send_date: new Date()
+        send_date: sendDate
       };
       const record = await ChatHistory.create(payload);
+      affectedDates.add(toHistoryDateKey(sendDate));
       if (payload.user_type === 'User') {
         const rawHistoryId = record.get('history_id');
         const historyIdNumber = Number(rawHistoryId);
         if (!Number.isNaN(historyIdNumber)) {
-          try {
-            await analysisService.analyzeAndStore({
-              historyId: historyIdNumber,
-              userId: this.userId,
-              message: payload.message,
-              userType: 'User'
-            });
-          } catch (error) {
+          void analysisService.analyzeAndStore({
+            historyId: historyIdNumber,
+            userId: this.userId,
+            message: payload.message,
+            userType: 'User',
+            plantId: this.plantId,
+            sendDate
+          }).catch(error => {
             console.error('RedisChatMessageHistory: analysis store failed', error);
-          }
+          });
         }
       }
     }
-    await this.refreshRedisCache();
+    if (affectedDates.size > 0) {
+      await invalidateHistoryCaches(this.userId, this.plantId, [...affectedDates]);
+    }
   }
 
   /**
@@ -168,17 +178,26 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
     try {
       const parsed = JSON.parse(item);
       const content = typeof parsed.content === 'string' ? parsed.content : String(parsed.content);
+      const timestamp = typeof parsed.timestamp === 'string' ? parsed.timestamp : new Date().toISOString();
       if (parsed.type === 'human') {
         const analysis = parsed.analysis;
         return new HumanMessage({
           content,
-          additional_kwargs: analysis ? {
-            analysis
-          } : {}
+          additional_kwargs: {
+            ...(analysis ? {
+              analysis
+            } : {}),
+            timestamp
+          }
         });
       }
       if (parsed.type === 'ai') {
-        return new AIMessage(content);
+        return new AIMessage({
+          content,
+          additional_kwargs: {
+            timestamp
+          }
+        });
       }
       return null;
     } catch (error) {
@@ -192,6 +211,8 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
       const rawHistoryId = history.get('history_id');
       const historyIdNumber = rawHistoryId === null ? null : Number(rawHistoryId);
       const safeHistoryId = historyIdNumber !== null && !Number.isNaN(historyIdNumber) ? historyIdNumber : null;
+      const sendDate = history.get ? history.get('send_date') : history.send_date;
+      const timestamp = sendDate ? new Date(sendDate).toISOString() : new Date().toISOString();
       if (history.user_type === 'User') {
         const analysisPayload = {
           historyId: safeHistoryId,
@@ -201,17 +222,24 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
         return new HumanMessage({
           content: history.message,
           additional_kwargs: {
-            analysis: analysisPayload
+            analysis: analysisPayload,
+            timestamp
           }
         });
       }
-      return new AIMessage(history.message);
+      return new AIMessage({
+        content: history.message,
+        additional_kwargs: {
+          timestamp
+        }
+      });
     });
   }
-  serializeMessage(message) {
+  serializeMessage(message, timestamp) {
     const basePayload = {
       type: message instanceof HumanMessage ? 'human' : 'ai',
-      content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content)
+      content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+      timestamp: timestamp?.toISOString() || message.additional_kwargs?.timestamp || new Date().toISOString()
     };
     if (message instanceof HumanMessage) {
       const analysis = message.additional_kwargs?.analysis;
@@ -224,32 +252,5 @@ export class RedisChatMessageHistory extends BaseChatMessageHistory {
       }
     }
     return JSON.stringify(basePayload);
-  }
-  async refreshRedisCache() {
-    try {
-      const histories = await ChatHistory.findAll({
-        where: {
-          user_id: this.userId,
-          plant_id: this.plantId
-        },
-        include: [{
-          model: db.ChatAnalysis,
-          as: 'analysis',
-          attributes: ['emotion', 'factor']
-        }],
-        order: [['send_date', 'DESC']],
-        limit: 20
-      });
-      const messages = this.mapHistoriesToMessages(histories);
-      const pipeline = redisClient.pipeline();
-      pipeline.del(this.sessionKey);
-      messages.forEach(msg => {
-        pipeline.rpush(this.sessionKey, this.serializeMessage(msg));
-      });
-      pipeline.expire(this.sessionKey, this.TTL);
-      await pipeline.exec();
-    } catch (error) {
-      console.error('RedisChatMessageHistory: failed to refresh cache', error);
-    }
   }
 }

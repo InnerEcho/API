@@ -1,7 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { URL } from 'url';
-import { MultiplayerTicketService } from "../services/MultiplayerTicketService.js";
-import { RoomManager } from "../services/RoomManager.js";
+import { MultiplayerTicketService } from "../services/multiplayer/MultiplayerTicketService.js";
+import { RoomManager } from "../services/multiplayer/RoomManager.js";
 
 /**
  * 멀티플레이어 AR WebSocket 서버를 설정합니다.
@@ -17,6 +17,7 @@ export function setupMultiplayerARWebSocket(server) {
 
   // upgrade 이벤트 핸들러 등록
   server.on('upgrade', (req, socket, head) => {
+    console.log("[UPGRADE]", req.url); // 여기에 /ws/ar-multiplayer?ticket=... 찍히는지
     const pathname = new URL(req.url, `http://${req.headers.host}`).pathname;
     if (pathname === '/ws/ar-multiplayer') {
       wss.handleUpgrade(req, socket, head, ws => {

@@ -4,14 +4,17 @@ import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { HumanMessage } from '@langchain/core/messages';
-import { AnalysisService } from "../AnalysisService.js";
+import { AnalysisService } from "../analysis/AnalysisService.js";
 import { RedisChatMessageHistory } from "./RedisChatMessageHistory.js";
 export class BaseChatBot {
   analysisService;
   constructor() {
     this.analysisService = new AnalysisService();
   }
-  async processChat(userId, plantId, userMessage) {
+  async processChat(userId, plantId, userMessage, options = {}) {
+    const {
+      storeHistory = true
+    } = options;
     // Sequelize 모델을 사용하여 user, plant, species 정보를 JOIN
     const plant = await db.Plant.findOne({
       where: {
@@ -59,31 +62,29 @@ export class BaseChatBot {
     }).pipe(userMessageTemplate).pipe(llm).pipe(outputParser);
 
     // 2. RunnableWithMessageHistory 설정 변경
-    const historyChain = new RunnableWithMessageHistory({
-      runnable: llmChain,
-      getMessageHistory: sessionId => {
-        // sessionId를 파싱하여 userId와 plantId를 추출합니다.
-        const [uid, pid] = sessionId.split('-').map(Number);
-        if (isNaN(uid) || isNaN(pid)) {
-          throw new Error(`잘못된 sessionId 형식입니다. "userId-plantId"가 필요합니다: "${sessionId}"`);
+    const historyStore = new RedisChatMessageHistory(userId, plantId);
+    if (storeHistory) {
+      const historyChain = new RunnableWithMessageHistory({
+        runnable: llmChain,
+        getMessageHistory: () => historyStore,
+        inputMessagesKey: 'input',
+        historyMessagesKey: 'history'
+      });
+      return historyChain.invoke({
+        input: userMessage,
+        analysisContext: ''
+      }, {
+        configurable: {
+          sessionId: `${userId}-${plantId}`
         }
-        // 명확하게 분리된 인자를 생성자에 전달합니다.
-        return new RedisChatMessageHistory(uid, pid);
-      },
-      inputMessagesKey: 'input',
-      historyMessagesKey: 'history'
+      });
+    }
+    const historyMessages = await historyStore.getMessages();
+    return llmChain.invoke({
+      input: userMessage,
+      history: historyMessages,
+      analysisContext: ''
     });
-
-    // 3. sessionId를 "userId-plantId" 조합으로 생성
-    const sessionId = `${userId}-${plantId}`;
-    const result = await historyChain.invoke({
-      input: userMessage
-    }, {
-      configurable: {
-        sessionId: sessionId
-      }
-    });
-    return result;
   }
   buildAnalysisContext({
     plantDbInfo,

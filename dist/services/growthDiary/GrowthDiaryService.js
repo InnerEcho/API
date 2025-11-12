@@ -1,0 +1,244 @@
+import db from "../../models/index.js";
+import { Op } from 'sequelize';
+import dayjs from 'dayjs';
+import { toCamelCase } from "../../utils/casing.js";
+import { formatToKstIsoString } from "../../utils/date.js";
+import { ChatHistoryService } from "../chat/ChatHistoryService.js";
+import { UserType } from "../../interface/index.js";
+export class GrowthDiaryService {
+  chatHistoryService;
+  constructor(growthDiaryBot) {
+    this.growthDiaryBot = growthDiaryBot;
+    this.chatHistoryService = new ChatHistoryService();
+  }
+  async getDiaryDatesForMonth(userId, yearMonth) {
+    if (!userId || !yearMonth) {
+      throw new Error('Missing required fields: userId or yearMonth');
+    }
+    const start = dayjs(`${yearMonth}-01`).startOf('month').format('YYYY-MM-DD HH:mm:ss');
+    const end = dayjs(`${yearMonth}-01`).endOf('month').format('YYYY-MM-DD HH:mm:ss');
+    try {
+      const diaries = await db.GrowthDiary.findAll({
+        attributes: ['diary_id', 'title', 'content', 'dominant_emotion', 'emotion_factor', 'primary_mission', 'edited', 'created_at', [db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), 'date']],
+        where: {
+          user_id: userId,
+          is_deleted: false,
+          created_at: {
+            [db.Sequelize.Op.between]: [start, end]
+          }
+        },
+        order: [['created_at', 'ASC']],
+        raw: true
+      });
+
+      // 각 일기에 대해 날짜와 미리보기 정보 포함
+      return diaries.map(diary => ({
+        diaryId: diary.diary_id,
+        date: diary.date,
+        title: diary.title,
+        emotion: diary.dominant_emotion ?? '없음',
+        emotionFactor: diary.emotion_factor ?? '없음',
+        primaryMission: diary.primary_mission ?? '없음',
+        contentPreview: diary.content ? diary.content.substring(0, 100) + (diary.content.length > 100 ? '...' : '') : '',
+        edited: diary.edited,
+        createdAt: formatToKstIsoString(diary.created_at)
+      }));
+    } catch (err) {
+      console.error('Error fetching diary dates:', err);
+      throw new Error('Failed to fetch diary dates');
+    }
+  }
+  async getDiaryById(userId, diaryId) {
+    if (!userId || !diaryId) {
+      throw new Error('Missing required fields: userId, diaryId');
+    }
+    try {
+      const diary = await db.GrowthDiary.findOne({
+        where: {
+          diary_id: diaryId,
+          user_id: userId,
+          is_deleted: false
+        }
+      });
+      if (!diary) {
+        throw new Error('Diary not found');
+      }
+      const plainDiary = diary.get({
+        plain: true
+      });
+      console.log(plainDiary);
+      return this.applyDiaryMetaFallback(toCamelCase(plainDiary));
+    } catch (err) {
+      console.error('Error fetching diary by id:', err);
+      throw err;
+    }
+  }
+  async getDiaryByDate(userId, date) {
+    if (!userId || !date) {
+      throw new Error('Missing required fields: userId, date');
+    }
+    try {
+      const diary = await db.GrowthDiary.findOne({
+        where: {
+          user_id: userId,
+          is_deleted: false,
+          [Op.and]: [db.Sequelize.where(db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), '=', date)]
+        }
+      });
+      if (!diary) {
+        return null;
+      }
+      const plainDiary = diary.get({
+        plain: true
+      });
+      return this.applyDiaryMetaFallback(toCamelCase(plainDiary));
+    } catch (err) {
+      console.error('Error fetching diary:', err);
+      throw new Error('Failed to fetch diary');
+    }
+  }
+  async create(userId, plantId, message) {
+    // 1. 챗봇 응답 생성
+    const reply = await this.growthDiaryBot.processChat(userId, plantId, message, {
+      storeHistory: false
+    });
+
+    // 2. DB 저장용 메시지 객체 생성
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    // 2. 성장일지 title 및 content 정의
+    const title = `${today} 일지`; // 예: "2025-05-20 일지"
+    const content = reply.toString();
+    const todayHistory = await this.chatHistoryService.getTodayHistory(userId, plantId);
+    const {
+      emotion: dominantEmotion,
+      factor: emotionFactor
+    } = this.getDominantEmotionFromHistory(todayHistory);
+    const primaryMission = await this.findPrimaryMission(userId, today);
+
+    // 3. 오늘 날짜의 일지가 있는지 확인
+    const existingDiary = await db.GrowthDiary.findOne({
+      where: {
+        user_id: userId,
+        is_deleted: false,
+        [db.Sequelize.Op.and]: [db.Sequelize.where(db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), '=', today)]
+      }
+    });
+    let result;
+    if (existingDiary) {
+      // 기존 일지 업데이트
+      result = await existingDiary.update({
+        content,
+        updated_at: now,
+        edited: true,
+        dominant_emotion: dominantEmotion,
+        emotion_factor: emotionFactor,
+        primary_mission: primaryMission
+      });
+    } else {
+      // 새 일지 생성
+      result = await db.GrowthDiary.create({
+        user_id: userId,
+        title,
+        content,
+        dominant_emotion: dominantEmotion,
+        emotion_factor: emotionFactor,
+        primary_mission: primaryMission,
+        image_url: null,
+        created_at: now,
+        updated_at: now,
+        is_deleted: false,
+        edited: false
+      });
+    }
+
+    // 4. 결과 반환 (camelCase 변환)
+    if (typeof result.get === 'function') {
+      return this.applyDiaryMetaFallback(toCamelCase(result.get({
+        plain: true
+      })));
+    }
+    return this.applyDiaryMetaFallback(toCamelCase(result));
+  }
+  getDominantEmotionFromHistory(history) {
+    if (!history || history.length === 0) {
+      return {
+        emotion: '없음',
+        factor: '없음'
+      };
+    }
+    const userMessages = history.filter(item => item.userType === UserType.USER && item.emotion && item.emotion !== '중립');
+    if (userMessages.length === 0) {
+      return {
+        emotion: '없음',
+        factor: '없음'
+      };
+    }
+    const counts = new Map();
+    userMessages.forEach(message => {
+      const key = message.emotion;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    const maxCount = Math.max(...counts.values());
+    let candidates = [...counts.entries()].filter(([, count]) => count === maxCount).map(([emotion]) => emotion);
+    const happiness = '행복';
+    let dominantEmotion = null;
+    if (candidates.includes(happiness)) {
+      dominantEmotion = happiness;
+    } else if (candidates.length === 1) {
+      dominantEmotion = candidates[0];
+    } else {
+      const sortedByRecency = [...userMessages].sort((a, b) => {
+        return new Date(b.sendDate).getTime() - new Date(a.sendDate).getTime();
+      });
+      dominantEmotion = sortedByRecency.find(message => candidates.includes(message.emotion))?.emotion ?? candidates[0];
+    }
+    const latestForEmotion = [...userMessages].filter(message => message.emotion === dominantEmotion).sort((a, b) => new Date(b.sendDate).getTime() - new Date(a.sendDate).getTime())[0];
+    return {
+      emotion: dominantEmotion,
+      factor: latestForEmotion?.factor ?? null
+    };
+  }
+  async findPrimaryMission(userId, date) {
+    try {
+      const missionRecord = await db.UserMission.findOne({
+        where: {
+          user_id: userId,
+          status: 'complete',
+          [Op.and]: [db.Sequelize.where(db.Sequelize.fn('DATE', db.Sequelize.col('completed_at')), '=', date)]
+        },
+        include: [{
+          model: db.Mission,
+          as: 'mission',
+          attributes: ['title', 'code'],
+          required: false
+        }],
+        order: [['completed_at', 'ASC'], ['id', 'ASC']]
+      });
+      if (!missionRecord) {
+        return null;
+      }
+      const mission = missionRecord.get('mission');
+      return mission?.title ?? mission?.code ?? null;
+    } catch (error) {
+      console.error('Failed to resolve primary mission', error);
+      return null;
+    }
+  }
+  applyDiaryMetaFallback(data) {
+    const normalized = {
+      ...data
+    };
+    const emotion = normalized.emotion ?? normalized.dominantEmotion ?? '없음';
+    const emotionFactor = normalized.emotionFactor ?? normalized.emotion_factor ?? '없음';
+    const primaryMission = normalized.primaryMission ?? normalized.primary_mission ?? '없음';
+    normalized.emotion = emotion;
+    normalized.emotionFactor = emotionFactor;
+    normalized.primaryMission = primaryMission;
+    delete normalized.dominantEmotion;
+    delete normalized.emotion_factor;
+    delete normalized.primary_mission;
+    return normalized;
+  }
+}

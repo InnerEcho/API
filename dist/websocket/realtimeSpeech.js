@@ -1,15 +1,29 @@
 import { WebSocketServer } from 'ws';
-import { RealtimeTicketService } from "../services/RealtimeTicketService.js";
+import { URL } from 'url';
+import { RealtimeTicketService } from "../services/realtime/RealtimeTicketService.js";
 
 /**
  * Realtime Speech WebSocket 서버 설정
  * @param server HTTP 서버 인스턴스
  */
 export function setupRealtimeSpeechWebSocket(server) {
-  // WebSocket 서버 생성 (path: /chat/realtime)
+  // noServer 모드로 생성한 뒤 upgrade 이벤트에서 직접 라우팅
   const wss = new WebSocketServer({
-    server,
-    path: '/chat/realtime'
+    noServer: true
+  });
+  server.on('upgrade', (req, socket, head) => {
+    try {
+      const pathname = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`).pathname;
+      if (pathname !== '/chat/realtime') {
+        return;
+      }
+      wss.handleUpgrade(req, socket, head, ws => {
+        wss.emit('connection', ws, req);
+      });
+    } catch (error) {
+      console.error('❌ Failed to handle /chat/realtime upgrade:', error);
+      socket.destroy();
+    }
   });
   const ticketService = new RealtimeTicketService();
   console.log('🎙️ Realtime Speech WebSocket 서버 초기화 완료');

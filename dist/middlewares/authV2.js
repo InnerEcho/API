@@ -1,4 +1,4 @@
-import { TokenService } from "../services/TokenService.js";
+import { TokenService } from "../services/auth/TokenService.js";
 
 // Request 타입 확장 (user 필드 추가)
 

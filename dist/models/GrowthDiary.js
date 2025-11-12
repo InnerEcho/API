@@ -18,6 +18,21 @@ export default function (sequelize) {
       allowNull: false,
       comment: "일지 제목"
     },
+    dominant_emotion: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      comment: "일지 대표 감정"
+    },
+    emotion_factor: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "대표 감정의 원인"
+    },
+    primary_mission: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: "대표 미션 이름"
+    },
     content: {
       type: DataTypes.TEXT,
       allowNull: false,
