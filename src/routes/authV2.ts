@@ -2,11 +2,15 @@ import express from 'express';
 import { AuthController } from '@/controllers/auth/AuthController.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 import { loginRateLimiter, apiRateLimiter } from '@/middlewares/rateLimiter.js';
+import { TokenService } from '@/services/auth/TokenService.js';
+import { UserService } from '@/services/user/UserService.js';
 
 const router = express.Router();
 
 // 의존성 주입
-const authController = new AuthController();
+const tokenService = new TokenService();
+const userService = new UserService();
+const authController = new AuthController(tokenService, userService);
 
 /**
  * @swagger

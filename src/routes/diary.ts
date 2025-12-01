@@ -4,13 +4,15 @@ import { GrowthDiaryService } from '@/services/growthDiary/GrowthDiaryService.js
 import { GrowthDiaryBot } from '@/services/bots/GrowthDiaryBot.js';
 import { GrowthDiaryCommentController } from '@/controllers/growthDiary/GrowthDiaryCommentController.js';
 import { GrowthDiaryCommentService } from '@/services/growthDiary/GrowthDiaryCommentService.js';
+import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();
 
 // 의존성 주입
 const growthDiaryBot = new GrowthDiaryBot();
-const growthDiaryService = new GrowthDiaryService(growthDiaryBot);
+const chatHistoryService = new ChatHistoryService();
+const growthDiaryService = new GrowthDiaryService(growthDiaryBot, chatHistoryService);
 const growthDiaryController = new GrowthDiaryController(growthDiaryService);
 
 const growthDiaryCommentService = new GrowthDiaryCommentService();

@@ -4,8 +4,8 @@ import { RealtimeSpeechService } from '@/services/realtime/RealtimeSpeechService
 export class RealtimeSpeechController {
   private realtimeSpeechService: RealtimeSpeechService;
 
-  constructor() {
-    this.realtimeSpeechService = new RealtimeSpeechService();
+  constructor(realtimeSpeechService: RealtimeSpeechService = new RealtimeSpeechService()) {
+    this.realtimeSpeechService = realtimeSpeechService;
   }
 
   /**

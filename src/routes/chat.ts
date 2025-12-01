@@ -6,6 +6,8 @@ import { RealtimeSpeechController } from '@/controllers/realtime/RealtimeSpeechC
 import { ChatService } from '@/services/chat/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
 import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
+import { RealtimeTicketService } from '@/services/realtime/RealtimeTicketService.js';
+import { RealtimeSpeechService } from '@/services/realtime/RealtimeSpeechService.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();
@@ -16,8 +18,10 @@ const chatService = new ChatService(chatBot);
 const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);
-const realtimeTicketController = new RealtimeTicketController();
-const realtimeSpeechController = new RealtimeSpeechController();
+const realtimeTicketService = new RealtimeTicketService();
+const realtimeSpeechService = new RealtimeSpeechService();
+const realtimeTicketController = new RealtimeTicketController(realtimeTicketService);
+const realtimeSpeechController = new RealtimeSpeechController(realtimeSpeechService);
 
 
 

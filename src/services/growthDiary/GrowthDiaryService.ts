@@ -11,8 +11,11 @@ import { UserType } from '@/interface/index.js';
 export class GrowthDiaryService {
   private chatHistoryService: ChatHistoryService;
 
-  constructor(private growthDiaryBot: GrowthDiaryBot) {
-    this.chatHistoryService = new ChatHistoryService();
+  constructor(
+    private growthDiaryBot: GrowthDiaryBot,
+    chatHistoryService: ChatHistoryService = new ChatHistoryService(),
+  ) {
+    this.chatHistoryService = chatHistoryService;
   }
 
   public async getDiaryDatesForMonth(
