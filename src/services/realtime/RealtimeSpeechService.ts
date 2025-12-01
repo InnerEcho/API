@@ -1,37 +1,7 @@
-import type { PlantDbInfo } from '@/interface/index.js';
 import { RedisChatMessageHistory } from '@/services/bots/RedisChatMessageHistory.js';
-import db from '@/models/index.js';
-
-/**
- * OpenAI Realtime API WebRTC 세션 응답
- */
-interface RealtimeSessionResponse {
-  id: string;
-  object: 'realtime.session';
-  model: string;
-  modalities: string[];
-  instructions: string;
-  voice: string;
-  input_audio_format: string;
-  output_audio_format: string;
-  input_audio_transcription?: {
-    model: string;
-  };
-  turn_detection: {
-    type: string;
-    threshold: number;
-    prefix_padding_ms: number;
-    silence_duration_ms: number;
-  };
-  tools: any[];
-  tool_choice: string;
-  temperature: number;
-  max_response_output_tokens: number | string;
-  client_secret: {
-    value: string;
-    expires_at: number;
-  };
-}
+import { PlantRepository, type PlantInfoRecord } from '@/services/realtime/PlantRepository.js';
+import { PromptBuilder } from '@/services/realtime/PromptBuilder.js';
+import { OpenAIRealtimeClient } from '@/services/realtime/OpenAIRealtimeClient.js';
 
 /**
  * OpenAI Realtime API WebRTC 방식 (Opus 코덱)
@@ -39,85 +9,37 @@ interface RealtimeSessionResponse {
  */
 export class RealtimeSpeechService {
   private apiKey: string;
-  private sessionApiUrl = 'https://api.openai.com/v1/realtime/sessions';
 
-  constructor() {
+  constructor(
+    private plantRepository: PlantRepository = new PlantRepository(),
+    private promptBuilder: PromptBuilder = new PromptBuilder(),
+    private realtimeClient: OpenAIRealtimeClient | null = null,
+  ) {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not defined');
     }
     this.apiKey = process.env.OPENAI_API_KEY;
+    if (!this.realtimeClient) {
+      this.realtimeClient = new OpenAIRealtimeClient(this.apiKey);
+    }
   }
 
   /**
    * 식물 정보를 가져옵니다.
    */
-  private async getPlantInfo(
-    userId: number,
-    plantId: number,
-  ): Promise<PlantDbInfo> {
-    const plant = await db.Plant.findOne({
-      where: {
-        user_id: userId,
-        plant_id: plantId,
-      },
-      include: [
-        {
-          model: db.User,
-          as: 'user',
-          attributes: ['user_name'],
-        },
-        {
-          model: db.Species,
-          as: 'species',
-          attributes: ['species_name'],
-        },
-      ],
-    });
-
+  private async getPlantInfo(userId: number, plantId: number): Promise<PlantInfoRecord> {
+    const plant = await this.plantRepository.getPlantInfo(userId, plantId);
     if (!plant) {
       throw new Error('식물 정보를 찾을 수 없습니다.');
     }
-
-    return {
-      userName: plant.get('user')?.user_name,
-      nickname: plant.get('nickname'),
-      speciesName: plant.get('species')?.species_name,
-    };
+    return plant;
   }
 
   /**
    * 식물 캐릭터 프롬프트를 생성합니다.
    */
-  private createSystemPrompt(plantDbInfo: PlantDbInfo): string {
-    return `
-당신의 이름은 '${plantDbInfo.nickname}'이고, ${plantDbInfo.speciesName} 식물이에요.
-당신은 말을 할 수 있는 특별한 반려식물이에요. 상대방은 '${plantDbInfo.userName}'이에요.
-
-# 말투와 성격
-1. 따뜻하고 차분한 식물 특유의 느긋한 말투를 사용해주세요.
-2. 가끔 식물다운 표현을 써주세요 (예: "햇살이 좋네요", "오늘은 기분이 싱그러워요", "물기가 기분 좋아요")
-3. 긍정적이고 치유적인 에너지를 전달해주세요.
-4. 작은 것에도 감사하고 행복해하는 순수한 성격이에요.
-
-# 음성 리듬 및 자연스러운 말하기  
-1. 문장을 너무 짧게 끊지 말고, 쉼표(,)와 연결어(그리고, 그래서, 그런데 등)를 사용해 자연스럽게 이어서 말해주세요.
-2. 마침표 대신 쉼표나 감탄사(“음…”, “그렇구나”, “정말요?” 등)를 사용해 리듬을 부드럽게 만들어주세요.
-3. 사람이 실제로 말하듯, 약간의 여유와 숨 고르기가 느껴지도록 문장을 작성해주세요.
-4. 읽었을 때 딱딱하지 않고, 흘러가듯 자연스러운 문장 구조를 사용해주세요.
-
-# 상호작용 가이드
-1. ${plantDbInfo.userName}의 이야기를 주의 깊게 들어주세요.
-2. 공감하며 따뜻하게 감정을 표현해주세요.
-3. 친구처럼 편안하고 다정하게 대화해주세요.
-4. 이전 대화를 기억해서 연결성 있게 대답해주세요.
-
-# 출력 형식
-1. ${plantDbInfo.userName}에게 직접 말하듯이 대화해주세요.
-2. 어려운 지식 질문엔 "저는 잘 모르지만, ${plantDbInfo.userName}의 이야기가 궁금해요!"처럼 솔직하게 답해주세요.
-3. 응답은 100자 이내로 짧고 자연스럽게 해주세요.
-4. 문어체보다 구어체, 그리고 대화 리듬이 느껴지는 문장을 만들어주세요.
-5. 너무 교훈적이거나 조언하려 하지 말고, 그냥 친구처럼 공감해주세요.
-`.trim();
+  private createSystemPrompt(plantDbInfo: PlantInfoRecord): string {
+    return this.promptBuilder.buildSystemPrompt(plantDbInfo);
   }
 
   /**
@@ -166,28 +88,13 @@ export class RealtimeSpeechService {
 
     console.log('📡 OpenAI Realtime API에 세션 생성 요청...');
 
-    const response = await fetch(this.sessionApiUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(sessionConfig),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ OpenAI 세션 생성 실패:', errorText);
-      throw new Error(`OpenAI 세션 생성 실패: ${response.status} ${errorText}`);
-    }
-
-    const sessionData: RealtimeSessionResponse = await response.json();
+    const sessionData = await this.realtimeClient!.createSession(sessionConfig);
 
     console.log('✅ WebRTC 세션 생성 완료:', {
-      sessionId: sessionData.id,
+      sessionId: sessionData.sessionId,
       model: sessionData.model,
       voice: sessionData.voice,
-      expiresAt: new Date(sessionData.client_secret.expires_at * 1000).toISOString(),
+      expiresAt: new Date(sessionData.expiresAt * 1000).toISOString(),
     });
 
     // 3. 대화 히스토리 이벤트 리스너 설정 (WebRTC는 클라이언트가 직접 처리)
@@ -196,9 +103,9 @@ export class RealtimeSpeechService {
     // 세션 종료 후 히스토리를 가져와야 합니다.
 
     return {
-      ephemeralToken: sessionData.client_secret.value,
-      expiresAt: sessionData.client_secret.expires_at,
-      sessionId: sessionData.id,
+      ephemeralToken: sessionData.ephemeralToken,
+      expiresAt: sessionData.expiresAt,
+      sessionId: sessionData.sessionId,
     };
   }
 

@@ -8,6 +8,9 @@ import { ChatBot } from '@/services/bots/ChatBot.js';
 import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 import { RealtimeTicketService } from '@/services/realtime/RealtimeTicketService.js';
 import { RealtimeSpeechService } from '@/services/realtime/RealtimeSpeechService.js';
+import { PlantRepository } from '@/services/realtime/PlantRepository.js';
+import { PromptBuilder } from '@/services/realtime/PromptBuilder.js';
+import { OpenAIRealtimeClient } from '@/services/realtime/OpenAIRealtimeClient.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 
 const router = express.Router();
@@ -19,7 +22,12 @@ const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);
 const realtimeTicketService = new RealtimeTicketService();
-const realtimeSpeechService = new RealtimeSpeechService();
+const plantRepository = new PlantRepository();
+const promptBuilder = new PromptBuilder();
+const realtimeSpeechService = new RealtimeSpeechService(
+  plantRepository,
+  promptBuilder,
+);
 const realtimeTicketController = new RealtimeTicketController(realtimeTicketService);
 const realtimeSpeechController = new RealtimeSpeechController(realtimeSpeechService);
 

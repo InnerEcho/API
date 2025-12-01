@@ -1,12 +1,14 @@
 import { GrowthDiaryBot } from '@/services/bots/GrowthDiaryBot.js';
-import db from '@/models/index.js';
-import { Op } from 'sequelize';
 import dayjs from 'dayjs';
 import { toCamelCase } from '@/utils/casing.js';
 import { formatToKstIsoString } from '@/utils/date.js';
 import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 import type { IMessage } from '@/interface/index.js';
 import { UserType } from '@/interface/index.js';
+import {
+  GrowthDiaryRepository,
+  type DiaryCreationAttributes,
+} from '@/services/growthDiary/GrowthDiaryRepository.js';
 
 export class GrowthDiaryService {
   private chatHistoryService: ChatHistoryService;
@@ -14,6 +16,7 @@ export class GrowthDiaryService {
   constructor(
     private growthDiaryBot: GrowthDiaryBot,
     chatHistoryService: ChatHistoryService = new ChatHistoryService(),
+    private repository: GrowthDiaryRepository = new GrowthDiaryRepository(),
   ) {
     this.chatHistoryService = chatHistoryService;
   }
@@ -34,28 +37,11 @@ export class GrowthDiaryService {
       .format('YYYY-MM-DD HH:mm:ss');
 
     try {
-      const diaries = await db.GrowthDiary.findAll({
-        attributes: [
-          'diary_id',
-          'title',
-          'content',
-          'dominant_emotion',
-          'emotion_factor',
-          'primary_mission',
-          'edited',
-          'created_at',
-          [db.Sequelize.fn('DATE', db.Sequelize.col('created_at')), 'date'],
-        ],
-        where: {
-          user_id: userId,
-          is_deleted: false,
-          created_at: {
-            [db.Sequelize.Op.between]: [start, end],
-          },
-        },
-        order: [['created_at', 'ASC']],
-        raw: true,
-      });
+      const diaries = await this.repository.findDiariesForMonth(
+        userId,
+        start,
+        end,
+      );
 
       // 각 일기에 대해 날짜와 미리보기 정보 포함
       return diaries.map((diary: any) => ({
@@ -84,13 +70,7 @@ export class GrowthDiaryService {
     }
 
     try {
-      const diary = await db.GrowthDiary.findOne({
-        where: {
-          diary_id: diaryId,
-          user_id: userId,
-          is_deleted: false,
-        },
-      });
+      const diary = await this.repository.findDiaryById(userId, diaryId);
 
       if (!diary) {
         throw new Error('Diary not found');
@@ -113,19 +93,7 @@ export class GrowthDiaryService {
     }
 
     try {
-      const diary = await db.GrowthDiary.findOne({
-        where: {
-          user_id: userId,
-          is_deleted: false,
-          [Op.and]: [
-            db.Sequelize.where(
-              db.Sequelize.fn('DATE', db.Sequelize.col('created_at')),
-              '=',
-              date,
-            ),
-          ],
-        },
-      });
+      const diary = await this.repository.findDiaryByDate(userId, date);
 
       if (!diary) {
         return null;
@@ -164,19 +132,10 @@ export class GrowthDiaryService {
     const primaryMission = await this.findPrimaryMission(userId, today);
 
     // 3. 오늘 날짜의 일지가 있는지 확인
-    const existingDiary = await db.GrowthDiary.findOne({
-      where: {
-        user_id: userId,
-        is_deleted: false,
-        [db.Sequelize.Op.and]: [
-          db.Sequelize.where(
-            db.Sequelize.fn('DATE', db.Sequelize.col('created_at')),
-            '=',
-            today,
-          ),
-        ],
-      },
-    });
+    const existingDiary = await this.repository.findDiaryByDate(
+      userId,
+      today,
+    );
 
     let result;
     if (existingDiary) {
@@ -191,7 +150,7 @@ export class GrowthDiaryService {
       });
     } else {
       // 새 일지 생성
-      result = await db.GrowthDiary.create({
+      const payload: DiaryCreationAttributes = {
         user_id: userId,
         title,
         content,
@@ -203,7 +162,8 @@ export class GrowthDiaryService {
         updated_at: now,
         is_deleted: false,
         edited: false,
-      });
+      };
+      result = await this.repository.createDiary(payload);
     }
 
     // 4. 결과 반환 (camelCase 변환)
@@ -279,31 +239,10 @@ export class GrowthDiaryService {
     date: string,
   ): Promise<string | null> {
     try {
-      const missionRecord = await db.UserMission.findOne({
-        where: {
-          user_id: userId,
-          status: 'complete',
-          [Op.and]: [
-            db.Sequelize.where(
-              db.Sequelize.fn('DATE', db.Sequelize.col('completed_at')),
-              '=',
-              date,
-            ),
-          ],
-        },
-        include: [
-          {
-            model: db.Mission,
-            as: 'mission',
-            attributes: ['title', 'code'],
-            required: false,
-          },
-        ],
-        order: [
-          ['completed_at', 'ASC'],
-          ['id', 'ASC'],
-        ],
-      });
+      const missionRecord = await this.repository.findCompletedMissionByDate(
+        userId,
+        date,
+      );
 
       if (!missionRecord) {
         return null;

@@ -26,21 +26,8 @@ vi.mock('@/services/chat/ChatHistoryService.js', () => ({
   ChatHistoryService: vi.fn().mockImplementation(() => chatHistoryMock),
 }));
 
-const userMissionFindOne = vi.hoisted(() => vi.fn());
-const sequelizeStub = vi.hoisted(() => ({
-  where: vi.fn((...args: any[]) => ({ __where: args })),
-  fn: vi.fn(),
-  col: vi.fn((column: string) => column),
-}));
-
-vi.mock('@/models/index.js', () => ({
-  default: {
-    UserMission: {
-      findOne: userMissionFindOne,
-    },
-    Mission: {},
-    Sequelize: sequelizeStub,
-  },
+const repositoryMock = vi.hoisted(() => ({
+  findCompletedMissionByDate: vi.fn(),
 }));
 
 describe('GrowthDiaryService helpers', () => {
@@ -59,11 +46,8 @@ describe('GrowthDiaryService helpers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     chatHistoryMock.getTodayHistory.mockReset();
-    userMissionFindOne.mockReset();
-    sequelizeStub.where.mockReset();
-    sequelizeStub.fn.mockReset();
-    sequelizeStub.col.mockReset();
-    service = new GrowthDiaryService({} as any);
+    repositoryMock.findCompletedMissionByDate.mockReset();
+    service = new GrowthDiaryService({} as any, chatHistoryMock as any, repositoryMock as any);
   });
 
   it('대표 감정이 없으면 "없음"으로 처리된다', () => {
@@ -104,7 +88,7 @@ describe('GrowthDiaryService helpers', () => {
 
   it('대표 미션은 가장 먼저 완료한 미션 제목을 반환한다', async () => {
     const mission = { title: '스트레칭 30초', code: 'STRETCH' };
-    userMissionFindOne.mockResolvedValueOnce({
+    repositoryMock.findCompletedMissionByDate.mockResolvedValueOnce({
       get: (field?: string) => {
         if (field === 'mission') {
           return mission;
@@ -115,19 +99,12 @@ describe('GrowthDiaryService helpers', () => {
 
     const primaryMission = await (service as any).findPrimaryMission(10, '2025-11-09');
 
-    expect(userMissionFindOne).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          user_id: 10,
-          status: 'complete',
-        }),
-      }),
-    );
+    expect(repositoryMock.findCompletedMissionByDate).toHaveBeenCalledWith(10, '2025-11-09');
     expect(primaryMission).toBe('스트레칭 30초');
   });
 
   it('대표 미션이 없으면 null을 반환한다', async () => {
-    userMissionFindOne.mockResolvedValueOnce(null);
+    repositoryMock.findCompletedMissionByDate.mockResolvedValueOnce(null);
 
     const primaryMission = await (service as any).findPrimaryMission(20, '2025-11-09');
 
