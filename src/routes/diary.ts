@@ -7,11 +7,16 @@ import { GrowthDiaryCommentService } from '@/services/growthDiary/GrowthDiaryCom
 import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 import { GrowthDiaryRepository } from '@/services/growthDiary/GrowthDiaryRepository.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
+import { LangchainChatModelFactory } from '@/services/llm/ChatModelFactory.js';
 
 const router = express.Router();
 
 // 의존성 주입
-const growthDiaryBot = new GrowthDiaryBot();
+const diaryModelFactory = new LangchainChatModelFactory({
+  model: 'gpt-4o',
+  temperature: 0.7,
+});
+const growthDiaryBot = new GrowthDiaryBot(diaryModelFactory);
 const chatHistoryService = new ChatHistoryService();
 const growthDiaryRepository = new GrowthDiaryRepository();
 const growthDiaryService = new GrowthDiaryService(

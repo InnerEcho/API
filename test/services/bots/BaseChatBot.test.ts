@@ -13,7 +13,13 @@ vi.mock('@/config/redis.config.js', () => ({
   },
 }));
 
+const llmFactoryStub = { create: vi.fn() };
+
 class TestBot extends BaseChatBot {
+  constructor() {
+    super(llmFactoryStub as any);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected async createPrompt(
     _plantDbInfo: PlantDbInfo,

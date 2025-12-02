@@ -5,13 +5,17 @@ import type { StateData } from '@/interface/index.js';
 import type { PlantDbInfo } from '@/interface/index.js';
 import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 import type { IMessage } from '@/interface/index.js';
+import type { ChatModelFactory } from '@/services/llm/ChatModelFactory.js';
 
 export class GrowthDiaryBot extends BaseChatBot {
   private chatHistoryService: ChatHistoryService;
 
-  constructor() {
-    super();
-    this.chatHistoryService = new ChatHistoryService();
+  constructor(
+    llmFactory: ChatModelFactory,
+    chatHistoryService: ChatHistoryService = new ChatHistoryService(),
+  ) {
+    super(llmFactory);
+    this.chatHistoryService = chatHistoryService;
   }
 
   public async createPrompt(

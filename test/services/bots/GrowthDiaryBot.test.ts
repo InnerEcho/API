@@ -21,6 +21,7 @@ vi.mock('@/services/chat/ChatHistoryService.js', () => ({
 
 describe('GrowthDiaryBot', () => {
   let bot: GrowthDiaryBot;
+  const llmFactoryStub = { create: vi.fn() };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,7 +37,7 @@ describe('GrowthDiaryBot', () => {
         message: '괜찮아',
       },
     ]);
-    bot = new GrowthDiaryBot();
+    bot = new GrowthDiaryBot(llmFactoryStub as any);
   });
 
   it('오늘 대화 기록을 프롬프트에 포함한다', async () => {
