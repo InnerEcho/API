@@ -17,6 +17,9 @@ import { PromptBuilder } from '@/services/realtime/PromptBuilder.js';
 import { OpenAIRealtimeClient } from '@/services/realtime/OpenAIRealtimeClient.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
 import { LangchainChatModelFactory } from '@/services/llm/ChatModelFactory.js';
+import { OpenAIEmbeddings } from '@langchain/openai';
+import { UpstashVectorMemory } from '@/services/memory/UpstashVectorMemory.js';
+import { NoopLongTermMemory } from '@/services/memory/LongTermMemory.js';
 
 const router = express.Router();
 
@@ -25,6 +28,15 @@ const chatModelFactory = new LangchainChatModelFactory({
   model: 'gpt-4o',
   temperature: 0.7,
 });
+const embeddings =
+  process.env.OPENAI_API_KEY &&
+  new OpenAIEmbeddings({
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'text-embedding-3-small',
+  });
+const longTermMemory =
+  (embeddings && UpstashVectorMemory.fromEnv(embeddings)) ||
+  new NoopLongTermMemory();
 const chatBot = new ChatBot(chatModelFactory);
 const reflectionAgent = new ReflectionAgent(chatModelFactory);
 const actionAgent = new ActionAgent(chatModelFactory);
@@ -34,7 +46,7 @@ const agentRouter = new AgentRouter({
   reflection: reflectionAgent,
   action: actionAgent,
 });
-const chatService = new ChatService(agentRouter, safetyGuard);
+const chatService = new ChatService(agentRouter, safetyGuard, longTermMemory);
 const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);

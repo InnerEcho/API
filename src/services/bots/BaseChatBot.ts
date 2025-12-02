@@ -10,6 +10,7 @@ import type {
   SafetyPlan,
 } from '@/services/chat/ChatAgent.js';
 import type { ChatModelFactory } from '@/services/llm/ChatModelFactory.js';
+import type { MemorySnippet } from '@/services/memory/LongTermMemory.js';
 import { RedisChatMessageHistory } from './RedisChatMessageHistory.js';
 
 export type LatestAnalysis = Awaited<
@@ -78,11 +79,15 @@ export abstract class BaseChatBot {
       analysisContextPlaceholder,
     );
     const guardedPrompt = this.applySafetyPlan(prompt, safetyPlan);
+    const enhancedPrompt = this.applyLongTermMemories(
+      guardedPrompt,
+      options.longTermMemories,
+    );
 
     const llm = this.llmFactory.create();
 
     const userMessageTemplate = ChatPromptTemplate.fromMessages(
-      guardedPrompt,
+      enhancedPrompt,
     );
     const outputParser = new StringOutputParser();
     const llmChain = RunnablePassthrough.assign<{
@@ -164,6 +169,40 @@ ${plan.reasoningSteps
     ] as [string, string];
 
     return [safetyInstructions, ...prompt];
+  }
+
+  private applyLongTermMemories(
+    prompt: Array<[string, string]>,
+    memories?: MemorySnippet[] | null,
+  ): Array<[string, string]> {
+    if (!memories || memories.length === 0) {
+      return prompt;
+    }
+
+    const formatted = memories
+      .map(snippet => {
+        const score = snippet.score
+          ? ` (확신도: ${(snippet.score * 100).toFixed(0)}%)`
+          : '';
+        const createdAt =
+          typeof snippet.metadata?.createdAt === 'string'
+            ? ` @${snippet.metadata.createdAt}`
+            : '';
+        return `- ${snippet.content.trim()}${score}${createdAt}`;
+      })
+      .join('\n');
+
+    return [
+      [
+        'system',
+        `
+[장기 기억 참고]
+다음 기록은 ${memories.length}개의 과거 대화/관찰에서 추출되었습니다. 현재 대화와 모순되지 않는 범위에서 참고하세요.
+${formatted}
+`.trim(),
+      ],
+      ...prompt,
+    ];
   }
 
   private buildAnalysisContext({
