@@ -5,6 +5,9 @@ import { RealtimeTicketController } from '@/controllers/realtime/RealtimeTicketC
 import { RealtimeSpeechController } from '@/controllers/realtime/RealtimeSpeechController.js';
 import { ChatService } from '@/services/chat/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
+import { ReflectionAgent } from '@/services/bots/ReflectionAgent.js';
+import { ActionAgent } from '@/services/bots/ActionAgent.js';
+import { AgentRouter } from '@/services/chat/AgentRouter.js';
 import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
 import { RealtimeTicketService } from '@/services/realtime/RealtimeTicketService.js';
 import { RealtimeSpeechService } from '@/services/realtime/RealtimeSpeechService.js';
@@ -17,7 +20,14 @@ const router = express.Router();
 
 // 의존성 주입
 const chatBot = new ChatBot();
-const chatService = new ChatService(chatBot);
+const reflectionAgent = new ReflectionAgent();
+const actionAgent = new ActionAgent();
+const agentRouter = new AgentRouter({
+  default: chatBot,
+  reflection: reflectionAgent,
+  action: actionAgent,
+});
+const chatService = new ChatService(agentRouter);
 const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);

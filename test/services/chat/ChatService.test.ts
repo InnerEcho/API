@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatService } from '@/services/chat/ChatService.js';
 import { UserType } from '@/interface/index.js';
+import type { ChatAgent } from '@/services/chat/ChatAgent.js';
+import { AgentRouter } from '@/services/chat/AgentRouter.js';
 
 vi.mock('@/services/bots/RedisChatMessageHistory.js', () => ({
   RedisChatMessageHistory: vi.fn(),
@@ -13,11 +15,16 @@ vi.mock('@/config/redis.config.js', () => ({
 }));
 
 describe('ChatService', () => {
+  beforeEach(() => {
+    delete process.env.OPENAI_API_KEY;
+  });
+
   it('ChatBot 응답을 IMessage 형태로 감싼다', async () => {
-    const chatBotMock = {
+    const chatBotMock: ChatAgent = {
       processChat: vi.fn().mockResolvedValue('안녕'),
     };
-    const service = new ChatService(chatBotMock as any);
+    const router = new AgentRouter({ default: chatBotMock });
+    const service = new ChatService(router);
 
     const result = await service.create(1, 2, 'hello');
 

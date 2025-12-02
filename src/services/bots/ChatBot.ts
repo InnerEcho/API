@@ -1,8 +1,9 @@
 import { BaseChatBot } from '@/services/bots/BaseChatBot.js';
 import type { LatestAnalysis } from '@/services/bots/BaseChatBot.js';
 import type { PlantDbInfo } from '@/interface/index.js';
+import type { ChatAgent } from '@/services/chat/ChatAgent.js';
 
-export class ChatBot extends BaseChatBot {
+export class ChatBot extends BaseChatBot implements ChatAgent {
   constructor() {
     super();
   }
