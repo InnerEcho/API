@@ -56,6 +56,9 @@ const promptBuilder = new PromptBuilder();
 const realtimeSpeechService = new RealtimeSpeechService(
   plantRepository,
   promptBuilder,
+  null,
+  safetyGuard,
+  longTermMemory,
 );
 const realtimeTicketController = new RealtimeTicketController(realtimeTicketService);
 const realtimeSpeechController = new RealtimeSpeechController(realtimeSpeechService);

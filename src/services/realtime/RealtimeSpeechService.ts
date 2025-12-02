@@ -2,6 +2,10 @@ import { RedisChatMessageHistory } from '@/services/bots/RedisChatMessageHistory
 import { PlantRepository, type PlantInfoRecord } from '@/services/realtime/PlantRepository.js';
 import { PromptBuilder } from '@/services/realtime/PromptBuilder.js';
 import { OpenAIRealtimeClient } from '@/services/realtime/OpenAIRealtimeClient.js';
+import { DepressionSafetyGuard } from '@/services/chat/DepressionSafetyGuard.js';
+import type { LongTermMemory, MemorySnippet } from '@/services/memory/LongTermMemory.js';
+import { NoopLongTermMemory } from '@/services/memory/LongTermMemory.js';
+import type { SafetyPlan } from '@/services/chat/ChatAgent.js';
 
 /**
  * OpenAI Realtime API WebRTC 방식 (Opus 코덱)
@@ -14,6 +18,8 @@ export class RealtimeSpeechService {
     private plantRepository: PlantRepository = new PlantRepository(),
     private promptBuilder: PromptBuilder = new PromptBuilder(),
     private realtimeClient: OpenAIRealtimeClient | null = null,
+    private safetyGuard: DepressionSafetyGuard = new DepressionSafetyGuard(),
+    private longTermMemory: LongTermMemory = new NoopLongTermMemory(),
   ) {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not defined');
@@ -53,6 +59,7 @@ export class RealtimeSpeechService {
   public async createWebRTCSession(
     userId: number,
     plantId: number,
+    initialMessage?: string,
   ): Promise<{
     ephemeralToken: string;
     expiresAt: number;
@@ -67,10 +74,17 @@ export class RealtimeSpeechService {
     console.log(`🌱 식물 정보 로드 완료: ${plantInfo.nickname}`);
 
     // 2. OpenAI Realtime API에 WebRTC 세션 요청
+    const instructions = await this.composeInstructions(
+      userId,
+      plantId,
+      plantInfo,
+      initialMessage,
+    );
+
     const sessionConfig = {
       model: 'gpt-4o-realtime-preview-2024-12-17',
       voice: 'shimmer', // alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar
-      instructions: this.createSystemPrompt(plantInfo),
+      instructions,
       // WebRTC는 자동으로 Opus 코덱 사용 (브라우저가 처리)
       // 설정 불필요 - input_audio_format, output_audio_format 제거
       input_audio_transcription: {
@@ -153,5 +167,91 @@ export class RealtimeSpeechService {
         content: String(msg.content),
       };
     });
+  }
+
+  private async composeInstructions(
+    userId: number,
+    plantId: number,
+    plantInfo: PlantInfoRecord,
+    initialMessage?: string,
+  ): Promise<string> {
+    const sections: string[] = [this.createSystemPrompt(plantInfo)];
+
+    if (!initialMessage?.trim()) {
+      return sections.join('\n\n');
+    }
+
+    const normalized = initialMessage.trim();
+    sections.push(
+      [
+        '[세션 시작 참고]',
+        `사용자 첫 발화: "${normalized}"`,
+        '대화 톤은 이 메시지를 기반으로 빠르게 맞추세요.',
+      ].join('\n'),
+    );
+
+    const [safetyPlan, memories] = await Promise.all([
+      this.buildSafetyPlan(normalized),
+      this.fetchLongTermMemories(userId, plantId, normalized),
+    ]);
+
+    if (memories.length > 0) {
+      sections.push(this.formatMemories(memories));
+    }
+
+    if (safetyPlan) {
+      sections.push(this.formatSafetyPlan(safetyPlan));
+    }
+
+    return sections.join('\n\n');
+  }
+
+  private async buildSafetyPlan(message: string): Promise<SafetyPlan | null> {
+    try {
+      return await this.safetyGuard.buildPlan(message);
+    } catch (error) {
+      console.warn('Realtime safety guard failure:', error);
+      return null;
+    }
+  }
+
+  private async fetchLongTermMemories(
+    userId: number,
+    plantId: number,
+    message: string,
+  ): Promise<MemorySnippet[]> {
+    try {
+      return (
+        (await this.longTermMemory.retrieveContext(userId, plantId, message)) ?? []
+      );
+    } catch (error) {
+      console.warn('Realtime memory retrieval failure:', error);
+      return [];
+    }
+  }
+
+  private formatMemories(memories: MemorySnippet[]): string {
+    const formatted = memories
+      .map(snippet => {
+        const score = snippet.score
+          ? ` (확신도 ${(snippet.score * 100).toFixed(0)}%)`
+          : '';
+        const createdAt =
+          typeof snippet.metadata?.createdAt === 'string'
+            ? ` @${snippet.metadata.createdAt}`
+            : '';
+        return `- ${snippet.content}${score}${createdAt}`;
+      })
+      .join('\n');
+    return ['[장기 기억]', formatted].join('\n');
+  }
+
+  private formatSafetyPlan(plan: SafetyPlan): string {
+    return `
+[안전 대응 지침]
+- 감지된 위험 요약: ${plan.triggerSummary}
+${plan.reasoningSteps.map((step, idx) => `${idx + 1}. ${step}`).join('\n')}
+- ${plan.finalReminder}
+`.trim();
   }
 }

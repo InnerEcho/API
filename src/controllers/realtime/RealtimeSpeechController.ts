@@ -15,7 +15,7 @@ export class RealtimeSpeechController {
   public async createSession(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.userId;
-      const { plantId } = req.body;
+      const { plantId, initialMessage } = req.body;
 
       if (!userId) {
         res.status(401).json({
@@ -39,6 +39,7 @@ export class RealtimeSpeechController {
       const session = await this.realtimeSpeechService.createWebRTCSession(
         userId,
         plantId,
+        initialMessage,
       );
 
       res.status(200).json({

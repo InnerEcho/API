@@ -57,12 +57,33 @@ describe('RealtimeSpeechController', () => {
 
     await controller.createSession(req, res);
 
-    expect(serviceMock.createWebRTCSession).toHaveBeenCalledWith(1, 10);
+    expect(serviceMock.createWebRTCSession).toHaveBeenCalledWith(1, 10, undefined);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ ephemeralToken: 'token' }),
       }),
+    );
+  });
+
+  it('initialMessage를 전달하면 서비스도 전달받는다', async () => {
+    const req = {
+      user: { userId: 2 },
+      body: { plantId: 20, initialMessage: '오늘 너무 우울해' },
+    } as unknown as Request;
+    const res = createMockRes();
+    serviceMock.createWebRTCSession.mockResolvedValue({
+      ephemeralToken: 'token',
+      expiresAt: 111,
+      sessionId: 'sess',
+    });
+
+    await controller.createSession(req, res);
+
+    expect(serviceMock.createWebRTCSession).toHaveBeenCalledWith(
+      2,
+      20,
+      '오늘 너무 우울해',
     );
   });
 
