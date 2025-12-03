@@ -1,10 +1,12 @@
 import { BaseChatBot } from '@/services/bots/BaseChatBot.js';
 import type { LatestAnalysis } from '@/services/bots/BaseChatBot.js';
 import type { PlantDbInfo } from '@/interface/index.js';
+import type { ChatAgent } from '@/services/chat/ChatAgent.js';
+import type { ChatModelFactory } from '@/services/llm/ChatModelFactory.js';
 
-export class ChatBot extends BaseChatBot {
-  constructor() {
-    super();
+export class ChatBot extends BaseChatBot implements ChatAgent {
+  constructor(llmFactory: ChatModelFactory) {
+    super(llmFactory);
   }
 
   public async createPrompt(

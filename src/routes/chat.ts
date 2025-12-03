@@ -5,19 +5,69 @@ import { RealtimeTicketController } from '@/controllers/realtime/RealtimeTicketC
 import { RealtimeSpeechController } from '@/controllers/realtime/RealtimeSpeechController.js';
 import { ChatService } from '@/services/chat/ChatService.js';
 import { ChatBot } from '@/services/bots/ChatBot.js';
+import { ReflectionAgent } from '@/services/bots/ReflectionAgent.js';
+import { ActionAgent } from '@/services/bots/ActionAgent.js';
+import { AgentRouter } from '@/services/chat/AgentRouter.js';
+import { DepressionSafetyGuard } from '@/services/chat/DepressionSafetyGuard.js';
 import { ChatHistoryService } from '@/services/chat/ChatHistoryService.js';
+import { RealtimeTicketService } from '@/services/realtime/RealtimeTicketService.js';
+import { RealtimeSpeechService } from '@/services/realtime/RealtimeSpeechService.js';
+import { PlantRepository } from '@/services/realtime/PlantRepository.js';
+import { PromptBuilder } from '@/services/realtime/PromptBuilder.js';
+import { OpenAIRealtimeClient } from '@/services/realtime/OpenAIRealtimeClient.js';
 import { verifyTokenV2 } from '@/middlewares/authV2.js';
+import { LangchainChatModelFactory } from '@/services/llm/ChatModelFactory.js';
+import { OpenAIEmbeddings } from '@langchain/openai';
+import { UpstashVectorMemory } from '@/services/memory/UpstashVectorMemory.js';
+import { NoopLongTermMemory } from '@/services/memory/LongTermMemory.js';
+import { SafetyModerator } from '@/services/chat/SafetyModerator.js';
 
 const router = express.Router();
 
 // 의존성 주입
-const chatBot = new ChatBot();
-const chatService = new ChatService(chatBot);
+const chatModelFactory = new LangchainChatModelFactory({
+  model: 'gpt-4o',
+  temperature: 0.7,
+});
+const embeddings =
+  process.env.OPENAI_API_KEY &&
+  new OpenAIEmbeddings({
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'text-embedding-3-small',
+  });
+const longTermMemory =
+  (embeddings && UpstashVectorMemory.fromEnv(embeddings)) ||
+  new NoopLongTermMemory();
+const chatBot = new ChatBot(chatModelFactory);
+const reflectionAgent = new ReflectionAgent(chatModelFactory);
+const actionAgent = new ActionAgent(chatModelFactory);
+const safetyGuard = new DepressionSafetyGuard();
+const safetyModerator = new SafetyModerator();
+const agentRouter = new AgentRouter({
+  default: chatBot,
+  reflection: reflectionAgent,
+  action: actionAgent,
+});
+const chatService = new ChatService(
+  agentRouter,
+  safetyModerator,
+  longTermMemory,
+);
 const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);
-const realtimeTicketController = new RealtimeTicketController();
-const realtimeSpeechController = new RealtimeSpeechController();
+const realtimeTicketService = new RealtimeTicketService();
+const plantRepository = new PlantRepository();
+const promptBuilder = new PromptBuilder();
+const realtimeSpeechService = new RealtimeSpeechService(
+  plantRepository,
+  promptBuilder,
+  null,
+  safetyGuard,
+  longTermMemory,
+);
+const realtimeTicketController = new RealtimeTicketController(realtimeTicketService);
+const realtimeSpeechController = new RealtimeSpeechController(realtimeSpeechService);
 
 
 

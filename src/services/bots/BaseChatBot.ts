@@ -1,11 +1,16 @@
 import db from '@/models/index.js';
 import { RunnableWithMessageHistory, RunnablePassthrough } from '@langchain/core/runnables';
-import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { BaseMessage, HumanMessage } from '@langchain/core/messages';
 import type { PlantDbInfo } from '@/interface/index.js';
 import { AnalysisService } from '@/services/analysis/AnalysisService.js';
+import type {
+  ChatAgentOptions,
+  SafetyPlan,
+} from '@/services/chat/ChatAgent.js';
+import type { ChatModelFactory } from '@/services/llm/ChatModelFactory.js';
+import type { MemorySnippet } from '@/services/memory/LongTermMemory.js';
 import { RedisChatMessageHistory } from './RedisChatMessageHistory.js';
 
 export type LatestAnalysis = Awaited<
@@ -15,17 +20,20 @@ export type LatestAnalysis = Awaited<
 export abstract class BaseChatBot {
   private readonly analysisService: AnalysisService;
 
-  constructor() {
-    this.analysisService = new AnalysisService();
+  constructor(
+    private readonly llmFactory: ChatModelFactory,
+    analysisService: AnalysisService = new AnalysisService(),
+  ) {
+    this.analysisService = analysisService;
   }
 
   public async processChat(
     userId: number,
     plantId: number,
     userMessage: string,
-    options: { storeHistory?: boolean } = {},
+    options: ChatAgentOptions = {},
   ): Promise<string> {
-    const { storeHistory = true } = options;
+    const { storeHistory = true, safetyPlan } = options;
     // Sequelize 모델을 사용하여 user, plant, species 정보를 JOIN
     const plant = await db.Plant.findOne({
       where: {
@@ -70,13 +78,17 @@ export abstract class BaseChatBot {
       latestAnalysis,
       analysisContextPlaceholder,
     );
+    const guardedPrompt = this.applySafetyPlan(prompt, safetyPlan);
+    const enhancedPrompt = this.applyLongTermMemories(
+      guardedPrompt,
+      options.longTermMemories,
+    );
 
-    const llm = new ChatOpenAI({
-      model: 'gpt-4o',
-      apiKey: process.env.OPENAI_API_KEY!,
-    });
+    const llm = this.llmFactory.create();
 
-    const userMessageTemplate = ChatPromptTemplate.fromMessages(prompt);
+    const userMessageTemplate = ChatPromptTemplate.fromMessages(
+      enhancedPrompt,
+    );
     const outputParser = new StringOutputParser();
     const llmChain = RunnablePassthrough.assign<{
       input: string;
@@ -133,6 +145,65 @@ export abstract class BaseChatBot {
     latestAnalysis: LatestAnalysis,
     analysisContextPlaceholder: string,
   ): Promise<Array<[string, string]>>;
+
+  private applySafetyPlan(
+    prompt: Array<[string, string]>,
+    plan?: SafetyPlan | null,
+  ): Array<[string, string]> {
+    if (!plan) {
+      return prompt;
+    }
+
+    const safetyInstructions = [
+      'system',
+      `
+[안전 대응 프로토콜]
+- 감지된 위험 요약: ${plan.triggerSummary}
+- 아래 단계를 순서대로 수행하며, 각 단계 결과를 한두 문장으로 정리한 뒤 최종 메시지를 작성하세요.
+${plan.reasoningSteps
+  .map((step, index) => `${index + 1}. ${step}`)
+  .join('\n')}
+- 전체 응답 길이는 3~4문단 이내로 유지하고, 과도한 자극적 표현은 피하세요.
+- ${plan.finalReminder}
+`.trim(),
+    ] as [string, string];
+
+    return [safetyInstructions, ...prompt];
+  }
+
+  private applyLongTermMemories(
+    prompt: Array<[string, string]>,
+    memories?: MemorySnippet[] | null,
+  ): Array<[string, string]> {
+    if (!memories || memories.length === 0) {
+      return prompt;
+    }
+
+    const formatted = memories
+      .map(snippet => {
+        const score = snippet.score
+          ? ` (확신도: ${(snippet.score * 100).toFixed(0)}%)`
+          : '';
+        const createdAt =
+          typeof snippet.metadata?.createdAt === 'string'
+            ? ` @${snippet.metadata.createdAt}`
+            : '';
+        return `- ${snippet.content.trim()}${score}${createdAt}`;
+      })
+      .join('\n');
+
+    return [
+      [
+        'system',
+        `
+[장기 기억 참고]
+다음 기록은 ${memories.length}개의 과거 대화/관찰에서 추출되었습니다. 현재 대화와 모순되지 않는 범위에서 참고하세요.
+${formatted}
+`.trim(),
+      ],
+      ...prompt,
+    ];
+  }
 
   private buildAnalysisContext({
     plantDbInfo,

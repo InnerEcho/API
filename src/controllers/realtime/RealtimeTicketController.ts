@@ -7,8 +7,8 @@ import { RealtimeTicketService } from '@/services/realtime/RealtimeTicketService
 export class RealtimeTicketController {
   private ticketService: RealtimeTicketService;
 
-  constructor() {
-    this.ticketService = new RealtimeTicketService();
+  constructor(ticketService: RealtimeTicketService = new RealtimeTicketService()) {
+    this.ticketService = ticketService;
   }
 
   /**

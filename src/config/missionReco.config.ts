@@ -15,7 +15,17 @@ type EmotionBoost = {
   conditions?: EmotionCondition[];
 };
 
-type MissionRecoConfig = {
+type MicroModeConfig = {
+  arousalThreshold: number;
+  emotionTags: string[];
+  allowCodes: string[];
+  allowTypes: string[];
+  maxBurden: number;
+  scoreBoost: number;
+  nonMicroPenalty: number;
+};
+
+export type MissionRecoConfig = {
   candidateFilter: {
     maxBurden: number | null;
   };
@@ -32,6 +42,7 @@ type MissionRecoConfig = {
     };
     emotionBoosts: EmotionBoost[];
   };
+  microMode: MicroModeConfig;
   novelty: {
     penaltiesByCount: number[];
     historyDays: number;
@@ -113,6 +124,15 @@ const defaultConfig: MissionRecoConfig = {
         ],
       },
     ],
+  },
+  microMode: {
+    arousalThreshold: 0.35,
+    emotionTags: ['무기력', 'lethargic', '귀찮음', '무기력증', 'energy_low'],
+    allowCodes: ['APP_OPEN', 'CHAT_RESPONSE', 'AR_PET', 'LOOK_OUT_WINDOW_30S', 'TAKE_A_BREATH_10S'],
+    allowTypes: ['instant'],
+    maxBurden: 1,
+    scoreBoost: 1.2,
+    nonMicroPenalty: 0.8,
   },
   novelty: {
     penaltiesByCount: [0, -0.3, -0.6, -1],
