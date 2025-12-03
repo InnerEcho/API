@@ -263,6 +263,51 @@ function softScore(code: string, type: string, bucket: TimeBucket) {
 
 const plantStateService = new PlantStateService();
 
+type UserContext = {
+  emotion?: string | null;
+  arousal?: number | null;
+  tags?: string[] | null;
+} | null;
+
+function shouldUseMicroMode(ctx: UserContext): boolean {
+  if (!ctx) return false;
+  const cfg = RECO.microMode;
+  if (!cfg) {
+    return false;
+  }
+  const emotion = typeof ctx.emotion === 'string' ? ctx.emotion.trim() : '';
+  if (emotion && cfg.emotionTags.includes(emotion)) {
+    return true;
+  }
+  if (typeof ctx.arousal === 'number' && ctx.arousal <= cfg.arousalThreshold) {
+    return true;
+  }
+  if (Array.isArray(ctx.tags) && ctx.tags.length > 0) {
+    const normalized = ctx.tags.map(tag => String(tag));
+    if (normalized.some(tag => cfg.emotionTags.includes(tag))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isMicroMission(mission: MissionRow): boolean {
+  const cfg = RECO.microMode;
+  if (!cfg) {
+    return false;
+  }
+  if (cfg.allowCodes.includes(mission.code)) {
+    return true;
+  }
+  if (cfg.allowTypes.includes(mission.type)) {
+    return true;
+  }
+  if (typeof mission.burden === 'number' && mission.burden <= cfg.maxBurden) {
+    return true;
+  }
+  return false;
+}
+
 export class MissionService {
   static async getToday(userId: number) {
     if (!Number.isInteger(userId) || userId <= 0) {
@@ -374,6 +419,25 @@ export class MissionService {
 
     const bucket = timeBucketKST();
     const ctx = await loadUserContext(userId);
+    const microModeActive = shouldUseMicroMode(ctx);
+    let microFilterApplied = false;
+    if (microModeActive) {
+      const beforeCount = candidates.length;
+      const filtered = candidates.filter(mission => isMicroMission(mission));
+      if (filtered.length > 0) {
+        candidates = filtered;
+        microFilterApplied = true;
+      }
+      logger.info({
+        event: 'recommend_micro_mode',
+        userId,
+        ctxEmotion: ctx?.emotion ?? null,
+        arousal: ctx?.arousal ?? null,
+        beforeCount,
+        filteredCount: filtered.length,
+        applied: microFilterApplied,
+      });
+    }
 
     const recentHistory = await loadRecentHistoryMap(userId, RECO.novelty.historyDays);
 
@@ -382,7 +446,13 @@ export class MissionService {
       const baseScore = softScore(mission.code, mission.type, bucket);
       const ctxScore = contextScore(mission, ctx);
       const noveltyPenalty = noveltyPenaltyById(missionId, recentHistory);
-      const finalScore = baseScore + ctxScore + noveltyPenalty;
+      const microAdj =
+        microModeActive && RECO.microMode
+          ? isMicroMission(mission)
+            ? RECO.microMode.scoreBoost
+            : -RECO.microMode.nonMicroPenalty
+          : 0;
+      const finalScore = baseScore + ctxScore + noveltyPenalty + microAdj;
 
       logger.info({
         event: 'recommend_scored',
@@ -395,6 +465,8 @@ export class MissionService {
         timeBucket: bucket,
         emotion: ctx?.emotion ?? null,
         arousal: ctx?.arousal ?? null,
+        microModeActive,
+        microAdjustment: Number(microAdj.toFixed(4)),
       });
 
       recordScoreEvent(userId, missionId, finalScore);
@@ -439,6 +511,7 @@ export class MissionService {
         userId,
         timeBucket: bucket,
         size: picked.length,
+        microModeActive,
         summary: {
           min: Number(min.toFixed(4)),
           max: Number(max.toFixed(4)),
@@ -706,5 +779,10 @@ export class MissionService {
     return this.getToday(userId);
   }
 }
+
+export const missionInternals = {
+  shouldUseMicroMode,
+  isMicroMission,
+};
 
 export default MissionService;

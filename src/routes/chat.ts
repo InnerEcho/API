@@ -20,6 +20,7 @@ import { LangchainChatModelFactory } from '@/services/llm/ChatModelFactory.js';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { UpstashVectorMemory } from '@/services/memory/UpstashVectorMemory.js';
 import { NoopLongTermMemory } from '@/services/memory/LongTermMemory.js';
+import { SafetyModerator } from '@/services/chat/SafetyModerator.js';
 
 const router = express.Router();
 
@@ -41,12 +42,17 @@ const chatBot = new ChatBot(chatModelFactory);
 const reflectionAgent = new ReflectionAgent(chatModelFactory);
 const actionAgent = new ActionAgent(chatModelFactory);
 const safetyGuard = new DepressionSafetyGuard();
+const safetyModerator = new SafetyModerator();
 const agentRouter = new AgentRouter({
   default: chatBot,
   reflection: reflectionAgent,
   action: actionAgent,
 });
-const chatService = new ChatService(agentRouter, safetyGuard, longTermMemory);
+const chatService = new ChatService(
+  agentRouter,
+  safetyModerator,
+  longTermMemory,
+);
 const plantChatBotController = new PlantChatBotController(chatService);
 const chatHistoryService = new ChatHistoryService();
 const chatHistoryController = new ChatHistoryController(chatHistoryService);
